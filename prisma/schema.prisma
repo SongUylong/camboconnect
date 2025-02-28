@@ -1,0 +1,313 @@
+// This is your Prisma schema file for CamboConnect
+// Learn more about Prisma: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication and profiles
+model User {
+  id                String              @id @default(uuid())
+  email             String              @unique
+  password          String?             // Null if using social auth only
+  firstName         String
+  lastName          String
+  profileImage      String?
+  bio               String?
+  education         String?
+  skills            String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  isAdmin           Boolean             @default(false)
+  twoFactorEnabled  Boolean             @default(false)
+  twoFactorMethod   TwoFactorMethod?
+  privacyLevel      PrivacyLevel        @default(ONLY_ME)
+  bookmarks         Bookmark[]
+  applications      Application[]
+  notifications     Notification[]
+  followedOrgs      Follow[]            @relation("userFollows")
+  friendRequestsSent     FriendRequest[]     @relation("requestSender")
+  friendRequestsReceived FriendRequest[]     @relation("requestReceiver")
+  friends           Friendship[]        @relation("userFriends")
+  friendsOf         Friendship[]        @relation("friendsOfUser")
+  participations    Participation[]
+  conversations     ConversationParticipant[]
+  messages          Message[]
+  pageViews         PageView[]
+  events            EventLog[]
+}
+
+// Organization model
+model Organization {
+  id                String              @id @default(uuid())
+  name              String              @unique
+  description       String
+  logo              String?
+  website           String?
+  history           String?
+  termsOfService    String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  opportunities     Opportunity[]
+  followers         Follow[]
+}
+
+// Opportunity model
+model Opportunity {
+  id                String              @id @default(uuid())
+  title             String
+  description       String
+  shortDescription  String
+  eligibility       String
+  applicationProcess String
+  benefits          String
+  contactInfo       String
+  externalLink      String?
+  deadline          DateTime
+  startDate         DateTime?
+  endDate           DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  status            OpportunityStatus   @default(ACTIVE)
+  categoryId        String
+  category          Category            @relation(fields: [categoryId], references: [id])
+  visitCount        Int                 @default(0)
+  isPopular         Boolean             @default(false)
+  isNew             Boolean             @default(true)
+  organizationId    String
+  organization      Organization        @relation(fields: [organizationId], references: [id])
+  bookmarks         Bookmark[]
+  applications      Application[]
+  participations    Participation[]
+}
+
+// Category model for dynamic opportunity categories
+model Category {
+  id                String              @id @default(uuid())
+  name              String              @unique
+  description       String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  opportunities     Opportunity[]
+}
+
+// Bookmark model
+model Bookmark {
+  id                String              @id @default(uuid())
+  createdAt         DateTime            @default(now())
+  userId            String
+  user              User                @relation(fields: [userId], references: [id])
+  opportunityId     String
+  opportunity       Opportunity         @relation(fields: [opportunityId], references: [id])
+
+  @@unique([userId, opportunityId])
+}
+
+// Application model for tracking applications
+model Application {
+  id                String              @id @default(uuid())
+  statusId          String
+  status            ApplicationStatusType @relation(fields: [statusId], references: [id])
+  feedback          String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  userId            String
+  user              User                @relation(fields: [userId], references: [id])
+  opportunityId     String
+  opportunity       Opportunity         @relation(fields: [opportunityId], references: [id])
+
+  @@unique([userId, opportunityId])
+}
+
+// Application Status Type model for dynamic application statuses
+model ApplicationStatusType {
+  id                String              @id @default(uuid())
+  name              String              @unique
+  description       String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  applications      Application[]
+}
+
+// Follow model for users following organizations
+model Follow {
+  id                String              @id @default(uuid())
+  createdAt         DateTime            @default(now())
+  userId            String
+  user              User                @relation("userFollows", fields: [userId], references: [id])
+  organizationId    String
+  organization      Organization        @relation(fields: [organizationId], references: [id])
+
+  @@unique([userId, organizationId])
+}
+
+// Friend Request model
+model FriendRequest {
+  id                String              @id @default(uuid())
+  status            FriendRequestStatus @default(PENDING)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  senderId          String
+  sender            User                @relation("requestSender", fields: [senderId], references: [id])
+  receiverId        String
+  receiver          User                @relation("requestReceiver", fields: [receiverId], references: [id])
+
+  @@unique([senderId, receiverId])
+}
+
+// Friendship model to track established friendships
+model Friendship {
+  id                String              @id @default(uuid())
+  createdAt         DateTime            @default(now())
+  userId            String
+  user              User                @relation("userFriends", fields: [userId], references: [id])
+  friendId          String
+  friend            User                @relation("friendsOfUser", fields: [friendId], references: [id])
+
+  @@unique([userId, friendId])
+}
+
+// Participation model to track user participation in opportunities
+model Participation {
+  id                String              @id @default(uuid())
+  year              Int
+  feedback          String?
+  isPublic          Boolean             @default(false)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  userId            String
+  user              User                @relation(fields: [userId], references: [id])
+  opportunityId     String
+  opportunity       Opportunity         @relation(fields: [opportunityId], references: [id])
+
+  @@unique([userId, opportunityId])
+}
+
+// Notification model
+model Notification {
+  id                String              @id @default(uuid())
+  type              NotificationType
+  message           String
+  isRead            Boolean             @default(false)
+  createdAt         DateTime            @default(now())
+  userId            String
+  user              User                @relation(fields: [userId], references: [id])
+  relatedEntityId   String?             // Can be an opportunityId, organizationId, etc.
+}
+
+// Conversation model for messaging
+model Conversation {
+  id                String              @id @default(uuid())
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  messages          Message[]
+  participants      ConversationParticipant[]
+}
+
+// ConversationParticipant links users to conversations
+model ConversationParticipant {
+  id                String              @id @default(uuid())
+  userId            String
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversationId    String
+  conversation      Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  lastReadMessageId String?
+  lastReadMessage   Message?            @relation("LastRead", fields: [lastReadMessageId], references: [id])
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@unique([userId, conversationId])
+}
+
+// Message model for user-to-user communication
+model Message {
+  id                String              @id @default(uuid())
+  content           String              @db.Text
+  senderId          String
+  sender            User                @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  conversationId    String
+  conversation      Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  readBy            ConversationParticipant[] @relation("LastRead")
+  isSystemMessage   Boolean             @default(false)
+}
+
+// PageView model for tracking page visits
+model PageView {
+  id                String              @id @default(uuid())
+  path              String              // URL path
+  userId            String?             // Optional - only for logged in users
+  user              User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  sessionId         String              // Anonymous session tracking
+  referrer          String?             // Where user came from
+  userAgent         String?             // Browser info
+  device            String?             // Device type (mobile, desktop, tablet)
+  createdAt         DateTime            @default(now())
+}
+
+// EventLog for tracking user actions
+model EventLog {
+  id                String              @id @default(uuid())
+  eventType         String              // Type of event (e.g., "opportunity_view", "application_submit")
+  userId            String?             // Optional - only for logged in users
+  user              User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  sessionId         String              // Anonymous session tracking
+  entityId          String?             // ID of related entity (opportunity, organization, etc.)
+  entityType        String?             // Type of entity (e.g., "opportunity", "organization")
+  metadata          Json?               // Additional event data
+  createdAt         DateTime            @default(now())
+}
+
+// DailyStats for aggregated metrics
+model DailyStats {
+  id                String              @id @default(uuid())
+  date              DateTime            @unique // Date for these stats (time part is zeroed)
+  pageViews         Int                 @default(0)
+  uniqueVisitors    Int                 @default(0)
+  newUsers          Int                 @default(0)
+  applications      Int                 @default(0)
+  bookmarks         Int                 @default(0)
+  opportunityViews  Json?               // JSON object with opportunity ID to view count
+  categoryViews     Json?               // JSON object with category ID to view count
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+}
+
+// Enums
+enum PrivacyLevel {
+  PUBLIC
+  ONLY_ME
+  FRIENDS_ONLY
+}
+
+enum TwoFactorMethod {
+  EMAIL
+}
+
+enum OpportunityStatus {
+  OPENING_SOON
+  ACTIVE
+  CLOSING_SOON
+  CLOSED
+}
+
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum NotificationType {
+  NEW_OPPORTUNITY
+  DEADLINE_REMINDER
+  APPLICATION_UPDATE
+  FRIEND_REQUEST
+  ORGANIZATION_UPDATE
+  NEW_MESSAGE
+}
