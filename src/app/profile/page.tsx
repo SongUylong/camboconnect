@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
-import { Award, Bookmark, Calendar, Edit, Eye, User, Users } from "lucide-react";
+import { Award, Bookmark, Briefcase, Calendar, Edit, Eye, GraduationCap, Link as LinkIcon, User, Users } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 
@@ -60,6 +60,18 @@ export default async function ProfilePage() {
           year: "desc",
         },
       },
+      educationEntries: {
+        orderBy: {
+          startDate: "desc",
+        },
+      },
+      experienceEntries: {
+        orderBy: {
+          startDate: "desc",
+        },
+      },
+      skillEntries: true,
+      socialLinks: true,
       _count: {
         select: {
           bookmarks: true,
@@ -86,9 +98,9 @@ export default async function ProfilePage() {
               <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-32 flex items-center justify-center">
                 <div className="h-20 w-20 rounded-full bg-white border-4 border-white flex items-center justify-center overflow-hidden relative top-12">
                   {user.profileImage ? (
-                    <img
-                      src={user.profileImage}
-                      alt={`${user.firstName} ${user.lastName}`}
+                    <img 
+                      src={user.profileImage} 
+                      alt={`${user.firstName} ${user.lastName}`} 
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -135,18 +147,91 @@ export default async function ProfilePage() {
                 </div>
                 
                 <div className="mt-6 border-t border-gray-200 pt-6">
-                  <h2 className="text-lg font-semibold text-gray-900">Education</h2>
-                  <p className="mt-2 text-gray-600">
-                    {user.education || "No education information provided yet."}
-                  </p>
+                  <div className="flex items-center mb-4">
+                    <GraduationCap className="h-5 w-5 text-blue-600 mr-2" />
+                    <h2 className="text-lg font-semibold text-gray-900">Education</h2>
+                  </div>
+                  {user.educationEntries.length > 0 ? (
+                    <div className="space-y-4">
+                      {user.educationEntries.map((edu) => (
+                        <div key={edu.id} className="border-l-2 border-blue-200 pl-4">
+                          <h3 className="font-medium text-gray-900">{edu.school}</h3>
+                          <p className="text-sm text-gray-600">{edu.degree} in {edu.field}</p>
+                          <p className="text-xs text-gray-500">
+                            {format(new Date(edu.startDate), 'MMM yyyy')} - 
+                            {edu.endDate ? format(new Date(edu.endDate), ' MMM yyyy') : ' Present'}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-gray-600">No education information provided yet.</p>
+                  )}
+                </div>
+                
+                <div className="mt-6 border-t border-gray-200 pt-6">
+                  <div className="flex items-center mb-4">
+                    <Briefcase className="h-5 w-5 text-blue-600 mr-2" />
+                    <h2 className="text-lg font-semibold text-gray-900">Experience</h2>
+                  </div>
+                  {user.experienceEntries.length > 0 ? (
+                    <div className="space-y-4">
+                      {user.experienceEntries.map((exp) => (
+                        <div key={exp.id} className="border-l-2 border-blue-200 pl-4">
+                          <h3 className="font-medium text-gray-900">{exp.title}</h3>
+                          <p className="text-sm text-gray-600">{exp.company}, {exp.location}</p>
+                          <p className="text-xs text-gray-500">
+                            {format(new Date(exp.startDate), 'MMM yyyy')} - 
+                            {exp.endDate ? format(new Date(exp.endDate), ' MMM yyyy') : ' Present'}
+                          </p>
+                          <p className="text-sm text-gray-600 mt-1">{exp.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-gray-600">No experience information provided yet.</p>
+                  )}
                 </div>
                 
                 <div className="mt-6 border-t border-gray-200 pt-6">
                   <h2 className="text-lg font-semibold text-gray-900">Skills</h2>
-                  <p className="mt-2 text-gray-600">
-                    {user.skills || "No skills provided yet."}
-                  </p>
+                  {user.skillEntries.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {user.skillEntries.map((skill) => (
+                        <span key={skill.id} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                          {skill.name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-gray-600">No skills provided yet.</p>
+                  )}
                 </div>
+                
+                {user.socialLinks.length > 0 && (
+                  <div className="mt-6 border-t border-gray-200 pt-6">
+                    <div className="flex items-center mb-4">
+                      <LinkIcon className="h-5 w-5 text-blue-600 mr-2" />
+                      <h2 className="text-lg font-semibold text-gray-900">Links</h2>
+                    </div>
+                    <div className="space-y-2">
+                      {user.socialLinks.map((link) => (
+                        <a 
+                          key={link.id}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center text-blue-600 hover:text-blue-800"
+                        >
+                          <span className="capitalize">{link.platform}</span>
+                          <svg className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 
                 <div className="mt-6 border-t border-gray-200 pt-6">
                   <h2 className="text-lg font-semibold text-gray-900">Privacy Settings</h2>
@@ -329,8 +414,8 @@ export default async function ProfilePage() {
                                 : application.status.name === "Pending Confirmation"
                                 ? "badge-warning"
                                 : "badge-secondary"
-                            }`}>
-                              {application.status.name}
+                             }`}>
+                               {application.status.name}
                             </div>
                           </div>
                         </div>

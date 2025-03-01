@@ -1,11 +1,57 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { compare } from "bcrypt";
 import { NextAuthOptions } from "next-auth";
+import { DefaultSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { db } from "@/lib/prisma";
+import { PrismaClient } from "@prisma/client";
+import type { Adapter, AdapterUser } from "next-auth/adapters";
+
+// Create a custom adapter that properly handles our User model requirements
+function CustomAdapter(prisma: PrismaClient): Adapter {
+  // Get the default adapter
+  const defaultAdapter = PrismaAdapter(prisma);
+  
+  // Return a modified adapter with our custom createUser function
+  return {
+    ...defaultAdapter,
+    createUser: async (user: {
+      email: string;
+      emailVerified?: Date | null;
+      name?: string | null;
+      image?: string | null;
+    }): Promise<AdapterUser> => {
+      // Extract first and last name from the name field
+      const nameParts = user.name?.split(' ') || ['', ''];
+      const firstName = nameParts[0];
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+      
+      // Create the user with our required fields
+      const newUser = await prisma.user.create({
+        data: {
+          firstName,
+          lastName,
+          email: user.email,
+          profileImage: user.image,
+          privacyLevel: "ONLY_ME",
+        },
+      });
+      
+      // Return the user in the format expected by NextAuth
+      return {
+        id: newUser.id,
+        name: `${newUser.firstName} ${newUser.lastName}`,
+        email: newUser.email,
+        emailVerified: null,
+        image: newUser.profileImage,
+      };
+    }
+  };
+}
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(db),
+  adapter: CustomAdapter(db as PrismaClient),
   session: {
     strategy: "jwt",
   },
@@ -15,6 +61,17 @@ export const authOptions: NextAuthOptions = {
     error: "/login",
   },
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code"
+        }
+      }
+    }),
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -58,14 +115,126 @@ export const authOptions: NextAuthOptions = {
         session.user.name = token.name;
         session.user.email = token.email;
         session.user.isAdmin = token.isAdmin as boolean;
+        
+        // Ensure the image URL is properly formatted
+        if (token.picture) {
+          // Add a referrer policy to the image URL if it's from Google
+          const pictureUrl = token.picture as string;
+          session.user.image = pictureUrl;
+        } else {
+          session.user.image = null;
+        }
       }
 
       return session;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
+      // Initial sign in
+      if (account && user) {
+        // For Google provider
+        if (account.provider === "google") {
+          // Check if user already exists in the database
+          const existingUser = await db.user.findFirst({
+            where: {
+              email: user.email ? user.email : undefined,
+            },
+          });
+
+          if (existingUser) {
+            // User exists, update token
+            // If this is a Google sign-in, update the profile image
+            if (account.access_token) {
+              try {
+                const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+                  headers: {
+                    Authorization: `Bearer ${account.access_token}`,
+                  },
+                });
+                
+                if (response.ok) {
+                  const googleProfile = await response.json();
+                  
+                  // Update the user's profile image if Google has one
+                  if (googleProfile.picture) {
+                    await db.user.update({
+                      where: { id: existingUser.id },
+                      data: { profileImage: googleProfile.picture },
+                    });
+                    
+                    // Add picture to token
+                    token.picture = googleProfile.picture;
+                  }
+                }
+              } catch (error) {
+                console.error('Error fetching Google profile:', error);
+              }
+            }
+            
+            return {
+              id: existingUser.id,
+              name: `${existingUser.firstName} ${existingUser.lastName}`,
+              email: existingUser.email,
+              isAdmin: existingUser.isAdmin,
+              picture: existingUser.profileImage,
+            };
+          } else {
+            // Create new user from Google data
+            const names = user.name?.split(' ') || ['', ''];
+            const firstName = names[0];
+            const lastName = names.length > 1 ? names.slice(1).join(' ') : '';
+            
+            // Try to get profile image from Google
+            let profileImage = null;
+            if (account.access_token) {
+              try {
+                const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+                  headers: {
+                    Authorization: `Bearer ${account.access_token}`,
+                  },
+                });
+                
+                if (response.ok) {
+                  const googleProfile = await response.json();
+                  profileImage = googleProfile.picture || null;
+                }
+              } catch (error) {
+                console.error('Error fetching Google profile:', error);
+              }
+            }
+            
+            const newUser = await db.user.create({
+              data: {
+                email: user.email!,
+                firstName,
+                lastName,
+                isAdmin: false,
+                profileImage,
+              },
+            });
+            
+            return {
+              id: newUser.id,
+              name: user.name,
+              email: newUser.email,
+              isAdmin: newUser.isAdmin,
+              picture: profileImage,
+            };
+          }
+        }
+        
+        // For credentials provider
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          isAdmin: (user as any).isAdmin || false,
+        };
+      }
+
+      // Subsequent requests
       const dbUser = await db.user.findFirst({
         where: {
-          email: token.email,
+          email: token.email ? token.email : undefined,
         },
       });
 
@@ -81,6 +250,7 @@ export const authOptions: NextAuthOptions = {
         name: `${dbUser.firstName} ${dbUser.lastName}`,
         email: dbUser.email,
         isAdmin: dbUser.isAdmin,
+        picture: dbUser.profileImage,
       };
     },
   },

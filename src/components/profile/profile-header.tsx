@@ -2,10 +2,10 @@
 
 import { UserProfile } from "@/types/user";
 import { Button } from "@/components/ui/button";
-import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Mail, Phone, Link as LinkIcon } from "lucide-react";
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 interface ProfileHeaderProps {
   user: {
@@ -34,12 +34,7 @@ export function ProfileHeader({
   return (
     <Card className="p-6">
       <div className="flex items-start gap-6">
-        <Avatar
-          src={user.image}
-          alt={user.name}
-          className="w-24 h-24"
-          fallback={user.name[0]}
-        />
+        <UserAvatar user={user} className="w-24 h-24" />
         <div className="flex-1">
           <div className="flex items-start justify-between">
             <div>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, AlertCircle, Check, X } from "lucide-react";
+import { signIn } from "next-auth/react";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -400,10 +401,7 @@ export function RegisterForm() {
             <button
               type="button"
               className="btn btn-outline w-full"
-              onClick={() => {
-                // In a real app, would use signIn from next-auth
-                // signIn("google", { callbackUrl: "/" });
-              }}
+              onClick={() => signIn("google", { callbackUrl: "/" })}
             >
               <svg
                 className="h-5 w-5 mr-2"

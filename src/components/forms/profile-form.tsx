@@ -1,71 +1,111 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { UserProfile } from "@/types/user";
+import { UserProfile, Education, Experience, SocialLinks } from "@/types/user";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
 import { toast } from "sonner";
+import { PlusCircle, Trash2, GraduationCap, Briefcase, Link as LinkIcon, Save } from "lucide-react";
 
+// Updated schemas to match our new database schema
 const educationSchema = z.object({
+  id: z.string().optional(),
   school: z.string().min(1, "School is required"),
   degree: z.string().min(1, "Degree is required"),
   field: z.string().min(1, "Field of study is required"),
-  startDate: z.date(),
-  endDate: z.date().optional(),
+  startDate: z.union([z.string(), z.date()]),
+  endDate: z.union([z.string(), z.date(), z.null()]).optional(),
 });
 
 const experienceSchema = z.object({
+  id: z.string().optional(),
   title: z.string().min(1, "Job title is required"),
   company: z.string().min(1, "Company is required"),
   location: z.string().min(1, "Location is required"),
-  startDate: z.date(),
-  endDate: z.date().optional(),
+  startDate: z.union([z.string(), z.date()]),
+  endDate: z.union([z.string(), z.date(), z.null()]).optional(),
   description: z.string().min(1, "Description is required"),
 });
 
+const linksSchema = z.object({
+  portfolio: z.string().url().optional().or(z.literal('')),
+  linkedin: z.string().url().optional().or(z.literal('')),
+  github: z.string().url().optional().or(z.literal('')),
+  twitter: z.string().url().optional().or(z.literal('')),
+});
+
+// Complete profile schema
 const profileSchema = z.object({
   bio: z.string().optional(),
-  skills: z.array(z.string()).min(1, "At least one skill is required"),
-  education: z.array(educationSchema),
-  experience: z.array(experienceSchema),
-  links: z.object({
-    portfolio: z.string().url().optional(),
-    linkedin: z.string().url().optional(),
-    github: z.string().url().optional(),
-    twitter: z.string().url().optional(),
-  }).optional(),
+  skills: z.array(z.string()).default([]),
+  education: z.array(educationSchema).default([]),
+  experience: z.array(experienceSchema).default([]),
+  links: linksSchema.default({}),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 interface ProfileFormProps {
-  initialData?: Partial<UserProfile>;
+  profile: UserProfile;
   onSubmit: (data: ProfileFormData) => Promise<void>;
+  isSubmitting: boolean;
 }
 
-export function ProfileForm({ initialData, onSubmit }: ProfileFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export function ProfileForm({ profile, onSubmit, isSubmitting }: ProfileFormProps) {
+  const [skillsInput, setSkillsInput] = useState("");
+
+  console.log("Initial profile data:", profile);
+
+  // Convert Date objects to strings for form inputs
+  const prepareFormData = (data: UserProfile): ProfileFormData => {
+    return {
+      bio: data.bio || "",
+      skills: data.skills || [],
+      education: data.education?.map(edu => ({
+        ...edu,
+        startDate: edu.startDate instanceof Date 
+          ? edu.startDate.toISOString().split('T')[0] 
+          : typeof edu.startDate === 'string' ? edu.startDate : '',
+        endDate: edu.endDate instanceof Date 
+          ? edu.endDate.toISOString().split('T')[0] 
+          : typeof edu.endDate === 'string' ? edu.endDate : null,
+      })) || [],
+      experience: data.experience?.map(exp => ({
+        ...exp,
+        startDate: exp.startDate instanceof Date 
+          ? exp.startDate.toISOString().split('T')[0] 
+          : typeof exp.startDate === 'string' ? exp.startDate : '',
+        endDate: exp.endDate instanceof Date 
+          ? exp.endDate.toISOString().split('T')[0] 
+          : typeof exp.endDate === 'string' ? exp.endDate : null,
+      })) || [],
+      links: data.links || {},
+    };
+  };
 
   const {
     register,
     control,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
-    defaultValues: {
-      bio: initialData?.bio || "",
-      skills: initialData?.skills || [],
-      education: initialData?.education || [],
-      experience: initialData?.experience || [],
-      links: initialData?.links || {},
-    },
+    defaultValues: prepareFormData(profile),
+    mode: "onChange"
   });
+
+  // Log form errors for debugging
+  useEffect(() => {
+    console.log("Form errors:", errors);
+  }, [errors]);
+
+  const skills = watch("skills");
 
   const { fields: educationFields, append: appendEducation, remove: removeEducation } = 
     useFieldArray({
@@ -79,172 +119,392 @@ export function ProfileForm({ initialData, onSubmit }: ProfileFormProps) {
       name: "experience",
     });
 
+  const handleAddSkill = () => {
+    if (skillsInput.trim()) {
+      const newSkills = [...skills, skillsInput.trim()];
+      setValue("skills", newSkills, { shouldDirty: true, shouldValidate: true });
+      setSkillsInput("");
+    }
+  };
+
+  const handleRemoveSkill = (index: number) => {
+    const newSkills = [...skills];
+    newSkills.splice(index, 1);
+    setValue("skills", newSkills, { shouldDirty: true, shouldValidate: true });
+  };
+
   const handleFormSubmit = async (data: ProfileFormData) => {
+    console.log("Form submitted with data:", data);
+    
     try {
-      setIsSubmitting(true);
       await onSubmit(data);
-      toast.success("Profile updated successfully");
     } catch (error) {
+      console.error("Error in form submission:", error);
       toast.error("Failed to update profile");
-      console.error(error);
-    } finally {
-      setIsSubmitting(false);
+    }
+  };
+
+  // Add a key press handler for the skills input
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddSkill();
     }
   };
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-8">
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Basic Information</h3>
-        <div className="space-y-4">
+      <Card className="p-6 shadow-md border border-gray-200 bg-white">
+        <h3 className="text-xl font-semibold mb-6 text-gray-800 border-b pb-3">Personal Information</h3>
+        <div className="space-y-6">
           <div>
-            <label className="block text-sm font-medium mb-1">Bio</label>
+            <label className="block text-sm font-medium mb-2 text-gray-700">Bio</label>
             <textarea
               {...register("bio")}
-              className="w-full min-h-[100px] p-2 border rounded-md"
+              className="w-full min-h-[120px] p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               placeholder="Tell us about yourself..."
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Skills</label>
-            <Input
-              {...register("skills")}
-              placeholder="Add skills (comma separated)"
-            />
+            <label className="block text-sm font-medium mb-2 text-gray-700">Skills</label>
+            <div className="flex gap-2">
+              <Input
+                value={skillsInput}
+                onChange={(e) => setSkillsInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Add a skill"
+                className="flex-1 h-10 border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <Button 
+                type="button" 
+                onClick={handleAddSkill}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Add
+              </Button>
+            </div>
+            {skills.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {skills.map((skill, index) => (
+                  <div key={index} className="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full flex items-center text-sm">
+                    <span>{skill}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSkill(index)}
+                      className="ml-2 text-blue-600 hover:text-blue-800"
+                      aria-label={`Remove ${skill}`}
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             {errors.skills && (
-              <p className="text-red-500 text-sm mt-1">{errors.skills.message}</p>
+              <p className="text-red-500 text-sm mt-2">{errors.skills.message}</p>
             )}
           </div>
         </div>
       </Card>
 
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Education</h3>
+      <Card className="p-6 shadow-md border border-gray-200 bg-white">
+        <div className="flex items-center mb-6 border-b pb-3">
+          <GraduationCap className="h-5 w-5 text-blue-600 mr-2" />
+          <h3 className="text-xl font-semibold text-gray-800">Education</h3>
+        </div>
+        
+        {educationFields.length === 0 && (
+          <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-md mb-4">
+            <p>No education entries yet. Add your educational background.</p>
+          </div>
+        )}
+        
         {educationFields.map((field, index) => (
-          <div key={field.id} className="space-y-4 mb-6 p-4 border rounded-md">
-            <Input
-              {...register(`education.${index}.school`)}
-              placeholder="School"
-            />
-            <Input
-              {...register(`education.${index}.degree`)}
-              placeholder="Degree"
-            />
-            <Input
-              {...register(`education.${index}.field`)}
-              placeholder="Field of Study"
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                type="date"
-                {...register(`education.${index}.startDate`)}
-              />
-              <Input
-                type="date"
-                {...register(`education.${index}.endDate`)}
-              />
+          <div key={field.id} className="space-y-4 mb-6 p-5 border border-gray-200 rounded-md bg-gray-50 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700">School/University</label>
+                <Input
+                  {...register(`education.${index}.school`)}
+                  placeholder="School or University name"
+                  className="border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                {errors.education?.[index]?.school && (
+                  <p className="text-red-500 text-xs mt-1">{errors.education[index]?.school?.message}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700">Degree</label>
+                <Input
+                  {...register(`education.${index}.degree`)}
+                  placeholder="Bachelor's, Master's, etc."
+                  className="border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                {errors.education?.[index]?.degree && (
+                  <p className="text-red-500 text-xs mt-1">{errors.education[index]?.degree?.message}</p>
+                )}
+              </div>
             </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Field of Study</label>
+              <Input
+                {...register(`education.${index}.field`)}
+                placeholder="Computer Science, Business, etc."
+                className="border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {errors.education?.[index]?.field && (
+                <p className="text-red-500 text-xs mt-1">{errors.education[index]?.field?.message}</p>
+              )}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700">Start Date</label>
+                <Input
+                  type="date"
+                  {...register(`education.${index}.startDate`)}
+                  className="border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                {errors.education?.[index]?.startDate && (
+                  <p className="text-red-500 text-xs mt-1">{errors.education[index]?.startDate?.message}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700">End Date (Optional)</label>
+                <Input
+                  type="date"
+                  {...register(`education.${index}.endDate`)}
+                  className="border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+            
             <Button
               type="button"
               variant="destructive"
               onClick={() => removeEducation(index)}
+              className="mt-2 flex items-center"
             >
+              <Trash2 className="h-4 w-4 mr-2" />
               Remove Education
             </Button>
           </div>
         ))}
+        
         <Button
           type="button"
           onClick={() => appendEducation({
             school: "",
             degree: "",
             field: "",
-            startDate: new Date(),
+            startDate: new Date().toISOString().split('T')[0],
+            endDate: "",
           })}
+          className="mt-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200"
         >
+          <PlusCircle className="h-4 w-4 mr-2" />
           Add Education
         </Button>
       </Card>
 
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Experience</h3>
+      <Card className="p-6 shadow-md border border-gray-200 bg-white">
+        <div className="flex items-center mb-6 border-b pb-3">
+          <Briefcase className="h-5 w-5 text-blue-600 mr-2" />
+          <h3 className="text-xl font-semibold text-gray-800">Experience</h3>
+        </div>
+        
+        {experienceFields.length === 0 && (
+          <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-md mb-4">
+            <p>No experience entries yet. Add your work experience.</p>
+          </div>
+        )}
+        
         {experienceFields.map((field, index) => (
-          <div key={field.id} className="space-y-4 mb-6 p-4 border rounded-md">
-            <Input
-              {...register(`experience.${index}.title`)}
-              placeholder="Job Title"
-            />
-            <Input
-              {...register(`experience.${index}.company`)}
-              placeholder="Company"
-            />
-            <Input
-              {...register(`experience.${index}.location`)}
-              placeholder="Location"
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                type="date"
-                {...register(`experience.${index}.startDate`)}
-              />
-              <Input
-                type="date"
-                {...register(`experience.${index}.endDate`)}
-              />
+          <div key={field.id} className="space-y-4 mb-6 p-5 border border-gray-200 rounded-md bg-gray-50 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700">Job Title</label>
+                <Input
+                  {...register(`experience.${index}.title`)}
+                  placeholder="Software Engineer, Project Manager, etc."
+                  className="border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                {errors.experience?.[index]?.title && (
+                  <p className="text-red-500 text-xs mt-1">{errors.experience[index]?.title?.message}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700">Company</label>
+                <Input
+                  {...register(`experience.${index}.company`)}
+                  placeholder="Company name"
+                  className="border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                {errors.experience?.[index]?.company && (
+                  <p className="text-red-500 text-xs mt-1">{errors.experience[index]?.company?.message}</p>
+                )}
+              </div>
             </div>
-            <textarea
-              {...register(`experience.${index}.description`)}
-              className="w-full min-h-[100px] p-2 border rounded-md"
-              placeholder="Job Description"
-            />
+            
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Location</label>
+              <Input
+                {...register(`experience.${index}.location`)}
+                placeholder="City, Country"
+                className="border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {errors.experience?.[index]?.location && (
+                <p className="text-red-500 text-xs mt-1">{errors.experience[index]?.location?.message}</p>
+              )}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700">Start Date</label>
+                <Input
+                  type="date"
+                  {...register(`experience.${index}.startDate`)}
+                  className="border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                {errors.experience?.[index]?.startDate && (
+                  <p className="text-red-500 text-xs mt-1">{errors.experience[index]?.startDate?.message}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700">End Date (Optional)</label>
+                <Input
+                  type="date"
+                  {...register(`experience.${index}.endDate`)}
+                  className="border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Description</label>
+              <textarea
+                {...register(`experience.${index}.description`)}
+                className="w-full min-h-[100px] p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                placeholder="Describe your responsibilities and achievements"
+              />
+              {errors.experience?.[index]?.description && (
+                <p className="text-red-500 text-xs mt-1">{errors.experience[index]?.description?.message}</p>
+              )}
+            </div>
+            
             <Button
               type="button"
               variant="destructive"
               onClick={() => removeExperience(index)}
+              className="mt-2 flex items-center"
             >
+              <Trash2 className="h-4 w-4 mr-2" />
               Remove Experience
             </Button>
           </div>
         ))}
+        
         <Button
           type="button"
           onClick={() => appendExperience({
             title: "",
             company: "",
             location: "",
-            startDate: new Date(),
+            startDate: new Date().toISOString().split('T')[0],
             description: "",
+            endDate: "",
           })}
+          className="mt-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200"
         >
+          <PlusCircle className="h-4 w-4 mr-2" />
           Add Experience
         </Button>
       </Card>
 
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Social Links</h3>
+      <Card className="p-6 shadow-md border border-gray-200 bg-white">
+        <div className="flex items-center mb-6 border-b pb-3">
+          <LinkIcon className="h-5 w-5 text-blue-600 mr-2" />
+          <h3 className="text-xl font-semibold text-gray-800">Social Links</h3>
+        </div>
+        
         <div className="space-y-4">
-          <Input
-            {...register("links.portfolio")}
-            placeholder="Portfolio URL"
-          />
-          <Input
-            {...register("links.linkedin")}
-            placeholder="LinkedIn URL"
-          />
-          <Input
-            {...register("links.github")}
-            placeholder="GitHub URL"
-          />
-          <Input
-            {...register("links.twitter")}
-            placeholder="Twitter URL"
-          />
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700">Portfolio Website</label>
+            <Input
+              {...register("links.portfolio")}
+              placeholder="https://yourportfolio.com"
+              className="border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            {errors.links?.portfolio && (
+              <p className="text-red-500 text-xs mt-1">{errors.links.portfolio.message}</p>
+            )}
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700">LinkedIn</label>
+            <Input
+              {...register("links.linkedin")}
+              placeholder="https://linkedin.com/in/yourusername"
+              className="border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            {errors.links?.linkedin && (
+              <p className="text-red-500 text-xs mt-1">{errors.links.linkedin.message}</p>
+            )}
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700">GitHub</label>
+            <Input
+              {...register("links.github")}
+              placeholder="https://github.com/yourusername"
+              className="border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            {errors.links?.github && (
+              <p className="text-red-500 text-xs mt-1">{errors.links.github.message}</p>
+            )}
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700">Twitter</label>
+            <Input
+              {...register("links.twitter")}
+              placeholder="https://twitter.com/yourusername"
+              className="border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            {errors.links?.twitter && (
+              <p className="text-red-500 text-xs mt-1">{errors.links.twitter.message}</p>
+            )}
+          </div>
         </div>
       </Card>
 
-      <div className="flex justify-end">
-        <Button type="submit" disabled={isSubmitting}>
+      <div className="sticky bottom-0 bg-white p-4 border-t shadow-md z-10 flex justify-between">
+        <Button 
+          type="button" 
+          onClick={() => console.log("Current form state:", { 
+            values: {
+              bio: watch("bio"),
+              skills: watch("skills"),
+              education: watch("education"),
+              experience: watch("experience"),
+              links: watch("links")
+            },
+            errors, 
+          })}
+          variant="outline"
+          className="px-4 py-2"
+        >
+          Debug Form
+        </Button>
+        
+        <Button 
+          type="submit" 
+          disabled={isSubmitting}
+          className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg shadow-sm transition-all flex items-center"
+        >
+          <Save className="h-4 w-4 mr-2" />
           {isSubmitting ? "Saving..." : "Save Profile"}
         </Button>
       </div>

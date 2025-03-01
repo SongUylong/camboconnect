@@ -77,14 +77,9 @@ export function LoginForm() {
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <Link href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-800">
-                Forgot password?
-              </Link>
-            </div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              Password
+            </label>
             <div className="relative">
               <input
                 id="password"
@@ -108,6 +103,11 @@ export function LoginForm() {
                   <Eye className="h-5 w-5" aria-hidden="true" />
                 )}
               </button>
+            </div>
+            <div className="flex justify-end mt-1">
+              <Link href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-800">
+                Forgot password?
+              </Link>
             </div>
           </div>
 

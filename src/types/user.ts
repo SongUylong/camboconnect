@@ -6,31 +6,39 @@ export type UserWithRelations = User & {
   savedOpportunities?: Opportunity[];
 };
 
+export interface Education {
+  id?: string;
+  school: string;
+  degree: string;
+  field: string;
+  startDate: string | Date;
+  endDate?: string | Date | null;
+}
+
+export interface Experience {
+  id?: string;
+  title: string;
+  company: string;
+  location: string;
+  startDate: string | Date;
+  endDate?: string | Date | null;
+  description: string;
+}
+
+export interface SocialLinks {
+  portfolio?: string;
+  linkedin?: string;
+  github?: string;
+  twitter?: string;
+  [key: string]: string | undefined;
+}
+
 export interface UserProfile {
   bio?: string;
   skills: string[];
-  education: {
-    school: string;
-    degree: string;
-    field: string;
-    startDate: Date;
-    endDate?: Date;
-  }[];
-  experience: {
-    title: string;
-    company: string;
-    location: string;
-    startDate: Date;
-    endDate?: Date;
-    description: string;
-  }[];
-  links?: {
-    portfolio?: string;
-    linkedin?: string;
-    github?: string;
-    twitter?: string;
-  };
-  resume?: string;
+  education: Education[];
+  experience: Experience[];
+  links?: SocialLinks;
 }
 
 export interface UserSettings {

@@ -10,6 +10,42 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// NextAuth Models
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
 // User model for authentication and profiles
 model User {
   id                String              @id @default(uuid())
@@ -19,8 +55,6 @@ model User {
   lastName          String
   profileImage      String?
   bio               String?
-  education         String?
-  skills            String?
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   isAdmin           Boolean             @default(false)
@@ -40,6 +74,67 @@ model User {
   messages          Message[]
   pageViews         PageView[]
   events            EventLog[]
+  passwordResetToken PasswordResetToken?
+  
+  // Relations for profile data
+  educationEntries  Education[]
+  experienceEntries Experience[]
+  skillEntries      Skill[]
+  socialLinks       SocialLink[]
+  
+  // NextAuth relations
+  accounts      Account[]
+  sessions      Session[]
+}
+
+// New model for Education
+model Education {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  school      String
+  degree      String
+  field       String
+  startDate   DateTime
+  endDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// New model for Experience
+model Experience {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  company     String
+  location    String
+  startDate   DateTime
+  endDate     DateTime?
+  description String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// New model for Skills
+model Skill {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// New model for Social Links
+model SocialLink {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform  String    // e.g., "portfolio", "linkedin", "github", "twitter"
+  url       String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 // Organization model
@@ -310,4 +405,14 @@ enum NotificationType {
   FRIEND_REQUEST
   ORGANIZATION_UPDATE
   NEW_MESSAGE
+}
+
+// Password Reset Token model
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expires   DateTime
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }

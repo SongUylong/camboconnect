@@ -1,10 +1,10 @@
 "use client";
 
-import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin } from "lucide-react";
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 interface FriendCardProps {
   friend: {
@@ -30,12 +30,7 @@ export function FriendCard({
   return (
     <Card className="p-4">
       <div className="flex items-start gap-4">
-        <Avatar
-          src={friend.image}
-          alt={friend.name}
-          className="w-12 h-12"
-          fallback={friend.name[0]}
-        />
+        <UserAvatar user={friend} className="w-12 h-12" />
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div>
