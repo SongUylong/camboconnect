@@ -3,9 +3,13 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
-import { Award, Bookmark, Briefcase, Calendar, Edit, Eye, GraduationCap, Link as LinkIcon, User, Users } from "lucide-react";
+import { Award, Bookmark, Briefcase, Calendar, Edit, Eye, GraduationCap, Link as LinkIcon, Settings, User, Users } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
+import dynamic from "next/dynamic";
+
+// Import the SettingsPopover component with dynamic import to avoid SSR issues
+const SettingsPopover = dynamic(() => import("./settings-popover"), { ssr: false });
 
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);
@@ -241,38 +245,6 @@ export default async function ProfilePage() {
                     </div>
                   </div>
                 )}
-                
-                <div className="mt-6 border-t border-gray-200 pt-6">
-                  <h2 className="text-lg font-semibold text-gray-900">Privacy Settings</h2>
-                  <div className="mt-2 flex items-center">
-                    <div className={`h-3 w-3 rounded-full ${
-                      user.privacyLevel === "PUBLIC" 
-                        ? "bg-green-500" 
-                        : user.privacyLevel === "FRIENDS_ONLY" 
-                        ? "bg-yellow-500" 
-                        : "bg-red-500"
-                    } mr-2`}></div>
-                    <span className="text-gray-600">
-                      {user.privacyLevel === "PUBLIC" 
-                        ? "Public Profile" 
-                        : user.privacyLevel === "FRIENDS_ONLY" 
-                        ? "Friends Only"
-                        : "Private Profile"}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {user.privacyLevel === "PUBLIC" 
-                      ? "Anyone can see your profile and participation history."
-                      : user.privacyLevel === "FRIENDS_ONLY"
-                      ? "Only friends can see your detailed profile and participation history."
-                      : "Only you can see your detailed profile and participation history."}
-                  </p>
-                  <div className="mt-2">
-                    <Link href="/settings" className="text-sm text-blue-600 hover:text-blue-800">
-                      Change privacy settings
-                    </Link>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -282,9 +254,12 @@ export default async function ProfilePage() {
             {/* Participations */}
             <section>
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Participation History
-                </h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Participation History
+                  </h2>
+                  <SettingsPopover />
+                </div>
                 {user.participations.length > 3 && (
                   <Link 
                     href="/profile/participations" 

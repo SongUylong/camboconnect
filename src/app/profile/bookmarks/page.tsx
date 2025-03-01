@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,25 @@ export default function BookmarksPage() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate fetching bookmarks from an API
+    const fetchBookmarks = async () => {
+      try {
+        // In a real app, this would be an API call
+        // For now, we'll just set an empty array after a short delay
+        setTimeout(() => {
+          setBookmarks([]);
+          setIsLoading(false);
+        }, 500);
+      } catch (error) {
+        console.error("Failed to fetch bookmarks:", error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchBookmarks();
+  }, []);
 
   const filteredBookmarks = bookmarks.filter((bookmark) => {
     const matchesSearch = bookmark.title

@@ -4,14 +4,24 @@ import { cn } from "@/lib/utils";
 export interface SelectProps
   extends React.SelectHTMLAttributes<HTMLSelectElement> {
   error?: string;
-  options: Array<{
+  options?: Array<{
     value: string;
     label: string;
   }>;
+  onValueChange?: (value: string) => void;
 }
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, error, options, children, ...props }, ref) => {
+  ({ className, error, options, children, onValueChange, onChange, ...props }, ref) => {
+    // Handle both onChange and onValueChange
+    const handleChange = React.useCallback(
+      (event: React.ChangeEvent<HTMLSelectElement>) => {
+        onChange?.(event);
+        onValueChange?.(event.target.value);
+      },
+      [onChange, onValueChange]
+    );
+
     return (
       <div className="relative">
         <select
@@ -20,10 +30,11 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             error && "border-destructive focus-visible:ring-destructive",
             className
           )}
+          onChange={handleChange}
           ref={ref}
           {...props}
         >
-          {options.map((option) => (
+          {options?.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
