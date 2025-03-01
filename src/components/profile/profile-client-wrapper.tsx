@@ -14,27 +14,31 @@ export default function ProfileClientWrapper({ isNewUser }: ProfileClientWrapper
   const router = useRouter();
   const { status } = useSession();
   
+  // Run this effect only once on component mount
   useEffect(() => {
-    // Check if this is a new user and if they've just registered
-    const isFromRegistration = window.location.search.includes('from=register');
-    
-    // Handle authentication status
+    // Don't do anything until authentication is complete
     if (status === "loading") {
-      // Session is still loading, wait
       return;
     }
     
+    // Check if this is a new user and if they've just registered
+    const isFromRegistration = window.location.search.includes('from=register');
+    
+    // Handle unauthenticated users trying to access from registration
     if (status === "unauthenticated" && isFromRegistration) {
-      // User is coming from registration but not authenticated
-      // This could happen if the auto sign-in failed
       console.log("User is not authenticated after registration, redirecting to login");
       router.push("/login?callbackUrl=/profile?from=register");
       return;
     }
     
-    // For new users, always show the welcome modal when authenticated
-    // For returning users, only show it if they're coming from registration
-    if ((isNewUser || isFromRegistration) && status === "authenticated") {
+    // Check if we've already shown the welcome modal in this session
+    const hasShownModal = localStorage.getItem('welcomeModalShown') === 'true';
+    
+    // Only show the modal if:
+    // 1. User is authenticated AND
+    // 2. Either they are a new user OR they're coming from registration AND
+    // 3. We haven't shown the modal already
+    if (status === "authenticated" && (isNewUser || isFromRegistration) && !hasShownModal) {
       setShowWelcomeModal(true);
       
       // Remove the query parameter without refreshing the page if it exists
@@ -43,11 +47,7 @@ export default function ProfileClientWrapper({ isNewUser }: ProfileClientWrapper
         window.history.replaceState({}, document.title, newUrl);
       }
     }
-  }, [isNewUser, status, router]);
+  }, [isNewUser, status, router]); // Only depend on these values
   
-  return (
-    <>
-      {showWelcomeModal && <WelcomeModal />}
-    </>
-  );
+  return showWelcomeModal ? <WelcomeModal /> : null;
 } 

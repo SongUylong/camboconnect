@@ -1,16 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CheckCircle, UserCircle, ArrowRight, ArrowLeft, Check } from "lucide-react";
-import { useSession } from "next-auth/react";
 import { ProfileSetupForm } from "@/components/forms/profile-setup-form";
 import { UserProfile } from "@/types/user";
 import { toast } from "sonner";
 
 export function WelcomeModal() {
+  // Basic state
   const [open, setOpen] = useState(true);
   const [showSetupForm, setShowSetupForm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -19,9 +18,6 @@ export function WelcomeModal() {
   const [currentStep, setCurrentStep] = useState(0);
   const [formRef, setFormRef] = useState<{ submitForm: () => void } | null>(null);
   
-  const router = useRouter();
-  const { status } = useSession();
-
   // Define the steps for the setup process
   const steps = [
     { id: 'bio', title: 'Bio & Skills' },
@@ -30,20 +26,15 @@ export function WelcomeModal() {
     { id: 'links', title: 'Social Links' }
   ];
 
-  // Handle modal state changes
-  useEffect(() => {
-    // If the user is not authenticated, redirect to login
-    if (status === "unauthenticated") {
-      router.push("/login?callbackUrl=/profile?from=register");
-    }
-    
-    // When the modal is closed, set a flag in localStorage to prevent showing it again
-    if (!open) {
-      localStorage.setItem('welcomeModalShown', 'true');
-    }
-  }, [open, status, router]);
+  // Handle closing the modal
+  const handleClose = useCallback(() => {
+    // Set localStorage flag to prevent showing the modal again
+    localStorage.setItem('welcomeModalShown', 'true');
+    setOpen(false);
+  }, []);
 
-  const fetchProfile = async () => {
+  // Fetch profile data
+  const fetchProfile = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await fetch("/api/profile");
@@ -88,25 +79,27 @@ export function WelcomeModal() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const handleSetupNow = () => {
+  // Handle setup now button click
+  const handleSetupNow = useCallback(() => {
     setShowSetupForm(true);
     fetchProfile();
-  };
+  }, [fetchProfile]);
 
-  const handleSkipForNow = () => {
+  // Handle skip for now button click
+  const handleSkipForNow = useCallback(() => {
     // Clear the flag from localStorage to prevent showing the modal again
     localStorage.removeItem('welcomeModalShown');
     
     // Close the modal
     setOpen(false);
-  };
+  }, []);
 
-  const handleSubmit = async (data: UserProfile) => {
+  // Handle form submission
+  const handleSubmit = useCallback(async (data: UserProfile) => {
     try {
       setSubmitting(true);
-      console.log("Submitting profile data:", JSON.stringify(data, null, 2));
       
       // Ensure we have at least some data
       const hasData = 
@@ -117,7 +110,6 @@ export function WelcomeModal() {
         Object.values(data.links || {}).some(link => link && link.trim() !== '');
       
       if (!hasData) {
-        console.warn("No data to submit - form is empty");
         toast.warning("Please add some information to your profile before submitting");
         setSubmitting(false);
         return;
@@ -131,8 +123,6 @@ export function WelcomeModal() {
         experience: Array.isArray(data.experience) ? data.experience : [],
         links: data.links || {}
       };
-      
-      console.log("Formatted data for API:", formattedData);
       
       // Send the complete data to the API
       const response = await fetch("/api/profile", {
@@ -148,9 +138,6 @@ export function WelcomeModal() {
         throw new Error(result.error || "Failed to update profile");
       }
       
-      const result = await response.json();
-      console.log("Profile update response:", result);
-      
       toast.success("Profile setup completed successfully!");
       
       // Clear the welcome modal flag from localStorage
@@ -164,22 +151,23 @@ export function WelcomeModal() {
     } finally {
       setSubmitting(false);
     }
-  };
+  }, []);
 
-  const nextStep = () => {
+  // Navigation functions
+  const nextStep = useCallback(() => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
-  };
+  }, [currentStep, steps.length]);
 
-  const prevStep = () => {
+  const prevStep = useCallback(() => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
-  };
+  }, [currentStep]);
 
-  // Don't render the modal if the user is not authenticated
-  if (status === "unauthenticated") {
+  // If the modal is closed, don't render anything
+  if (!open) {
     return null;
   }
 
