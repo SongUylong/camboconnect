@@ -96,26 +96,23 @@ export function RegisterForm() {
     setIsLoading(true);
     
     try {
-      // In a real app, send registration request to API
-      // const response = await fetch('/api/register', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     firstName: formData.firstName,
-      //     lastName: formData.lastName,
-      //     email: formData.email,
-      //     password: formData.password,
-      //     privacyLevel: formData.privacyLevel,
-      //   }),
-      // });
+      // Send registration request to API
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+          privacyLevel: formData.privacyLevel,
+        }),
+      });
       
-      // if (!response.ok) {
-      //   const error = await response.json();
-      //   throw new Error(error.message || 'Registration failed');
-      // }
-      
-      // Simulate API call with timeout
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Registration failed');
+      }
       
       // Redirect to login page
       router.push("/login?registered=true");

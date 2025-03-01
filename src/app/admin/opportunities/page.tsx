@@ -1,8 +1,8 @@
+"use client";
+
 import { MainLayout } from "@/components/layout/main-layout";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { db } from "@/lib/prisma";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { 
   Edit, 
@@ -16,90 +16,106 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 
-interface SearchParams {
-  q?: string;
-  category?: string;
-  status?: string;
-  sort?: string;
-  page?: string;
+interface Opportunity {
+  id: string;
+  title: string;
+  status: string;
+  deadline: string;
+  createdAt: string;
+  visitCount: number;
+  organization: {
+    id: string;
+    name: string;
+  };
+  category: {
+    id: string;
+    name: string;
+  };
+  _count: {
+    applications: number;
+    bookmarks: number;
+    participations: number;
+  };
 }
 
-export default async function AdminOpportunitiesPage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
-  const session = await getServerSession(authOptions);
+interface Category {
+  id: string;
+  name: string;
+}
 
-  // Check if user is authenticated and is an admin
-  if (!session || !session.user.isAdmin) {
-    redirect("/login");
-  }
-
+export default function AdminOpportunitiesPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  
   // Parse search params
-  const query = searchParams.q || "";
-  const categoryId = searchParams.category;
-  const status = searchParams.status;
-  const sort = searchParams.sort || "createdAt-desc";
-  const page = parseInt(searchParams.page || "1");
-  const pageSize = 20;
+  const query = searchParams.get('q') || "";
+  const categoryId = searchParams.get('category') || "";
+  const status = searchParams.get('status') || "";
+  const sort = searchParams.get('sort') || "createdAt-desc";
+  const page = parseInt(searchParams.get('page') || "1");
   
-  // Build where clause
-  const whereClause: any = {};
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch opportunities
+        const opportunitiesRes = await fetch(`/api/admin/opportunities?${searchParams.toString()}`);
+        if (!opportunitiesRes.ok) throw new Error('Failed to fetch opportunities');
+        const opportunitiesData = await opportunitiesRes.json();
+        
+        setOpportunities(opportunitiesData.opportunities);
+        setTotalPages(opportunitiesData.totalPages);
+        
+        // Fetch categories
+        const categoriesRes = await fetch('/api/admin/categories');
+        if (!categoriesRes.ok) throw new Error('Failed to fetch categories');
+        const categoriesData = await categoriesRes.json();
+        
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [searchParams]);
   
-  if (query) {
-    whereClause.OR = [
-      { title: { contains: query, mode: "insensitive" } },
-      { description: { contains: query, mode: "insensitive" } },
-      { shortDescription: { contains: query, mode: "insensitive" } },
-    ];
-  }
+  const handleFilterChange = (name: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    if (value) {
+      params.set(name, value);
+    } else {
+      params.delete(name);
+    }
+    
+    // Reset to page 1 when filters change
+    params.set('page', '1');
+    
+    router.push(`/admin/opportunities?${params.toString()}`);
+  };
   
-  if (categoryId) {
-    whereClause.categoryId = categoryId;
-  }
-  
-  if (status) {
-    whereClause.status = status;
-  }
-  
-  // Parse sort
-  const [sortField, sortOrder] = sort.split("-");
-  const orderBy: any = {};
-  orderBy[sortField] = sortOrder;
-  
-  // Fetch opportunities
-  const opportunities = await db.opportunity.findMany({
-    where: whereClause,
-    include: {
-      organization: true,
-      category: true,
-      _count: {
-        select: {
-          applications: true,
-          bookmarks: true,
-          participations: true,
-        },
-      },
-    },
-    orderBy,
-    skip: (page - 1) * pageSize,
-    take: pageSize,
-  });
-  
-  // Get total count for pagination
-  const totalCount = await db.opportunity.count({
-    where: whereClause,
-  });
-  
-  const totalPages = Math.ceil(totalCount / pageSize);
-  
-  // Fetch categories for filter
-  const categories = await db.category.findMany({
-    orderBy: {
-      name: "asc",
-    },
-  });
+  const getStatusBadgeClass = (status: string) => {
+    switch (status) {
+      case "OPENING_SOON":
+        return "bg-gray-100 text-gray-800";
+      case "ACTIVE":
+        return "bg-green-100 text-green-800";
+      case "CLOSING_SOON":
+        return "bg-yellow-100 text-yellow-800";
+      case "CLOSED":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
 
   return (
     <MainLayout>
@@ -123,7 +139,11 @@ export default async function AdminOpportunitiesPage({
           <div className="flex flex-wrap gap-4">
             {/* Search */}
             <div className="flex-1 min-w-[300px]">
-              <form>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                handleFilterChange('q', formData.get('q') as string);
+              }}>
                 <div className="relative">
                   <input
                     type="text"
@@ -135,6 +155,7 @@ export default async function AdminOpportunitiesPage({
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                     <Search className="h-5 w-5 text-gray-400" />
                   </div>
+                  <button type="submit" className="sr-only">Search</button>
                 </div>
               </form>
             </div>
@@ -143,18 +164,9 @@ export default async function AdminOpportunitiesPage({
             <div className="w-full sm:w-auto">
               <select
                 name="category"
-                defaultValue={categoryId || ""}
+                value={categoryId}
                 className="input w-full"
-                onChange={(e) => {
-                  const url = new URL(window.location.href);
-                  if (e.target.value) {
-                    url.searchParams.set("category", e.target.value);
-                  } else {
-                    url.searchParams.delete("category");
-                  }
-                  url.searchParams.set("page", "1");
-                  window.location.href = url.toString();
-                }}
+                onChange={(e) => handleFilterChange('category', e.target.value)}
               >
                 <option value="">All Categories</option>
                 {categories.map((category) => (
@@ -169,18 +181,9 @@ export default async function AdminOpportunitiesPage({
             <div className="w-full sm:w-auto">
               <select
                 name="status"
-                defaultValue={status || ""}
+                value={status}
                 className="input w-full"
-                onChange={(e) => {
-                  const url = new URL(window.location.href);
-                  if (e.target.value) {
-                    url.searchParams.set("status", e.target.value);
-                  } else {
-                    url.searchParams.delete("status");
-                  }
-                  url.searchParams.set("page", "1");
-                  window.location.href = url.toString();
-                }}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
               >
                 <option value="">All Statuses</option>
                 <option value="ACTIVE">Active</option>
@@ -194,13 +197,9 @@ export default async function AdminOpportunitiesPage({
             <div className="w-full sm:w-auto">
               <select
                 name="sort"
-                defaultValue={sort}
+                value={sort}
                 className="input w-full"
-                onChange={(e) => {
-                  const url = new URL(window.location.href);
-                  url.searchParams.set("sort", e.target.value);
-                  window.location.href = url.toString();
-                }}
+                onChange={(e) => handleFilterChange('sort', e.target.value)}
               >
                 <option value="createdAt-desc">Newest First</option>
                 <option value="createdAt-asc">Oldest First</option>
@@ -216,7 +215,11 @@ export default async function AdminOpportunitiesPage({
         
         {/* Results */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-          {opportunities.length === 0 ? (
+          {isLoading ? (
+            <div className="p-6 text-center">
+              <p className="text-gray-500">Loading opportunities...</p>
+            </div>
+          ) : opportunities.length === 0 ? (
             <div className="p-6 text-center">
               <h3 className="text-lg font-medium text-gray-900">No opportunities found</h3>
               <p className="mt-1 text-gray-500">
@@ -267,7 +270,7 @@ export default async function AdminOpportunitiesPage({
                             {opportunity.title}
                           </div>
                           <div className="text-sm text-gray-500">
-                            Created {format(new Date(opportunity.createdAt), 'MMM d, yyyy')}
+                            ID: {opportunity.id}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -282,50 +285,46 @@ export default async function AdminOpportunitiesPage({
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">
-                            {format(new Date(opportunity.deadline), 'MMM d, yyyy')}
+                            {new Date(opportunity.deadline).toLocaleDateString()}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            opportunity.status === 'ACTIVE' 
-                              ? 'bg-green-100 text-green-800' 
-                              : opportunity.status === 'CLOSING_SOON'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : opportunity.status === 'OPENING_SOON'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {opportunity.status.replace('_', ' ')}
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(opportunity.status)}`}>
+                            {opportunity.status.replace("_", " ")}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-500">
-                            <div>Views: {opportunity.visitCount}</div>
-                            <div>Applications: {opportunity._count.applications}</div>
-                            <div>Bookmarks: {opportunity._count.bookmarks}</div>
+                            <div>{opportunity.visitCount} views</div>
+                            <div>{opportunity._count.applications} applications</div>
+                            <div>{opportunity._count.bookmarks} bookmarks</div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex justify-end space-x-2">
                             <Link 
-                              href={`/opportunities/${opportunity.id}`} 
+                              href={`/opportunities/${opportunity.id}`}
                               className="text-blue-600 hover:text-blue-900"
                               target="_blank"
                             >
                               <Eye className="h-5 w-5" />
                             </Link>
                             <Link 
-                              href={`/admin/opportunities/${opportunity.id}/edit`} 
+                              href={`/admin/opportunities/${opportunity.id}/edit`}
                               className="text-indigo-600 hover:text-indigo-900"
                             >
                               <Edit className="h-5 w-5" />
                             </Link>
-                            <Link 
-                              href={`/admin/opportunities/${opportunity.id}/delete`} 
+                            <button
+                              onClick={() => {
+                                if (confirm('Are you sure you want to delete this opportunity?')) {
+                                  // Delete logic here
+                                }
+                              }}
                               className="text-red-600 hover:text-red-900"
                             >
                               <Trash2 className="h-5 w-5" />
-                            </Link>
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -336,99 +335,76 @@ export default async function AdminOpportunitiesPage({
               
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                  <div className="flex-1 flex justify-between sm:hidden">
+                    <button
+                      onClick={() => handleFilterChange('page', String(page - 1))}
+                      disabled={page === 1}
+                      className={`btn btn-outline ${page === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => handleFilterChange('page', String(page + 1))}
+                      disabled={page === totalPages}
+                      className={`btn btn-outline ${page === totalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      Next
+                    </button>
+                  </div>
                   <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                     <div>
                       <p className="text-sm text-gray-700">
-                        Showing <span className="font-medium">{(page - 1) * pageSize + 1}</span> to{' '}
-                        <span className="font-medium">
-                          {Math.min(page * pageSize, totalCount)}
-                        </span>{' '}
-                        of <span className="font-medium">{totalCount}</span> results
+                        Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages}</span>
                       </p>
                     </div>
                     <div>
                       <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                        <Link
-                          href={{
-                            pathname: '/admin/opportunities',
-                            query: {
-                              ...searchParams,
-                              page: Math.max(1, page - 1).toString(),
-                            },
-                          }}
-                          className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
-                            page <= 1
-                              ? 'text-gray-300 cursor-not-allowed'
-                              : 'text-gray-500 hover:bg-gray-50'
-                          }`}
+                        <button
+                          onClick={() => handleFilterChange('page', String(page - 1))}
+                          disabled={page === 1}
+                          className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${page === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           <span className="sr-only">Previous</span>
                           <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
-                        </Link>
+                        </button>
                         
                         {/* Page numbers */}
                         {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                          // Show pages around the current page
-                          let pageNum = page;
-                          if (page <= 3) {
-                            // Near the start
+                          let pageNum;
+                          if (totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (page <= 3) {
                             pageNum = i + 1;
                           } else if (page >= totalPages - 2) {
-                            // Near the end
                             pageNum = totalPages - 4 + i;
                           } else {
-                            // Middle
                             pageNum = page - 2 + i;
                           }
                           
-                          // Skip if out of bounds
-                          if (pageNum <= 0 || pageNum > totalPages) {
-                            return null;
-                          }
-                          
                           return (
-                            <Link
+                            <button
                               key={pageNum}
-                              href={{
-                                pathname: '/admin/opportunities',
-                                query: {
-                                  ...searchParams,
-                                  page: pageNum.toString(),
-                                },
-                              }}
-                              className={`relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium ${
-                                page === pageNum
-                                  ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                                  : 'text-gray-500 hover:bg-gray-50'
-                              }`}
+                              onClick={() => handleFilterChange('page', String(pageNum))}
+                              className={`relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium ${pageNum === page ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-50'}`}
                             >
                               {pageNum}
-                            </Link>
+                            </button>
                           );
                         })}
                         
-                        <Link
-                          href={{
-                            pathname: '/admin/opportunities',
-                            query: {
-                              ...searchParams,
-                              page: Math.min(totalPages, page + 1).toString(),
-                            },
-                          }}
-                          className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
-                            page >= totalPages
-                              ? 'text-gray-300 cursor-not-allowed'
-                              : 'text-gray-500 hover:bg-gray-50'
-                          }`}
+                        <button
+                          onClick={() => handleFilterChange('page', String(page + 1))}
+                          disabled={page === totalPages}
+                          className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${page === totalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           <span className="sr-only">Next</span>
                           <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                           </svg>
-                        </Link>
+                        </button>
                       </nav>
                     </div>
                   </div>

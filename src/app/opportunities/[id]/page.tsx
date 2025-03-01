@@ -1,18 +1,28 @@
 import { MainLayout } from "@/components/layout/main-layout";
 import { db } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { format } from "date-fns";
 import Link from "next/link";
 import { Bookmark, Calendar, ExternalLink, Globe, Info, Mail, Users } from "lucide-react";
 import { BookmarkButton } from "@/components/opportunities/bookmark-button";
 import { PreviousParticipants } from "@/components/opportunities/previous-participants";
 import ApplicationStatusForm from "@/components/opportunities/application-status-form";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export default async function OpportunityDetailPage({
   params,
 }: {
   params: { id: string };
 }) {
+  // Check if user is authenticated
+  const session = await getServerSession(authOptions);
+  
+  if (!session) {
+    // Redirect to login page with callback URL to return after login
+    redirect(`/login?callbackUrl=/opportunities/${params.id}`);
+  }
+
   // Increment view count - in a real app, this would use a server action
   try {
     await db.opportunity.update({
