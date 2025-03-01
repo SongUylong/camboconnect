@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 
 export function LoginForm() {
   const router = useRouter();
@@ -28,6 +29,41 @@ export function LoginForm() {
     setErrorMessage(null);
 
     try {
+      // First, check if 2FA is required
+      const twoFactorResponse = await fetch("/api/auth/two-factor/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const twoFactorData = await twoFactorResponse.json();
+
+      // If 2FA is required, redirect to the 2FA verification page
+      if (twoFactorData.success && twoFactorData.twoFactorRequired) {
+        // Verify credentials first before redirecting to 2FA page
+        const credentialsCheck = await signIn("credentials", {
+          email,
+          password,
+          redirect: false,
+        });
+
+        if (!credentialsCheck?.ok) {
+          setErrorMessage("Invalid email or password");
+          setIsLoading(false);
+          return;
+        }
+
+        // Redirect to 2FA page
+        const params = new URLSearchParams();
+        params.set("email", email);
+        params.set("callbackUrl", callbackUrl);
+        router.push(`/two-factor?${params.toString()}`);
+        return;
+      }
+
+      // If 2FA is not required, proceed with normal login
       const result = await signIn("credentials", {
         email,
         password,
@@ -40,9 +76,11 @@ export function LoginForm() {
         return;
       }
 
+      toast.success("Login successful!");
       router.push(callbackUrl);
       router.refresh(); // Refresh data on client
     } catch (error) {
+      console.error("Login error:", error);
       setErrorMessage("An unexpected error occurred. Please try again.");
       setIsLoading(false);
     }

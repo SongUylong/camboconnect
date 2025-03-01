@@ -73,6 +73,7 @@ model User {
   pageViews         PageView[]
   events            EventLog[]
   passwordResetToken PasswordResetToken?
+  twoFactorToken    TwoFactorToken?
   
   // Relations for profile data
   educationEntries  Education[]
@@ -370,6 +371,16 @@ enum NotificationType {
 model PasswordResetToken {
   id        String   @id @default(uuid())
   token     String   @unique
+  expires   DateTime
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+// Two Factor Authentication Token model
+model TwoFactorToken {
+  id        String   @id @default(uuid())
+  code      String   @unique
   expires   DateTime
   userId    String   @unique
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

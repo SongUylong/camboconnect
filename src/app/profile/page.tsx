@@ -11,6 +11,9 @@ import dynamic from "next/dynamic";
 // Import the SettingsPopover component with dynamic import to avoid SSR issues
 const SettingsPopover = dynamic(() => import("./settings-popover"), { ssr: false });
 
+// Import the WelcomeModal component with dynamic import
+const ProfileClientWrapper = dynamic(() => import("@/components/profile/profile-client-wrapper"), { ssr: false });
+
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);
 
@@ -91,8 +94,17 @@ export default async function ProfilePage() {
     redirect("/login");
   }
 
+  // Check if the user is newly registered (no profile data)
+  const isNewUser = !user.bio && 
+                   (!user.skillEntries || user.skillEntries.length === 0) && 
+                   (!user.educationEntries || user.educationEntries.length === 0) && 
+                   (!user.experienceEntries || user.experienceEntries.length === 0);
+
   return (
     <MainLayout>
+      {/* Add the client wrapper component that will show the welcome modal for new users */}
+      <ProfileClientWrapper isNewUser={isNewUser} />
+      
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row gap-8">
           {/* Left sidebar (profile info) */}

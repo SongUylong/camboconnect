@@ -141,7 +141,7 @@ export async function PUT(req: Request) {
     } catch (parseError: any) {
       console.error("Error parsing request body:", parseError);
       return NextResponse.json(
-        { error: 'Invalid request body' },
+        { error: 'Invalid request body', details: parseError?.message },
         { status: 400 }
       );
     }
@@ -160,6 +160,15 @@ export async function PUT(req: Request) {
       newPassword,
       privacyLevel,
     } = body;
+    
+    // Log the extracted fields for debugging
+    console.log("Extracted fields:", {
+      bio: typeof bio !== 'undefined' ? 'present' : 'undefined',
+      education: Array.isArray(education) ? `array with ${education.length} items` : 'not an array',
+      experience: Array.isArray(experience) ? `array with ${experience.length} items` : 'not an array',
+      skills: Array.isArray(skills) ? `array with ${skills.length} items` : 'not an array',
+      links: links ? 'present' : 'undefined'
+    });
     
     // Prepare update data for the user model
     const updateData: any = {};
@@ -201,133 +210,149 @@ export async function PUT(req: Request) {
     }
     
     // Start a transaction to update everything
-    const result = await db.$transaction(async (tx) => {
-      // Update the user basic info
-      const updatedUser = await tx.user.update({
-        where: { id: userId },
-        data: updateData,
-      });
-      
-      // Handle education entries
-      if (education !== undefined) {
-        console.log("Processing education data:", education);
-        
-        // Delete existing education entries
-        await tx.education.deleteMany({
-          where: { userId },
+    try {
+      const result = await db.$transaction(async (tx) => {
+        // Update the user basic info
+        const updatedUser = await tx.user.update({
+          where: { id: userId },
+          data: updateData,
         });
         
-        // Create new education entries
-        if (Array.isArray(education) && education.length > 0) {
-          await Promise.all(education.map(async (edu) => {
-            return tx.education.create({
-              data: {
-                userId,
-                school: edu.school,
-                degree: edu.degree,
-                field: edu.field,
-                startDate: new Date(edu.startDate),
-                endDate: edu.endDate ? new Date(edu.endDate) : null,
-              },
-            });
-          }));
-        }
-      }
-      
-      // Handle experience entries
-      if (experience !== undefined) {
-        console.log("Processing experience data:", experience);
-        
-        // Delete existing experience entries
-        await tx.experience.deleteMany({
-          where: { userId },
-        });
-        
-        // Create new experience entries
-        if (Array.isArray(experience) && experience.length > 0) {
-          await Promise.all(experience.map(async (exp) => {
-            return tx.experience.create({
-              data: {
-                userId,
-                title: exp.title,
-                company: exp.company,
-                location: exp.location,
-                startDate: new Date(exp.startDate),
-                endDate: exp.endDate ? new Date(exp.endDate) : null,
-                description: exp.description,
-              },
-            });
-          }));
-        }
-      }
-      
-      // Handle skills
-      if (skills !== undefined) {
-        console.log("Processing skills data:", skills);
-        
-        // Delete existing skills
-        await tx.skill.deleteMany({
-          where: { userId },
-        });
-        
-        // Create new skills
-        if (Array.isArray(skills) && skills.length > 0) {
-          await Promise.all(skills.map(async (skill) => {
-            return tx.skill.create({
-              data: {
-                userId,
-                name: skill,
-              },
-            });
-          }));
-        }
-      }
-      
-      // Handle social links
-      if (links !== undefined) {
-        console.log("Processing links data:", links);
-        
-        // Delete existing links
-        await tx.socialLink.deleteMany({
-          where: { userId },
-        });
-        
-        // Create new links
-        if (links && typeof links === 'object') {
-          const linkEntries = Object.entries(links);
-          if (linkEntries.length > 0) {
-            await Promise.all(linkEntries.map(async ([platform, url]) => {
-              if (url && typeof url === 'string' && url.trim() !== '') {
-                return tx.socialLink.create({
-                  data: {
-                    userId,
-                    platform,
-                    url: url as string,
-                  },
-                });
-              }
-              return null;
+        // Handle education entries
+        if (education !== undefined) {
+          console.log("Processing education data:", JSON.stringify(education, null, 2));
+          
+          // Delete existing education entries
+          await tx.education.deleteMany({
+            where: { userId },
+          });
+          
+          // Create new education entries
+          if (Array.isArray(education) && education.length > 0) {
+            await Promise.all(education.map(async (edu) => {
+              return tx.education.create({
+                data: {
+                  userId,
+                  school: edu.school,
+                  degree: edu.degree,
+                  field: edu.field,
+                  startDate: new Date(edu.startDate),
+                  endDate: edu.endDate ? new Date(edu.endDate) : null,
+                },
+              });
             }));
           }
         }
-      }
+        
+        // Handle experience entries
+        if (experience !== undefined) {
+          console.log("Processing experience data:", JSON.stringify(experience, null, 2));
+          
+          // Delete existing experience entries
+          await tx.experience.deleteMany({
+            where: { userId },
+          });
+          
+          // Create new experience entries
+          if (Array.isArray(experience) && experience.length > 0) {
+            await Promise.all(experience.map(async (exp) => {
+              return tx.experience.create({
+                data: {
+                  userId,
+                  title: exp.title,
+                  company: exp.company,
+                  location: exp.location,
+                  startDate: new Date(exp.startDate),
+                  endDate: exp.endDate ? new Date(exp.endDate) : null,
+                  description: exp.description,
+                },
+              });
+            }));
+          }
+        }
+        
+        // Handle skills
+        if (skills !== undefined) {
+          console.log("Processing skills data:", JSON.stringify(skills, null, 2));
+          
+          // Delete existing skills
+          await tx.skill.deleteMany({
+            where: { userId },
+          });
+          
+          // Create new skills
+          if (Array.isArray(skills) && skills.length > 0) {
+            await Promise.all(skills.map(async (skill) => {
+              return tx.skill.create({
+                data: {
+                  userId,
+                  name: skill,
+                },
+              });
+            }));
+          }
+        }
+        
+        // Handle social links
+        if (links !== undefined) {
+          console.log("Processing links data:", JSON.stringify(links, null, 2));
+          
+          // Delete existing links
+          await tx.socialLink.deleteMany({
+            where: { userId },
+          });
+          
+          // Create new links
+          if (links && typeof links === 'object') {
+            const linkEntries = Object.entries(links);
+            if (linkEntries.length > 0) {
+              await Promise.all(linkEntries.map(async ([platform, url]) => {
+                if (url && typeof url === 'string' && url.trim() !== '') {
+                  return tx.socialLink.create({
+                    data: {
+                      userId,
+                      platform,
+                      url: url as string,
+                    },
+                  });
+                }
+                return null;
+              }));
+            }
+          }
+        }
+        
+        return updatedUser;
+      });
       
-      return updatedUser;
-    });
-    
-    console.log("User profile updated successfully");
-    
-    // Remove password from response
-    const { password, ...userWithoutPassword } = result;
-    
-    return NextResponse.json({
-      user: userWithoutPassword,
-      message: 'Profile updated successfully',
-    });
+      console.log("User profile updated successfully");
+      
+      // Remove password from response
+      const { password, ...userWithoutPassword } = result;
+      
+      return NextResponse.json({
+        user: userWithoutPassword,
+        message: 'Profile updated successfully',
+      });
+    } catch (txError: any) {
+      console.error('Transaction error:', txError);
+      return NextResponse.json(
+        { 
+          error: 'Database transaction failed', 
+          details: txError?.message || 'Unknown transaction error',
+          code: txError?.code
+        },
+        { status: 500 }
+      );
+    }
   } catch (error: any) {
     console.error('Error updating profile:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error?.message || 'Unknown error' },
+      { 
+        error: 'Internal server error', 
+        details: error?.message || 'Unknown error',
+        code: error?.code
+      },
       { status: 500 }
     );
   }

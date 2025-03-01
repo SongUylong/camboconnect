@@ -7,6 +7,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { db } from "@/lib/prisma";
 import { PrismaClient } from "@prisma/client";
 import type { Adapter, AdapterUser } from "next-auth/adapters";
+import { verifyJwtToken } from "@/lib/jwt";
 
 // Create a custom adapter that properly handles our User model requirements
 function CustomAdapter(prisma: PrismaClient): Adapter {
@@ -77,9 +78,44 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        twoFactorVerified: { label: "2FA Verified", type: "text" },
+        twoFactorToken: { label: "2FA Token", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.email) {
+          return null;
+        }
+
+        // Check if this is a 2FA verification
+        if (credentials.twoFactorVerified === "true" && credentials.twoFactorToken) {
+          // Verify the 2FA token
+          const decoded = verifyJwtToken(credentials.twoFactorToken);
+          
+          if (!decoded || decoded.email !== credentials.email || !decoded.twoFactorVerified) {
+            return null;
+          }
+          
+          // If token is valid, get the user
+          const user = await db.user.findUnique({
+            where: {
+              email: credentials.email,
+            },
+          });
+          
+          if (!user) {
+            return null;
+          }
+          
+          return {
+            id: user.id,
+            email: user.email,
+            name: `${user.firstName} ${user.lastName}`,
+            isAdmin: user.isAdmin,
+          };
+        }
+
+        // Regular password login
+        if (!credentials.password) {
           return null;
         }
 

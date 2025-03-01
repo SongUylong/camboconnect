@@ -115,8 +115,26 @@ export function RegisterForm() {
         throw new Error(error.error || 'Registration failed');
       }
       
-      // Redirect to login page
-      router.push("/login?registered=true");
+      // Sign in the user automatically after registration
+      const signInResult = await signIn("credentials", {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+        callbackUrl: "/profile?from=register"
+      });
+      
+      if (signInResult?.error) {
+        console.error("Auto sign-in failed:", signInResult.error);
+        // If auto sign-in fails, redirect to login page with callback
+        router.push(`/login?callbackUrl=/profile?from=register&email=${encodeURIComponent(formData.email)}`);
+        return;
+      }
+      
+      // Add a small delay to ensure the session is established
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Redirect to profile page with a query parameter indicating the user is coming from registration
+      router.push("/profile?from=register");
     } catch (error) {
       setErrorMessage((error as Error).message || "An unexpected error occurred");
     } finally {
@@ -331,27 +349,6 @@ export function RegisterForm() {
                 )}
               </button>
             </div>
-          </div>
-
-          <div>
-            <label htmlFor="privacyLevel" className="block text-sm font-medium text-gray-700 mb-1">
-              Default Privacy Level
-            </label>
-            <select
-              id="privacyLevel"
-              name="privacyLevel"
-              value={formData.privacyLevel}
-              onChange={handleInputChange}
-              className="input w-full"
-            >
-              <option value="PUBLIC">Public (Anyone can see your profile)</option>
-              <option value="FRIENDS_ONLY">Friends Only (Only friends can see your profile)</option>
-              <option value="ONLY_ME">Only Me (Only you can see your profile)</option>
-            </select>
-            <p className="mt-1 text-xs text-gray-500">
-              This setting controls who can see your participation history and profile information.
-              You can change this later in your profile settings.
-            </p>
           </div>
 
           <div className="flex items-start">
