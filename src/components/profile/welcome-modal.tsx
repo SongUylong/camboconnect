@@ -30,16 +30,16 @@ export function WelcomeModal() {
     { id: 'links', title: 'Social Links' }
   ];
 
-  // Ensure the modal state is properly managed
+  // Handle modal state changes
   useEffect(() => {
-    // Set a flag in localStorage to prevent showing the modal again if user refreshes
-    if (open) {
-      localStorage.setItem('welcomeModalShown', 'true');
-    }
-    
     // If the user is not authenticated, redirect to login
     if (status === "unauthenticated") {
       router.push("/login?callbackUrl=/profile?from=register");
+    }
+    
+    // When the modal is closed, set a flag in localStorage to prevent showing it again
+    if (!open) {
+      localStorage.setItem('welcomeModalShown', 'true');
     }
   }, [open, status, router]);
 
@@ -101,11 +101,6 @@ export function WelcomeModal() {
     
     // Close the modal
     setOpen(false);
-    
-    // Use a small timeout to allow the modal closing animation to complete
-    setTimeout(() => {
-      router.push("/opportunities");
-    }, 300);
   };
 
   const handleSubmit = async (data: UserProfile) => {

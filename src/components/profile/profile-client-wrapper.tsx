@@ -18,9 +18,6 @@ export default function ProfileClientWrapper({ isNewUser }: ProfileClientWrapper
     // Check if this is a new user and if they've just registered
     const isFromRegistration = window.location.search.includes('from=register');
     
-    // Check if we've already shown the welcome modal in this session
-    const hasShownModal = localStorage.getItem('welcomeModalShown') === 'true';
-    
     // Handle authentication status
     if (status === "loading") {
       // Session is still loading, wait
@@ -35,14 +32,16 @@ export default function ProfileClientWrapper({ isNewUser }: ProfileClientWrapper
       return;
     }
     
-    // Only show the welcome modal for new users coming from registration
-    // and if we haven't shown it already in this session
-    if (isNewUser && isFromRegistration && !hasShownModal && status === "authenticated") {
+    // For new users, always show the welcome modal when authenticated
+    // For returning users, only show it if they're coming from registration
+    if ((isNewUser || isFromRegistration) && status === "authenticated") {
       setShowWelcomeModal(true);
       
-      // Remove the query parameter without refreshing the page
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
+      // Remove the query parameter without refreshing the page if it exists
+      if (isFromRegistration) {
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+      }
     }
   }, [isNewUser, status, router]);
   

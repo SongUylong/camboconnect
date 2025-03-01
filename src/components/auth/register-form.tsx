@@ -133,6 +133,9 @@ export function RegisterForm() {
       // Add a small delay to ensure the session is established
       await new Promise(resolve => setTimeout(resolve, 500));
       
+      // Clear any existing welcome modal flag to ensure it shows for new users
+      localStorage.removeItem('welcomeModalShown');
+      
       // Redirect to profile page with a query parameter indicating the user is coming from registration
       router.push("/profile?from=register");
     } catch (error) {
