@@ -70,8 +70,6 @@ model User {
   friends           Friendship[]        @relation("userFriends")
   friendsOf         Friendship[]        @relation("friendsOfUser")
   participations    Participation[]
-  conversations     ConversationParticipant[]
-  messages          Message[]
   pageViews         PageView[]
   events            EventLog[]
   passwordResetToken PasswordResetToken?
@@ -295,44 +293,6 @@ model Notification {
   relatedEntityId   String?             // Can be an opportunityId, organizationId, etc.
 }
 
-// Conversation model for messaging
-model Conversation {
-  id                String              @id @default(uuid())
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  messages          Message[]
-  participants      ConversationParticipant[]
-}
-
-// ConversationParticipant links users to conversations
-model ConversationParticipant {
-  id                String              @id @default(uuid())
-  userId            String
-  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conversationId    String
-  conversation      Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  lastReadMessageId String?
-  lastReadMessage   Message?            @relation("LastRead", fields: [lastReadMessageId], references: [id])
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-
-  @@unique([userId, conversationId])
-}
-
-// Message model for user-to-user communication
-model Message {
-  id                String              @id @default(uuid())
-  content           String              @db.Text
-  senderId          String
-  sender            User                @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  conversationId    String
-  conversation      Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  readBy            ConversationParticipant[] @relation("LastRead")
-  isSystemMessage   Boolean             @default(false)
-}
-
 // PageView model for tracking page visits
 model PageView {
   id                String              @id @default(uuid())
@@ -404,7 +364,6 @@ enum NotificationType {
   APPLICATION_UPDATE
   FRIEND_REQUEST
   ORGANIZATION_UPDATE
-  NEW_MESSAGE
 }
 
 // Password Reset Token model

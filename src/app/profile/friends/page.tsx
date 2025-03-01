@@ -38,10 +38,6 @@ export default function FriendsPage() {
     router.push(`/profile/${id}`);
   };
 
-  const handleMessage = (id: string) => {
-    router.push(`/messages/${id}`);
-  };
-
   const handleRemoveConnection = async (id: string) => {
     try {
       // API call to remove connection
@@ -103,7 +99,6 @@ export default function FriendsPage() {
               key={friend.id}
               friend={friend}
               onViewProfile={handleViewProfile}
-              onMessage={handleMessage}
               onRemoveConnection={handleRemoveConnection}
             />
           ))

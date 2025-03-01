@@ -131,9 +131,6 @@ export default function NotificationCenter() {
         case "FRIEND_REQUEST":
           router.push(`/profile/friends`);
           break;
-        case "NEW_MESSAGE":
-          router.push(`/messages/${notification.relatedEntityId}`);
-          break;
         default:
           // Default fallback
           setIsOpen(false);

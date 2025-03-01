@@ -84,7 +84,6 @@ export default async function ProfilePage() {
   });
 
   if (!user) {
-    // This shouldn't happen if the session is valid
     redirect("/login");
   }
 
@@ -98,11 +97,21 @@ export default async function ProfilePage() {
               <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-32 flex items-center justify-center">
                 <div className="h-20 w-20 rounded-full bg-white border-4 border-white flex items-center justify-center overflow-hidden relative top-12">
                   {user.profileImage ? (
-                    <img 
-                      src={user.profileImage} 
-                      alt={`${user.firstName} ${user.lastName}`} 
-                      className="h-full w-full object-cover"
-                    />
+                    user.profileImage.includes('googleusercontent.com') ? (
+                      <img 
+                        src={user.profileImage} 
+                        alt={`${user.firstName} ${user.lastName}`} 
+                        className="h-full w-full object-cover"
+                        referrerPolicy="no-referrer"
+                        crossOrigin="anonymous"
+                      />
+                    ) : (
+                      <img 
+                        src={user.profileImage} 
+                        alt={`${user.firstName} ${user.lastName}`} 
+                        className="h-full w-full object-cover"
+                      />
+                    )
                   ) : (
                     <User className="h-10 w-10 text-gray-400" />
                   )}

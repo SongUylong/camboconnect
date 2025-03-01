@@ -118,9 +118,7 @@ export const authOptions: NextAuthOptions = {
         
         // Ensure the image URL is properly formatted
         if (token.picture) {
-          // Add a referrer policy to the image URL if it's from Google
-          const pictureUrl = token.picture as string;
-          session.user.image = pictureUrl;
+          session.user.image = token.picture as string;
         } else {
           session.user.image = null;
         }

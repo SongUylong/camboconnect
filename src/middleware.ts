@@ -9,7 +9,6 @@ export async function middleware(request: NextRequest) {
   const protectedPaths = [
     '/opportunities/',
     '/profile',
-    '/messages',
     '/notifications',
     '/settings',
     '/admin',
@@ -32,7 +31,6 @@ export const config = {
   matcher: [
     '/opportunities/:path*',
     '/profile/:path*',
-    '/messages/:path*',
     '/notifications',
     '/settings',
     '/admin/:path*',

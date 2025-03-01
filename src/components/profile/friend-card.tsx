@@ -17,14 +17,12 @@ interface FriendCardProps {
     connectionDate: Date;
   };
   onViewProfile: (id: string) => void;
-  onMessage: (id: string) => void;
   onRemoveConnection: (id: string) => void;
 }
 
 export function FriendCard({
   friend,
   onViewProfile,
-  onMessage,
   onRemoveConnection,
 }: FriendCardProps) {
   return (
@@ -58,13 +56,6 @@ export function FriendCard({
               onClick={() => onViewProfile(friend.id)}
             >
               View Profile
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onMessage(friend.id)}
-            >
-              Message
             </Button>
             <Button
               size="sm"
