@@ -1,6 +1,6 @@
 import { LoginForm } from "@/components/auth/login-form";
 import Link from "next/link";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, AlertCircle } from "lucide-react";
 
 interface LoginPageProps {
   searchParams: {
@@ -12,6 +12,7 @@ interface LoginPageProps {
 
 export default function LoginPage({ searchParams }: LoginPageProps) {
   const registered = searchParams.registered === "true";
+  const isOAuthCallback = searchParams.error === "OAuthCallback";
 
   return (
     <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gray-50">
@@ -42,6 +43,26 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
                 <div className="mt-2 text-sm text-green-700">
                   <p>
                     Your account has been created! Please sign in with your credentials.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isOAuthCallback && (
+        <div className="sm:mx-auto sm:w-full sm:max-w-md mt-4">
+          <div className="rounded-md bg-yellow-50 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-yellow-400" aria-hidden="true" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-yellow-800">Account Already Exists</h3>
+                <div className="mt-2 text-sm text-yellow-700">
+                  <p>
+                    This account already exists. Please sign in with your email and password instead.
                   </p>
                 </div>
               </div>
