@@ -29,7 +29,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     
-    console.log("Fetching profile for user:", session.user.id);
     
     // Fetch the user's full profile with all related data
     const user = await db.user.findUnique({
@@ -119,12 +118,10 @@ export async function GET(request: Request) {
 
 export async function PUT(req: Request) {
   try {
-    console.log("Profile update request received");
     const session = await getServerSession(authOptions);
     
     // Check authentication
     if (!session || !session.user.id) {
-      console.log("Unauthorized request");
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -132,12 +129,10 @@ export async function PUT(req: Request) {
     }
     
     const userId = session.user.id;
-    console.log("User ID from session:", userId);
     
     let body;
     try {
       body = await req.json();
-      console.log("Request body received:", JSON.stringify(body, null, 2));
     } catch (parseError: any) {
       console.error("Error parsing request body:", parseError);
       return NextResponse.json(
@@ -162,13 +157,7 @@ export async function PUT(req: Request) {
     } = body;
     
     // Log the extracted fields for debugging
-    console.log("Extracted fields:", {
-      bio: typeof bio !== 'undefined' ? 'present' : 'undefined',
-      education: Array.isArray(education) ? `array with ${education.length} items` : 'not an array',
-      experience: Array.isArray(experience) ? `array with ${experience.length} items` : 'not an array',
-      skills: Array.isArray(skills) ? `array with ${skills.length} items` : 'not an array',
-      links: links ? 'present' : 'undefined'
-    });
+    
     
     // Prepare update data for the user model
     const updateData: any = {};
@@ -220,7 +209,6 @@ export async function PUT(req: Request) {
         
         // Handle education entries
         if (education !== undefined) {
-          console.log("Processing education data:", JSON.stringify(education, null, 2));
           
           // Delete existing education entries
           await tx.education.deleteMany({
@@ -246,7 +234,6 @@ export async function PUT(req: Request) {
         
         // Handle experience entries
         if (experience !== undefined) {
-          console.log("Processing experience data:", JSON.stringify(experience, null, 2));
           
           // Delete existing experience entries
           await tx.experience.deleteMany({
@@ -273,7 +260,6 @@ export async function PUT(req: Request) {
         
         // Handle skills
         if (skills !== undefined) {
-          console.log("Processing skills data:", JSON.stringify(skills, null, 2));
           
           // Delete existing skills
           await tx.skill.deleteMany({
@@ -295,7 +281,6 @@ export async function PUT(req: Request) {
         
         // Handle social links
         if (links !== undefined) {
-          console.log("Processing links data:", JSON.stringify(links, null, 2));
           
           // Delete existing links
           await tx.socialLink.deleteMany({
@@ -324,8 +309,6 @@ export async function PUT(req: Request) {
         
         return updatedUser;
       });
-      
-      console.log("User profile updated successfully");
       
       // Remove password from response
       const { password, ...userWithoutPassword } = result;

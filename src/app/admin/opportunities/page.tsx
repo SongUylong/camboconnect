@@ -85,7 +85,28 @@ export default function AdminOpportunitiesPage() {
     };
     
     fetchData();
-  }, [searchParams]);
+    
+    // Add visibility change event listener
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchData();
+      }
+    };
+    
+    // Add focus event listener
+    const handleFocus = () => {
+      fetchData();
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
+    // Cleanup event listeners
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [searchParams, router]);
   
   const handleFilterChange = (name: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());

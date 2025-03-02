@@ -3,11 +3,11 @@ import { db } from '@/lib/prisma';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 
-interface ParamsType {
+type ParamsType = {
   params: {
     id: string;
   };
-}
+};
 
 export async function POST(req: Request, { params }: ParamsType) {
   try {
@@ -24,7 +24,7 @@ export async function POST(req: Request, { params }: ParamsType) {
     
     const userId = session.user.id;
     const body = await req.json();
-    const { statusId, feedback } = body;
+    const { statusId } = body;
     
     // Check if opportunity exists
     const opportunity = await db.opportunity.findUnique({
@@ -38,15 +38,26 @@ export async function POST(req: Request, { params }: ParamsType) {
       );
     }
     
-    // Check if application status exists
-    const statusExists = await db.applicationStatusType.findUnique({
-      where: { id: statusId },
-    });
+    // Get the appropriate application status type
+    let statusType;
+    if (statusId === "pending") {
+      statusType = await db.applicationStatusType.findFirst({
+        where: { name: "Pending Confirmation" },
+      });
+    } else if (statusId === "applied") {
+      statusType = await db.applicationStatusType.findFirst({
+        where: { name: "Applied" },
+      });
+    } else if (statusId === "not_applied") {
+      statusType = await db.applicationStatusType.findFirst({
+        where: { name: "Not Applied" },
+      });
+    }
     
-    if (!statusExists) {
+    if (!statusType) {
       return NextResponse.json(
-        { error: 'Application status not found' },
-        { status: 404 }
+        { error: 'Invalid application status' },
+        { status: 400 }
       );
     }
     
@@ -67,8 +78,7 @@ export async function POST(req: Request, { params }: ParamsType) {
           id: existingApplication.id,
         },
         data: {
-          statusId,
-          feedback,
+          statusId: statusType.id,
         },
         include: {
           status: true,
@@ -80,8 +90,7 @@ export async function POST(req: Request, { params }: ParamsType) {
         data: {
           userId,
           opportunityId: id,
-          statusId,
-          feedback,
+          statusId: statusType.id,
         },
         include: {
           status: true,
@@ -99,12 +108,9 @@ export async function POST(req: Request, { params }: ParamsType) {
       },
     });
     
-    return NextResponse.json({
-      application,
-      message: 'Application status updated successfully',
-    });
+    return NextResponse.json(application);
   } catch (error) {
-    console.error('Error updating application status:', error);
+    console.error('Error handling application:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

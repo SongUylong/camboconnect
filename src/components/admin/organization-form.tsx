@@ -23,26 +23,8 @@ export default function OrganizationForm({
     description: "",
     website: "",
     logo: "",
-    coverImage: "",
-    email: "",
-    phone: "",
-    address: "",
-    city: "",
-    state: "",
-    country: "",
-    postalCode: "",
-    type: "COMPANY", // COMPANY, UNIVERSITY, NONPROFIT, GOVERNMENT
-    size: "SMALL", // SMALL, MEDIUM, LARGE
-    industry: "",
-    foundedYear: "",
-    isVerified: false,
-    isActive: true,
-    socialMedia: {
-      linkedin: "",
-      twitter: "",
-      facebook: "",
-      instagram: "",
-    },
+    history: "",
+    termsOfService: "",
     ...initialData,
   });
   
@@ -50,37 +32,13 @@ export default function OrganizationForm({
     if (initialData) {
       setFormData({
         ...initialData,
-        // Ensure social media object exists
-        socialMedia: {
-          linkedin: "",
-          twitter: "",
-          facebook: "",
-          instagram: "",
-          ...(initialData.socialMedia || {}),
-        },
       });
     }
   }, [initialData]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target as HTMLInputElement;
-    
-    if (type === 'checkbox') {
-      const { checked } = e.target as HTMLInputElement;
-      setFormData(prev => ({ ...prev, [name]: checked }));
-    } else if (name.startsWith('social.')) {
-      // Handle social media fields
-      const socialField = name.split('.')[1];
-      setFormData(prev => ({
-        ...prev,
-        socialMedia: {
-          ...prev.socialMedia,
-          [socialField]: value,
-        },
-      }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
+    const { name, value } = e.target;
+    setFormData((prev: typeof formData) => ({ ...prev, [name]: value }));
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -91,7 +49,7 @@ export default function OrganizationForm({
     try {
       // Validate required fields
       const requiredFields = [
-        'name', 'description', 'email', 'type', 'industry'
+        'name', 'description'
       ];
       
       for (const field of requiredFields) {
@@ -173,81 +131,6 @@ export default function OrganizationForm({
           />
         </div>
         
-        {/* Type */}
-        <div>
-          <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
-            Organization Type <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="type"
-            name="type"
-            value={formData.type}
-            onChange={handleChange}
-            className="input w-full"
-            required
-          >
-            <option value="COMPANY">Company</option>
-            <option value="UNIVERSITY">University</option>
-            <option value="NONPROFIT">Non-Profit</option>
-            <option value="GOVERNMENT">Government</option>
-          </select>
-        </div>
-        
-        {/* Industry */}
-        <div>
-          <label htmlFor="industry" className="block text-sm font-medium text-gray-700 mb-1">
-            Industry <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="industry"
-            name="industry"
-            value={formData.industry}
-            onChange={handleChange}
-            className="input w-full"
-            required
-          />
-        </div>
-        
-        {/* Size */}
-        <div>
-          <label htmlFor="size" className="block text-sm font-medium text-gray-700 mb-1">
-            Organization Size
-          </label>
-          <select
-            id="size"
-            name="size"
-            value={formData.size}
-            onChange={handleChange}
-            className="input w-full"
-          >
-            <option value="SMALL">Small (1-50 employees)</option>
-            <option value="MEDIUM">Medium (51-500 employees)</option>
-            <option value="LARGE">Large (500+ employees)</option>
-          </select>
-        </div>
-        
-        {/* Founded Year */}
-        <div>
-          <label htmlFor="foundedYear" className="block text-sm font-medium text-gray-700 mb-1">
-            Founded Year
-          </label>
-          <input
-            type="number"
-            id="foundedYear"
-            name="foundedYear"
-            value={formData.foundedYear}
-            onChange={handleChange}
-            className="input w-full"
-            min="1800"
-            max={new Date().getFullYear()}
-          />
-        </div>
-      </div>
-      
-      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm space-y-4">
-        <h2 className="text-lg font-medium text-gray-900">Contact Information</h2>
-        
         {/* Website */}
         <div>
           <label htmlFor="website" className="block text-sm font-medium text-gray-700 mb-1">
@@ -264,184 +147,7 @@ export default function OrganizationForm({
           />
         </div>
         
-        {/* Email */}
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            Email <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className="input w-full"
-            required
-          />
-        </div>
-        
-        {/* Phone */}
-        <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-            Phone
-          </label>
-          <input
-            type="tel"
-            id="phone"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            className="input w-full"
-          />
-        </div>
-        
-        {/* Address */}
-        <div>
-          <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-            Address
-          </label>
-          <input
-            type="text"
-            id="address"
-            name="address"
-            value={formData.address}
-            onChange={handleChange}
-            className="input w-full"
-          />
-        </div>
-        
-        {/* City, State, Country */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
-              City
-            </label>
-            <input
-              type="text"
-              id="city"
-              name="city"
-              value={formData.city}
-              onChange={handleChange}
-              className="input w-full"
-            />
-          </div>
-          <div>
-            <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
-              State/Province
-            </label>
-            <input
-              type="text"
-              id="state"
-              name="state"
-              value={formData.state}
-              onChange={handleChange}
-              className="input w-full"
-            />
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-              Country
-            </label>
-            <input
-              type="text"
-              id="country"
-              name="country"
-              value={formData.country}
-              onChange={handleChange}
-              className="input w-full"
-            />
-          </div>
-          <div>
-            <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-1">
-              Postal Code
-            </label>
-            <input
-              type="text"
-              id="postalCode"
-              name="postalCode"
-              value={formData.postalCode}
-              onChange={handleChange}
-              className="input w-full"
-            />
-          </div>
-        </div>
-      </div>
-      
-      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm space-y-4">
-        <h2 className="text-lg font-medium text-gray-900">Social Media</h2>
-        
-        {/* LinkedIn */}
-        <div>
-          <label htmlFor="social.linkedin" className="block text-sm font-medium text-gray-700 mb-1">
-            LinkedIn
-          </label>
-          <input
-            type="url"
-            id="social.linkedin"
-            name="social.linkedin"
-            value={formData.socialMedia.linkedin}
-            onChange={handleChange}
-            className="input w-full"
-            placeholder="https://linkedin.com/company/example"
-          />
-        </div>
-        
-        {/* Twitter */}
-        <div>
-          <label htmlFor="social.twitter" className="block text-sm font-medium text-gray-700 mb-1">
-            Twitter
-          </label>
-          <input
-            type="url"
-            id="social.twitter"
-            name="social.twitter"
-            value={formData.socialMedia.twitter}
-            onChange={handleChange}
-            className="input w-full"
-            placeholder="https://twitter.com/example"
-          />
-        </div>
-        
-        {/* Facebook */}
-        <div>
-          <label htmlFor="social.facebook" className="block text-sm font-medium text-gray-700 mb-1">
-            Facebook
-          </label>
-          <input
-            type="url"
-            id="social.facebook"
-            name="social.facebook"
-            value={formData.socialMedia.facebook}
-            onChange={handleChange}
-            className="input w-full"
-            placeholder="https://facebook.com/example"
-          />
-        </div>
-        
-        {/* Instagram */}
-        <div>
-          <label htmlFor="social.instagram" className="block text-sm font-medium text-gray-700 mb-1">
-            Instagram
-          </label>
-          <input
-            type="url"
-            id="social.instagram"
-            name="social.instagram"
-            value={formData.socialMedia.instagram}
-            onChange={handleChange}
-            className="input w-full"
-            placeholder="https://instagram.com/example"
-          />
-        </div>
-      </div>
-      
-      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm space-y-4">
-        <h2 className="text-lg font-medium text-gray-900">Media & Status</h2>
-        
-        {/* Logo URL */}
+        {/* Logo */}
         <div>
           <label htmlFor="logo" className="block text-sm font-medium text-gray-700 mb-1">
             Logo URL
@@ -455,53 +161,49 @@ export default function OrganizationForm({
             className="input w-full"
             placeholder="https://example.com/logo.png"
           />
+          <p className="mt-1 text-sm text-gray-500">
+            Direct link to the organization's logo image
+          </p>
         </div>
+      </div>
+      
+      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm space-y-4">
+        <h2 className="text-lg font-medium text-gray-900">Additional Information</h2>
         
-        {/* Cover Image URL */}
+        {/* History */}
         <div>
-          <label htmlFor="coverImage" className="block text-sm font-medium text-gray-700 mb-1">
-            Cover Image URL
+          <label htmlFor="history" className="block text-sm font-medium text-gray-700 mb-1">
+            Organization History
           </label>
-          <input
-            type="url"
-            id="coverImage"
-            name="coverImage"
-            value={formData.coverImage}
+          <textarea
+            id="history"
+            name="history"
+            value={formData.history}
             onChange={handleChange}
+            rows={4}
             className="input w-full"
-            placeholder="https://example.com/cover.jpg"
           />
+          <p className="mt-1 text-sm text-gray-500">
+            Brief history of the organization, when it was founded, etc.
+          </p>
         </div>
         
-        {/* Status Checkboxes */}
-        <div className="flex items-center space-x-6">
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="isVerified"
-              name="isVerified"
-              checked={formData.isVerified}
-              onChange={handleChange}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="isVerified" className="ml-2 block text-sm text-gray-700">
-              Verified Organization
-            </label>
-          </div>
-          
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="isActive"
-              name="isActive"
-              checked={formData.isActive}
-              onChange={handleChange}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700">
-              Active
-            </label>
-          </div>
+        {/* Terms of Service */}
+        <div>
+          <label htmlFor="termsOfService" className="block text-sm font-medium text-gray-700 mb-1">
+            Terms of Service
+          </label>
+          <textarea
+            id="termsOfService"
+            name="termsOfService"
+            value={formData.termsOfService}
+            onChange={handleChange}
+            rows={4}
+            className="input w-full"
+          />
+          <p className="mt-1 text-sm text-gray-500">
+            Any specific terms or conditions for users interacting with this organization
+          </p>
         </div>
       </div>
       
@@ -509,17 +211,17 @@ export default function OrganizationForm({
         <button
           type="button"
           onClick={() => router.back()}
-          className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          className="btn btn-outline"
           disabled={submitting}
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          className="btn btn-primary"
           disabled={submitting}
         >
-          {submitting ? 'Saving...' : isEdit ? 'Update Organization' : 'Create Organization'}
+          {submitting ? "Saving..." : isEdit ? "Update Organization" : "Create Organization"}
         </button>
       </div>
     </form>

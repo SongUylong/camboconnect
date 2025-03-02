@@ -7,6 +7,7 @@ import { Bookmark, Calendar, ExternalLink, Globe, Info, Mail, Users } from "luci
 import { BookmarkButton } from "@/components/opportunities/bookmark-button";
 import { PreviousParticipants } from "@/components/opportunities/previous-participants";
 import ApplicationStatusForm from "@/components/opportunities/application-status-form";
+import { ApplicationCheckModal } from "@/components/opportunities/application-check-modal";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
@@ -182,24 +183,17 @@ export default async function OpportunityDetailPage({
                       This opportunity is no longer accepting applications.
                     </p>
                   </div>
-                ) : opportunity.externalLink ? (
-                  <div className="mt-4">
-                    <p className="mb-4 text-gray-600">
-                      Applications for this opportunity are managed on an external site. Click the button below to apply.
-                    </p>
-                    <a 
-                      href={opportunity.externalLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-primary"
-                    >
-                      Apply on External Site
-                      <ExternalLink className="ml-2 h-4 w-4" />
-                    </a>
-                  </div>
                 ) : (
                   <div className="mt-4">
-                    <ApplicationStatusForm opportunityId={opportunity.id} />
+                    <ApplicationStatusForm 
+                      opportunityId={opportunity.id} 
+                      externalLink={opportunity.externalLink}
+                    />
+                    <ApplicationCheckModal 
+                      opportunityId={opportunity.id}
+                      opportunityTitle={opportunity.title}
+                      organizationName={opportunity.organization.name}
+                    />
                   </div>
                 )}
               </section>

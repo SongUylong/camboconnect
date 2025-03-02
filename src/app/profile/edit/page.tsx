@@ -28,7 +28,6 @@ export default function EditProfilePage() {
       }
       
       const data = await response.json();
-      console.log("Fetched profile data:", data);
       
       // Map the API response to the UserProfile format
       const profileData: UserProfile = {
@@ -61,7 +60,6 @@ export default function EditProfilePage() {
         }, {}) || {}
       };
       
-      console.log("Mapped profile data:", profileData);
       setProfile(profileData);
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -74,7 +72,6 @@ export default function EditProfilePage() {
   const handleSubmit = async (data: UserProfile) => {
     try {
       setSubmitting(true);
-      console.log("Form submission data received in page component:", data);
       
       // Send the complete data to the API
       const response = await fetch("/api/profile", {
@@ -85,9 +82,7 @@ export default function EditProfilePage() {
         body: JSON.stringify(data),
       });
       
-      console.log("API response status:", response.status);
       const result = await response.json();
-      console.log("API response body:", result);
       
       if (!response.ok) {
         throw new Error(result.error || "Failed to update profile");
