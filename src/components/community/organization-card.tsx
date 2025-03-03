@@ -3,8 +3,8 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
 import { Building, Globe, Users } from "lucide-react";
+import { FollowButton } from "@/components/community/follow-button";
 
 type OrganizationCardProps = {
   organization: {
@@ -20,42 +20,6 @@ type OrganizationCardProps = {
 };
 
 export function OrganizationCard({ organization }: OrganizationCardProps) {
-  const { data: session } = useSession();
-  const router = useRouter();
-  const [isFollowing, setIsFollowing] = useState(organization.isFollowing || false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleFollow = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (!session) {
-      router.push("/login");
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    try {
-      const response = await fetch(`/api/organizations/${organization.id}/follow`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ following: !isFollowing }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update follow status');
-      }
-
-      setIsFollowing(!isFollowing);
-      router.refresh();
-    } catch (error) {
-      console.error("Failed to update follow status:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <Link
       href={`/community/${organization.id}`}
@@ -96,21 +60,9 @@ export function OrganizationCard({ organization }: OrganizationCardProps) {
             <span>{organization.followerCount || 0} followers</span>
           </div>
           
-          <button
-            onClick={handleFollow}
-            className={`btn btn-sm ${
-              isFollowing 
-                ? "bg-blue-50 text-blue-600 border-blue-600" 
-                : "btn-outline"
-            }`}
-            disabled={isLoading}
-          >
-            {isLoading 
-              ? "Loading..." 
-              : isFollowing 
-                ? "Following" 
-                : "Follow"}
-          </button>
+          <div onClick={(e) => e.preventDefault()}>
+            <FollowButton organizationId={organization.id} />
+          </div>
         </div>
       </div>
     </Link>

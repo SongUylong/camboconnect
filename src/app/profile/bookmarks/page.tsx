@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
 import { MainLayout } from "@/components/layout/main-layout";
+import { useBookmarkStore } from "@/store/bookmarkStore";
 
 interface BookmarkedOpportunity {
   id: string;
@@ -43,6 +44,7 @@ export default function BookmarksPage() {
     message: string;
     type: "success" | "error" | null;
   }>({ message: "", type: null });
+  const { removeBookmark, setInitialBookmarks } = useBookmarkStore();
 
   useEffect(() => {
     // Redirect if not logged in
@@ -61,6 +63,10 @@ export default function BookmarksPage() {
         }
         const data = await response.json();
         setBookmarks(data);
+        
+        // Initialize the global bookmark store with current bookmarks
+        setInitialBookmarks(data.map((bookmark: BookmarkedOpportunity) => bookmark.id));
+        
         setIsLoading(false);
       } catch (error) {
         console.error("Failed to fetch bookmarks:", error);
@@ -71,7 +77,7 @@ export default function BookmarksPage() {
     if (session) {
       fetchBookmarks();
     }
-  }, [session, router]);
+  }, [session, router, setInitialBookmarks]);
 
   // Clear notification after 3 seconds
   useEffect(() => {
@@ -112,17 +118,17 @@ export default function BookmarksPage() {
       // Remove from local state
       setBookmarks((prev) => prev.filter((b) => b.bookmarkId !== bookmarkId));
       
+      // Remove from global state
+      removeBookmark(opportunityId);
+      
       // Show success notification
       setNotification({
         message: "Bookmark removed successfully",
         type: "success"
       });
       
-      // Force revalidation of the opportunities page
-      await fetch('/api/revalidate?path=/opportunities', { method: 'POST' });
-      
-      // Optionally navigate to opportunities page
-      // router.push('/opportunities');
+      // Force router refresh
+      router.refresh();
     } catch (error) {
       console.error("Failed to remove bookmark:", error);
       

@@ -7,13 +7,33 @@ import { Award, Bookmark, Briefcase, Calendar, Edit, Eye, GraduationCap, Link as
 import Link from "next/link";
 import { format } from "date-fns";
 import dynamic from "next/dynamic";
-import { Organization, Follow, Education, Experience, Skill, SocialLink, Application, Participation, Bookmark as BookmarkType } from "@prisma/client";
+import { Organization, Follow, Education, Experience, Skill, SocialLink, Application, Participation, Bookmark as BookmarkType, Opportunity } from "@prisma/client";
+import { FollowingOrgCard } from "@/components/profile/following-org-card";
 
 // Import the SettingsPopover component with dynamic import to avoid SSR issues
 const SettingsPopover = dynamic(() => import("./settings-popover"), { ssr: false });
 
 // Import the WelcomeModal component with dynamic import
 const ProfileClientWrapper = dynamic(() => import("@/components/profile/profile-client-wrapper"), { ssr: false });
+
+type ExtendedOrganization = Organization & {
+  _count: {
+    followers: number;
+    opportunities: number;
+  };
+};
+
+type ExtendedOpportunity = Opportunity & {
+  organization: Organization;
+  category: {
+    id: string;
+    name: string;
+  };
+};
+
+type ExtendedFollow = Follow & {
+  organization: ExtendedOrganization;
+};
 
 type ExtendedUser = {
   id: string;
@@ -29,32 +49,16 @@ type ExtendedUser = {
   twoFactorEnabled: boolean;
   twoFactorMethod: string | null;
   privacyLevel: string;
-  followedOrgs: (Follow & {
-    organization: Organization & {
-      _count: {
-        followers: number;
-        opportunities: number;
-      };
-    };
-  })[];
+  followedOrgs: ExtendedFollow[];
   bookmarks: (BookmarkType & {
-    opportunity: {
-      organization: Organization;
-      category: { id: string; name: string };
-    };
+    opportunity: ExtendedOpportunity;
   })[];
   applications: (Application & {
-    opportunity: {
-      organization: Organization;
-      category: { id: string; name: string };
-    };
+    opportunity: ExtendedOpportunity;
     status: { id: string; name: string };
   })[];
   participations: (Participation & {
-    opportunity: {
-      organization: Organization;
-      category: { id: string; name: string };
-    };
+    opportunity: ExtendedOpportunity;
   })[];
   educationEntries: Education[];
   experienceEntries: Experience[];
@@ -347,33 +351,10 @@ export default async function ProfilePage() {
                 {user.followedOrgs.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {user.followedOrgs.map((follow) => (
-                      <Link
+                      <FollowingOrgCard
                         key={follow.organization.id}
-                        href={`/community/${follow.organization.id}`}
-                        className="flex items-start p-4 rounded-lg border border-gray-200 hover:border-blue-500 transition-colors"
-                      >
-                        <div className="h-12 w-12 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
-                          {follow.organization.logo ? (
-                            <img
-                              src={follow.organization.logo}
-                              alt={follow.organization.name}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <Building className="h-6 w-6 text-gray-400" />
-                          )}
-                        </div>
-                        <div className="ml-4">
-                          <h3 className="text-sm font-medium text-gray-900">{follow.organization.name}</h3>
-                          <div className="mt-1 flex items-center text-xs text-gray-500">
-                            <Users className="h-3 w-3 mr-1" />
-                            <span>{follow.organization._count.followers} followers</span>
-                            <span className="mx-2">•</span>
-                            <Calendar className="h-3 w-3 mr-1" />
-                            <span>{follow.organization._count.opportunities} opportunities</span>
-                          </div>
-                        </div>
-                      </Link>
+                        organization={follow.organization}
+                      />
                     ))}
                   </div>
                 ) : (

@@ -4,6 +4,7 @@ import { Bookmark } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useBookmarkStore } from "@/store/bookmarkStore";
 
 interface BookmarkButtonProps {
   opportunityId: string;
@@ -12,28 +13,8 @@ interface BookmarkButtonProps {
 export function BookmarkButton({ opportunityId }: BookmarkButtonProps) {
   const { data: session } = useSession();
   const router = useRouter();
-  const [isBookmarked, setIsBookmarked] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Check if opportunity is bookmarked by this user
-    if (session?.user?.id) {
-      setIsLoading(true);
-      // Fetch bookmark status from API
-      fetch(`/api/opportunities/${opportunityId}/bookmark/status`)
-        .then(res => res.json())
-        .then(data => {
-          setIsBookmarked(data.isBookmarked);
-          setIsLoading(false);
-        })
-        .catch(error => {
-          console.error("Failed to fetch bookmark status:", error);
-          setIsLoading(false);
-        });
-    } else {
-      setIsLoading(false);
-    }
-  }, [session, opportunityId]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { isBookmarked, addBookmark, removeBookmark } = useBookmarkStore();
 
   const handleBookmarkClick = async () => {
     if (!session) {
@@ -41,26 +22,35 @@ export function BookmarkButton({ opportunityId }: BookmarkButtonProps) {
       return;
     }
 
-    // Toggle bookmark state optimistically
-    setIsBookmarked(!isBookmarked);
+    setIsLoading(true);
 
-    // Send API request to toggle bookmark
     try {
-      await fetch(`/api/opportunities/${opportunityId}/bookmark`, {
+      const newBookmarkState = !isBookmarked(opportunityId);
+      
+      // Send API request to toggle bookmark
+      const response = await fetch(`/api/opportunities/${opportunityId}/bookmark`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookmarked: !isBookmarked }),
+        body: JSON.stringify({ bookmarked: newBookmarkState }),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to update bookmark');
+      }
+
+      // Update global state
+      if (newBookmarkState) {
+        addBookmark(opportunityId);
+      } else {
+        removeBookmark(opportunityId);
+      }
       
-      // Revalidate the opportunities page
-      await fetch('/api/revalidate?path=/opportunities', { method: 'POST' });
-      
-      // Navigate to the current page to force a refresh
+      // Force router refresh to update server state
       router.refresh();
     } catch (error) {
-      // Revert on error
-      setIsBookmarked(isBookmarked);
       console.error("Failed to update bookmark:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -75,18 +65,20 @@ export function BookmarkButton({ opportunityId }: BookmarkButtonProps) {
     );
   }
 
+  const bookmarked = isBookmarked(opportunityId);
+
   return (
     <button
       onClick={handleBookmarkClick}
       className={`btn ${
-        isBookmarked ? "bg-blue-50 text-blue-600 border-blue-600" : "btn-outline"
+        bookmarked ? "bg-blue-50 text-blue-600 border-blue-600 p-2" : "btn-outline"
       }`}
-      aria-label={isBookmarked ? "Remove bookmark" : "Add bookmark"}
+      aria-label={bookmarked ? "Remove bookmark" : "Add bookmark"}
     >
       <Bookmark
-        className={`h-5 w-5 mr-2 ${isBookmarked ? "fill-blue-600" : ""}`}
+        className={`h-5 w-5 mr-2 ${bookmarked ? "fill-blue-600" : ""}`}
       />
-      {isBookmarked ? "Bookmarked" : "Bookmark"}
+      {bookmarked ? "Bookmarked" : "Bookmark"}
     </button>
   );
 }

@@ -3,13 +3,14 @@ import { db } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { format } from "date-fns";
 import Link from "next/link";
-import { Bookmark, Calendar, ExternalLink, Globe, Info, Mail, Users } from "lucide-react";
+import { Bookmark, Calendar, ExternalLink, Globe, Info, Mail, Users, ArrowLeft } from "lucide-react";
 import { BookmarkButton } from "@/components/opportunities/bookmark-button";
 import { PreviousParticipants } from "@/components/opportunities/previous-participants";
 import ApplicationStatusForm from "@/components/opportunities/application-status-form";
 import { ApplicationCheckModal } from "@/components/opportunities/application-check-modal";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { BackButton } from "@/components/ui/back-button";
 
 export default async function OpportunityDetailPage({
   params,
@@ -95,6 +96,11 @@ export default async function OpportunityDetailPage({
     <MainLayout>
       <div className="bg-white">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          {/* Back Button */}
+          <div className="mb-6">
+            <BackButton />
+          </div>
+
           {/* Header */}
           <div className="border-b border-gray-200 pb-6">
             <div className="flex flex-wrap items-start justify-between">

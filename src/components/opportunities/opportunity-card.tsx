@@ -3,9 +3,10 @@
 import { Bookmark, Eye, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useBookmarkStore } from "@/store/bookmarkStore";
 
 type OpportunityCardProps = {
   opportunity: {
@@ -33,7 +34,32 @@ type OpportunityCardProps = {
 export function OpportunityCard({ opportunity }: OpportunityCardProps) {
   const { data: session } = useSession();
   const router = useRouter();
-  const [isBookmarked, setIsBookmarked] = useState(opportunity.isBookmarked || false);
+  const { isBookmarked, addBookmark, removeBookmark } = useBookmarkStore();
+
+  const revalidatePaths = async () => {
+    try {
+      // Revalidate all related paths
+      await Promise.all([
+        fetch('/api/revalidate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: '/opportunities' })
+        }),
+        fetch('/api/revalidate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: '/profile/bookmarks' })
+        }),
+        fetch('/api/revalidate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: `/opportunities/${opportunity.id}` })
+        })
+      ]);
+    } catch (error) {
+      console.error("Failed to revalidate paths:", error);
+    }
+  };
 
   // Status badge style based on status
   const getStatusBadgeClass = (status: string) => {
@@ -76,25 +102,30 @@ export function OpportunityCard({ opportunity }: OpportunityCardProps) {
       return;
     }
 
-    // Toggle bookmark state optimistically
-    setIsBookmarked(!isBookmarked);
-
-    // API call to update bookmark status
     try {
-      await fetch(`/api/opportunities/${opportunity.id}/bookmark`, {
+      const newBookmarkState = !isBookmarked(opportunity.id);
+      
+      // API call to update bookmark status
+      const response = await fetch(`/api/opportunities/${opportunity.id}/bookmark`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookmarked: !isBookmarked }),
+        body: JSON.stringify({ bookmarked: newBookmarkState }),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to update bookmark');
+      }
+
+      // Update global state
+      if (newBookmarkState) {
+        addBookmark(opportunity.id);
+      } else {
+        removeBookmark(opportunity.id);
+      }
       
-      // Revalidate the opportunities page
-      await fetch('/api/revalidate?path=/opportunities', { method: 'POST' });
-      
-      // Force a refresh of the current page
+      // Force router refresh to update server state
       router.refresh();
     } catch (error) {
-      // Revert on error
-      setIsBookmarked(isBookmarked);
       console.error("Failed to update bookmark:", error);
     }
   };
@@ -119,11 +150,15 @@ export function OpportunityCard({ opportunity }: OpportunityCardProps) {
           </div>
           <button
             onClick={handleBookmarkClick}
-            className={`text-gray-400 hover:text-blue-600 focus:outline-none ${isBookmarked ? 'text-blue-600' : ''}`}
-            aria-label={isBookmarked ? "Remove bookmark" : "Add bookmark"}
+            className={`text-gray-400 hover:text-blue-600 focus:outline-none ${
+              isBookmarked(opportunity.id) ? 'text-blue-600' : ''
+            }`}
+            aria-label={isBookmarked(opportunity.id) ? "Remove bookmark" : "Add bookmark"}
           >
             <Bookmark
-              className={`h-5 w-5 ${isBookmarked ? "fill-blue-600 text-blue-600" : ""}`}
+              className={`h-5 w-5 ${
+                isBookmarked(opportunity.id) ? "fill-blue-600 text-blue-600" : ""
+              }`}
             />
           </button>
         </div>
