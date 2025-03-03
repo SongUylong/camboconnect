@@ -12,11 +12,11 @@ import {
   Trash2, 
   Filter, 
   Eye, 
-  Download, 
   ArrowUpDown,
   CheckCircle
 } from "lucide-react";
 import { format } from "date-fns";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 interface Organization {
   id: string;
@@ -42,6 +42,8 @@ export default function AdminOrganizationsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteOrgId, setDeleteOrgId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   
   // Parse search params
   const query = searchParams.get('q') || "";
@@ -142,6 +144,34 @@ export default function AdminOrganizationsPage() {
     }
   };
 
+  const handleDeleteOrganization = async () => {
+    if (!deleteOrgId) return;
+    
+    try {
+      const response = await fetch(`/api/organizations/${deleteOrgId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        if (response.status === 400) {
+          throw new Error('Cannot delete organization that has existing opportunities. Please delete all opportunities first.');
+        }
+        throw new Error(data.error || 'Failed to delete organization');
+      }
+
+      // Update UI immediately by removing the deleted organization
+      setOrganizations(prevOrgs => 
+        prevOrgs.filter(org => org.id !== deleteOrgId)
+      );
+      setDeleteOrgId(null);
+      setDeleteError(null);
+    } catch (error) {
+      console.error('Error deleting organization:', error);
+      setDeleteError(error instanceof Error ? error.message : 'An error occurred');
+    }
+  };
+
   return (
     <MainLayout>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
@@ -156,10 +186,6 @@ export default function AdminOrganizationsPage() {
             <Link href="/admin/organizations/new" className="btn btn-primary">
               <Plus className="h-4 w-4 mr-2" />
               Add New Organization
-            </Link>
-            <Link href="/admin/organizations/export" className="btn btn-outline">
-              <Download className="h-4 w-4 mr-2" />
-              Export
             </Link>
           </div>
         </div>
@@ -299,11 +325,7 @@ export default function AdminOrganizationsPage() {
                               <Edit className="h-5 w-5" />
                             </Link>
                             <button
-                              onClick={() => {
-                                if (confirm('Are you sure you want to delete this organization?')) {
-                                  router.push(`/admin/organizations/${org.id}/delete`);
-                                }
-                              }}
+                              onClick={() => setDeleteOrgId(org.id)}
                               className="text-red-600 hover:text-red-900"
                             >
                               <Trash2 className="h-5 w-5" />
@@ -396,6 +418,47 @@ export default function AdminOrganizationsPage() {
             </div>
           )}
         </div>
+        
+        {/* Add the delete confirmation modal: */}
+        <Dialog open={!!deleteOrgId} onOpenChange={() => {
+          setDeleteOrgId(null);
+          setDeleteError(null);
+        }}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Delete Organization</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-gray-500 mb-4">
+                Are you sure you want to delete this organization? This action cannot be undone.
+              </p>
+              {deleteError && (
+                <div className="text-red-500 text-sm bg-red-50 p-3 rounded-md mb-4">
+                  {deleteError}
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => {
+                  setDeleteOrgId(null);
+                  setDeleteError(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-destructive"
+                onClick={handleDeleteOrganization}
+              >
+                Delete
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );

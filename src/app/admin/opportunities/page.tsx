@@ -61,6 +61,8 @@ export default function AdminOpportunitiesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteOpportunityId, setDeleteOpportunityId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   
   // Category management state
   const [isAddingCategory, setIsAddingCategory] = useState(false);
@@ -69,6 +71,8 @@ export default function AdminOpportunitiesPage() {
   const [categoryDescription, setCategoryDescription] = useState("");
   const [categoryError, setCategoryError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
+  const [deleteCategoryError, setDeleteCategoryError] = useState<string | null>(null);
   
   // Parse search params
   const query = searchParams.get('q') || "";
@@ -181,13 +185,11 @@ export default function AdminOpportunitiesPage() {
     setIsAddingCategory(false);
   };
 
-  const handleDeleteCategory = async (categoryId: string) => {
-    if (!confirm("Are you sure you want to delete this category? This action cannot be undone.")) {
-      return;
-    }
+  const handleDeleteCategory = async () => {
+    if (!deleteCategoryId) return;
 
     try {
-      const response = await fetch(`/api/admin/categories/${categoryId}`, {
+      const response = await fetch(`/api/admin/categories/${deleteCategoryId}`, {
         method: 'DELETE',
       });
 
@@ -196,15 +198,15 @@ export default function AdminOpportunitiesPage() {
         throw new Error(data.error || 'Failed to delete category');
       }
 
-      // Refresh categories
-      const categoriesRes = await fetch('/api/admin/categories');
-      if (!categoriesRes.ok) throw new Error('Failed to fetch categories');
-      const categoriesData = await categoriesRes.json();
-      
-      setCategories(categoriesData);
+      // Update UI immediately
+      setCategories(prevCategories => 
+        prevCategories.filter(cat => cat.id !== deleteCategoryId)
+      );
+      setDeleteCategoryId(null);
+      setDeleteCategoryError(null);
     } catch (error) {
       console.error('Error deleting category:', error);
-      alert(error instanceof Error ? error.message : 'An error occurred while deleting the category');
+      setDeleteCategoryError(error instanceof Error ? error.message : 'An error occurred while deleting the category');
     }
   };
 
@@ -253,6 +255,34 @@ export default function AdminOpportunitiesPage() {
       setCategoryError(error instanceof Error ? error.message : 'An error occurred while saving the category');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteOpportunity = async () => {
+    if (!deleteOpportunityId) return;
+    
+    try {
+      const response = await fetch(`/api/opportunities/${deleteOpportunityId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        if (response.status === 409) {
+          throw new Error('Cannot delete this opportunity because it has been bookmarked by users. Please remove all bookmarks first.');
+        }
+        throw new Error(data.error || 'Failed to delete opportunity');
+      }
+
+      // Update UI immediately by removing the deleted opportunity
+      setOpportunities(prevOpportunities => 
+        prevOpportunities.filter(opp => opp.id !== deleteOpportunityId)
+      );
+      setDeleteOpportunityId(null);
+      setDeleteError(null);
+    } catch (error) {
+      console.error('Error deleting opportunity:', error);
+      setDeleteError(error instanceof Error ? error.message : 'An error occurred');
     }
   };
 
@@ -367,7 +397,7 @@ export default function AdminOpportunitiesPage() {
                                   <Edit className="h-4 w-4" />
                                 </button>
                                 <button
-                                  onClick={() => handleDeleteCategory(category.id)}
+                                  onClick={() => setDeleteCategoryId(category.id)}
                                   className="text-red-600 hover:text-red-800"
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -585,11 +615,7 @@ export default function AdminOpportunitiesPage() {
                               <Edit className="h-5 w-5" />
                             </Link>
                             <button
-                              onClick={() => {
-                                if (confirm('Are you sure you want to delete this opportunity?')) {
-                                  // Delete logic here
-                                }
-                              }}
+                              onClick={() => setDeleteOpportunityId(opportunity.id)}
                               className="text-red-600 hover:text-red-900"
                             >
                               <Trash2 className="h-5 w-5" />
@@ -682,6 +708,88 @@ export default function AdminOpportunitiesPage() {
             </div>
           )}
         </div>
+
+        {/* Delete Category Confirmation Modal */}
+        <Dialog open={!!deleteCategoryId} onOpenChange={() => {
+          setDeleteCategoryId(null);
+          setDeleteCategoryError(null);
+        }}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Delete Category</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-gray-500 mb-4">
+                Are you sure you want to delete this category? This action cannot be undone.
+              </p>
+              {deleteCategoryError && (
+                <div className="text-red-500 text-sm bg-red-50 p-3 rounded-md mb-4">
+                  {deleteCategoryError}
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => {
+                  setDeleteCategoryId(null);
+                  setDeleteCategoryError(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-destructive"
+                onClick={handleDeleteCategory}
+              >
+                Delete
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Opportunity Confirmation Modal */}
+        <Dialog open={!!deleteOpportunityId} onOpenChange={() => {
+          setDeleteOpportunityId(null);
+          setDeleteError(null);
+        }}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Delete Opportunity</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-gray-500 mb-4">
+                Are you sure you want to delete this opportunity? This action cannot be undone.
+              </p>
+              {deleteError && (
+                <div className="text-red-500 text-sm bg-red-50 p-3 rounded-md mb-4">
+                  {deleteError}
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => {
+                  setDeleteOpportunityId(null);
+                  setDeleteError(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-destructive"
+                onClick={handleDeleteOpportunity}
+              >
+                Delete
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );

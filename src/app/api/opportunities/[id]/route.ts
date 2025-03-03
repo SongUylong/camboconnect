@@ -142,6 +142,18 @@ export async function DELETE(req: Request, { params }: ParamsType) {
       );
     }
     
+    // Check if opportunity has any bookmarks
+    const bookmarksCount = await db.bookmark.count({
+      where: { opportunityId: id },
+    });
+
+    if (bookmarksCount > 0) {
+      return NextResponse.json(
+        { error: 'Cannot delete opportunity that has been bookmarked by users' },
+        { status: 409 }
+      );
+    }
+    
     // Delete opportunity
     await db.opportunity.delete({
       where: { id },

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Grid, List, Search, Calendar, Building, ChevronDown, ChevronUp, Filter, X } from "lucide-react";
 import Link from "next/link";
 import { OrganizationCard } from "@/components/community/organization-card";
 import { FollowButton } from "@/components/community/follow-button";
+import { CommunitySearch } from "@/components/community/community-search";
 
 // Define the organization type
 type Organization = {
@@ -55,7 +56,6 @@ export function CommunityClient({
   const [layout, setLayout] = useState(initialLayout);
   const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
   const [organizations, setOrganizations] = useState<Organization[]>(initialOrganizations || []);
-  const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [isLoadingOpportunities, setIsLoadingOpportunities] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
@@ -65,6 +65,17 @@ export function CommunityClient({
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const filterMenuRef = useRef<HTMLDivElement>(null);
+
+  // Handle search results update
+  const handleSearchResults = useCallback((results: Organization[]) => {
+    setOrganizations(results);
+    // If in list view and we have results, select the first organization
+    if (layout === "list" && results.length > 0) {
+      setSelectedOrganization(results[0]);
+    } else if (results.length === 0) {
+      setSelectedOrganization(null);
+    }
+  }, [layout]);
 
   // Set the selected organization to the first one when in list view
   useEffect(() => {
@@ -165,19 +176,6 @@ export function CommunityClient({
     setLayout(newLayout);
   };
 
-  // Handle search
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const params = new URLSearchParams(urlSearchParams.toString());
-    if (searchQuery) {
-      params.set("q", searchQuery);
-    } else {
-      params.delete("q");
-    }
-    params.set("layout", layout);
-    router.push(`/community?${params.toString()}`);
-  };
-
   // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -260,23 +258,9 @@ export function CommunityClient({
           </p>
         </div>
 
-        <div className="mt-4 md:mt-0 flex items-center w-full md:w-auto">
-          {/* Search Box */}
-          <form onSubmit={handleSearch} className="flex-grow md:flex-grow-0 mr-2">
-            <div className="relative">
-              <input
-                type="text"
-                name="q"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search organizations..."
-                className="input w-full md:w-80 pl-10"
-              />
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
-              </div>
-            </div>
-          </form>
+        <div className="mt-4 md:mt-0 flex items-center w-full md:w-auto gap-2">
+          {/* Replace old search form with new CommunitySearch component */}
+          <CommunitySearch onSearchResults={handleSearchResults} />
 
           {/* Layout Toggle - Hidden on Mobile */}
           <div className="hidden md:flex border rounded-md">

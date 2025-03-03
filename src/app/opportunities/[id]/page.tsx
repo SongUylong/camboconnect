@@ -11,6 +11,7 @@ import { ApplicationCheckModal } from "@/components/opportunities/application-ch
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { BackButton } from "@/components/ui/back-button";
+import { ViewCounter } from "@/components/opportunities/view-counter";
 
 export default async function OpportunityDetailPage({
   params,
@@ -23,16 +24,6 @@ export default async function OpportunityDetailPage({
   if (!session) {
     // Redirect to login page with callback URL to return after login
     redirect(`/login?callbackUrl=/opportunities/${params.id}`);
-  }
-
-  // Increment view count - in a real app, this would use a server action
-  try {
-    await db.opportunity.update({
-      where: { id: params.id },
-      data: { visitCount: { increment: 1 } },
-    });
-  } catch (error) {
-    console.error("Failed to increment view count:", error);
   }
 
   // Fetch opportunity details
@@ -94,6 +85,7 @@ export default async function OpportunityDetailPage({
 
   return (
     <MainLayout>
+      <ViewCounter opportunityId={params.id} />
       <div className="bg-white">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           {/* Back Button */}

@@ -1,6 +1,7 @@
 import { MainLayout } from "@/components/layout/main-layout";
 import { OpportunityCard } from "@/components/opportunities/opportunity-card";
 import { OpportunityFilter } from "@/components/opportunities/opportunity-filter";
+import { OpportunitySearch } from "@/components/opportunities/opportunity-search";
 import { db } from "@/lib/prisma";
 import { Search } from "lucide-react";
 import { getServerSession } from "next-auth/next";
@@ -117,21 +118,10 @@ export default async function OpportunitiesPage({
             </p>
           </div>
 
-          {/* Search Box */}
-          <form className="mt-4 md:mt-0 w-full md:w-auto">
-            <div className="relative">
-              <input
-                type="text"
-                name="q"
-                defaultValue={searchParams.q || ""}
-                placeholder="Search opportunities..."
-                className="input w-full md:w-80 pl-10"
-              />
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
-              </div>
-            </div>
-          </form>
+          {/* Replace the search form with OpportunitySearch component */}
+          <div className="mt-4 md:mt-0 w-full md:w-auto">
+            <OpportunitySearch />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
