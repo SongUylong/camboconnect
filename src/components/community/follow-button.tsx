@@ -19,15 +19,16 @@ export function FollowButton({ organizationId }: FollowButtonProps) {
     // Check if organization is followed by this user
     if (session?.user?.id) {
       setIsLoading(true);
-      // In a real app, fetch follow status from API
-      // For now, simulate an API call with a timeout
-      const timeout = setTimeout(() => {
-        // This would be replaced with actual API call
-        setIsFollowing(false);
-        setIsLoading(false);
-      }, 500);
-      
-      return () => clearTimeout(timeout);
+      fetch(`/api/organizations/${organizationId}/follow/status`)
+        .then(res => res.json())
+        .then(data => {
+          setIsFollowing(data.following);
+          setIsLoading(false);
+        })
+        .catch(error => {
+          console.error("Failed to fetch follow status:", error);
+          setIsLoading(false);
+        });
     } else {
       setIsLoading(false);
     }
@@ -42,14 +43,21 @@ export function FollowButton({ organizationId }: FollowButtonProps) {
     // Toggle follow state optimistically
     setIsFollowing(!isFollowing);
 
-    // In a real app, send API request to toggle follow status
     try {
-      // await fetch(`/api/organizations/${organizationId}/follow`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ following: !isFollowing }),
-      // });
-      // Handle errors and revert state if needed
+      const response = await fetch(`/api/organizations/${organizationId}/follow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ following: !isFollowing }),
+      });
+
+      if (!response.ok) {
+        // Revert on error
+        setIsFollowing(isFollowing);
+        throw new Error('Failed to update follow status');
+      }
+
+      // Refresh the page to update counts and states
+      router.refresh();
     } catch (error) {
       // Revert on error
       setIsFollowing(isFollowing);

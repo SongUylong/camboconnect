@@ -37,17 +37,18 @@ export function OrganizationCard({ organization }: OrganizationCardProps) {
     setIsLoading(true);
     
     try {
-      // In a real app, send API request to toggle follow status
-      // await fetch(`/api/organizations/${organization.id}/follow`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ following: !isFollowing }),
-      // });
-      
-      // Simulate API call with timeout
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      const response = await fetch(`/api/organizations/${organization.id}/follow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ following: !isFollowing }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update follow status');
+      }
+
       setIsFollowing(!isFollowing);
+      router.refresh();
     } catch (error) {
       console.error("Failed to update follow status:", error);
     } finally {

@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { Bell, Menu, User, X, Bookmark } from "lucide-react";
+import { Bell, Menu, User, X, Bookmark, Users } from "lucide-react";
 import { useState } from "react";
+import NotificationCenter from "./notification-center";
 
 interface NavigationItem {
   name: string;
@@ -85,15 +86,8 @@ export function Header() {
                   <Bookmark className="h-6 w-6" aria-hidden="true" />
                 </Link>
 
-                {/* Notification bell */}
-                <button
-                  type="button"
-                  className="relative rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                >
-                  <span className="absolute -inset-1.5" />
-                  <span className="sr-only">View notifications</span>
-                  <Bell className="h-6 w-6" aria-hidden="true" />
-                </button>
+                {/* Notification center */}
+                <NotificationCenter />
 
                 <div className="relative ml-3">
                   <div>

@@ -3,16 +3,70 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
-import { Award, Bookmark, Briefcase, Calendar, Edit, Eye, GraduationCap, Link as LinkIcon, Settings, User, Users } from "lucide-react";
+import { Award, Bookmark, Briefcase, Calendar, Edit, Eye, GraduationCap, Link as LinkIcon, Settings, User, Users, Building } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import dynamic from "next/dynamic";
+import { Organization, Follow, Education, Experience, Skill, SocialLink, Application, Participation, Bookmark as BookmarkType } from "@prisma/client";
 
 // Import the SettingsPopover component with dynamic import to avoid SSR issues
 const SettingsPopover = dynamic(() => import("./settings-popover"), { ssr: false });
 
 // Import the WelcomeModal component with dynamic import
 const ProfileClientWrapper = dynamic(() => import("@/components/profile/profile-client-wrapper"), { ssr: false });
+
+type ExtendedUser = {
+  id: string;
+  email: string;
+  password: string | null;
+  firstName: string;
+  lastName: string;
+  profileImage: string | null;
+  bio: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  isAdmin: boolean;
+  twoFactorEnabled: boolean;
+  twoFactorMethod: string | null;
+  privacyLevel: string;
+  followedOrgs: (Follow & {
+    organization: Organization & {
+      _count: {
+        followers: number;
+        opportunities: number;
+      };
+    };
+  })[];
+  bookmarks: (BookmarkType & {
+    opportunity: {
+      organization: Organization;
+      category: { id: string; name: string };
+    };
+  })[];
+  applications: (Application & {
+    opportunity: {
+      organization: Organization;
+      category: { id: string; name: string };
+    };
+    status: { id: string; name: string };
+  })[];
+  participations: (Participation & {
+    opportunity: {
+      organization: Organization;
+      category: { id: string; name: string };
+    };
+  })[];
+  educationEntries: Education[];
+  experienceEntries: Experience[];
+  skillEntries: Skill[];
+  socialLinks: SocialLink[];
+  _count: {
+    bookmarks: number;
+    applications: number;
+    participations: number;
+    friendsOf: number;
+  };
+};
 
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);
@@ -22,9 +76,26 @@ export default async function ProfilePage() {
   }
 
   // Fetch the user's full profile
-  const user = await db.user.findUnique({
+  const user = (await db.user.findUnique({
     where: { id: session.user.id },
     include: {
+      followedOrgs: {
+        include: {
+          organization: {
+            include: {
+              _count: {
+                select: {
+                  followers: true,
+                  opportunities: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      },
       bookmarks: {
         include: {
           opportunity: {
@@ -88,7 +159,7 @@ export default async function ProfilePage() {
         },
       },
     },
-  });
+  })) as ExtendedUser;
 
   if (!user) {
     redirect("/login");
@@ -263,6 +334,59 @@ export default async function ProfilePage() {
           
           {/* Right content area */}
           <div className="md:w-2/3">
+            {/* Following Section */}
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <Users className="h-5 w-5 text-blue-600 mr-2" />
+                    <h2 className="text-lg font-semibold text-gray-900">Following</h2>
+                  </div>
+                </div>
+                
+                {user.followedOrgs.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {user.followedOrgs.map((follow) => (
+                      <Link
+                        key={follow.organization.id}
+                        href={`/community/${follow.organization.id}`}
+                        className="flex items-start p-4 rounded-lg border border-gray-200 hover:border-blue-500 transition-colors"
+                      >
+                        <div className="h-12 w-12 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
+                          {follow.organization.logo ? (
+                            <img
+                              src={follow.organization.logo}
+                              alt={follow.organization.name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <Building className="h-6 w-6 text-gray-400" />
+                          )}
+                        </div>
+                        <div className="ml-4">
+                          <h3 className="text-sm font-medium text-gray-900">{follow.organization.name}</h3>
+                          <div className="mt-1 flex items-center text-xs text-gray-500">
+                            <Users className="h-3 w-3 mr-1" />
+                            <span>{follow.organization._count.followers} followers</span>
+                            <span className="mx-2">•</span>
+                            <Calendar className="h-3 w-3 mr-1" />
+                            <span>{follow.organization._count.opportunities} opportunities</span>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <p className="text-gray-600 mb-4">You're not following any organizations yet.</p>
+                    <Link href="/community" className="btn btn-outline">
+                      Explore Organizations
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+            
             {/* Participations */}
             <section>
               <div className="flex justify-between items-center mb-4">
