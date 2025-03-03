@@ -19,15 +19,17 @@ export function BookmarkButton({ opportunityId }: BookmarkButtonProps) {
     // Check if opportunity is bookmarked by this user
     if (session?.user?.id) {
       setIsLoading(true);
-      // In a real app, fetch bookmark status from API
-      // For now, simulate an API call with a timeout
-      const timeout = setTimeout(() => {
-        // This would be replaced with actual API call
-        setIsBookmarked(false);
-        setIsLoading(false);
-      }, 500);
-      
-      return () => clearTimeout(timeout);
+      // Fetch bookmark status from API
+      fetch(`/api/opportunities/${opportunityId}/bookmark/status`)
+        .then(res => res.json())
+        .then(data => {
+          setIsBookmarked(data.isBookmarked);
+          setIsLoading(false);
+        })
+        .catch(error => {
+          console.error("Failed to fetch bookmark status:", error);
+          setIsLoading(false);
+        });
     } else {
       setIsLoading(false);
     }
@@ -42,14 +44,15 @@ export function BookmarkButton({ opportunityId }: BookmarkButtonProps) {
     // Toggle bookmark state optimistically
     setIsBookmarked(!isBookmarked);
 
-    // In a real app, send API request to toggle bookmark
+    // Send API request to toggle bookmark
     try {
-      // await fetch(`/api/opportunities/${opportunityId}/bookmark`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ bookmarked: !isBookmarked }),
-      // });
-      // Handle errors and revert state if needed
+      await fetch(`/api/opportunities/${opportunityId}/bookmark`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookmarked: !isBookmarked }),
+      });
+      // Refresh the page to update UI
+      router.refresh();
     } catch (error) {
       // Revert on error
       setIsBookmarked(isBookmarked);

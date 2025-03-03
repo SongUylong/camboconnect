@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { Bell, Menu, User, X } from "lucide-react";
+import { Bell, Menu, User, X, Bookmark } from "lucide-react";
 import { useState } from "react";
 
 interface NavigationItem {
   name: string;
   href: string;
   className?: string;
+  icon?: React.ReactNode;
 }
 
 export function Header() {
@@ -23,8 +24,8 @@ export function Header() {
     { name: "Community", href: "/community" },
   ];
 
-  // Add admin item if user has admin role
-  const navigation = session?.user?.isAdmin
+  // Add admin item if user is authenticated and has admin role
+  const navigation: NavigationItem[] = session?.user?.isAdmin
     ? [
         ...baseNavigation,
         {
@@ -66,6 +67,7 @@ export function Header() {
                       : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700")
                   }`}
                 >
+                  {item.icon}
                   {item.name}
                 </Link>
               ))}
@@ -74,6 +76,17 @@ export function Header() {
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             {session ? (
               <>
+                {/* Bookmark button */}
+                <Link
+                  href="/profile/bookmarks"
+                  className="relative rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mr-2"
+                >
+                  <span className="absolute -inset-1.5" />
+                  <span className="sr-only">View bookmarks</span>
+                  <Bookmark className="h-6 w-6" aria-hidden="true" />
+                </Link>
+
+                {/* Notification bell */}
                 <button
                   type="button"
                   className="relative rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -148,7 +161,10 @@ export function Header() {
                     : "border-transparent text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800")
                 }`}
               >
-                {item.name}
+                <div className="flex items-center">
+                  {item.icon}
+                  {item.name}
+                </div>
               </Link>
             ))}
           </div>
@@ -168,14 +184,25 @@ export function Header() {
                     {session.user.email}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  className="relative ml-auto flex-shrink-0 rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                >
-                  <span className="absolute -inset-1.5" />
-                  <span className="sr-only">View notifications</span>
-                  <Bell className="h-6 w-6" aria-hidden="true" />
-                </button>
+                <div className="ml-auto flex items-center space-x-2">
+                  {/* Mobile bookmark button */}
+                  <Link
+                    href="/profile/bookmarks"
+                    className="rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
+                    <span className="sr-only">View bookmarks</span>
+                    <Bookmark className="h-6 w-6" aria-hidden="true" />
+                  </Link>
+                  
+                  {/* Mobile notification bell */}
+                  <button
+                    type="button"
+                    className="rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
+                    <span className="sr-only">View notifications</span>
+                    <Bell className="h-6 w-6" aria-hidden="true" />
+                  </button>
+                </div>
               </div>
               <div className="mt-3 space-y-1">
                 {userNavigation.map((item) => (

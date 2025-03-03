@@ -18,6 +18,7 @@ export default function ApplicationStatusForm({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const handleExternalApplication = async () => {
     if (!session) {
@@ -48,6 +49,12 @@ export default function ApplicationStatusForm({
       // Redirect to external link
       window.open(externalLink, '_blank');
       
+      // Show the modal immediately after redirecting
+      setShowModal(true);
+      
+      // Store in localStorage that we've started an application that needs confirmation
+      localStorage.setItem(`application-started-${opportunityId}`, 'true');
+      
       setSubmitSuccess(true);
       
     } catch (error) {
@@ -75,7 +82,7 @@ export default function ApplicationStatusForm({
       <div className="bg-green-50 p-4 rounded-md">
         <h3 className="text-green-800 font-medium">Application Started</h3>
         <p className="text-green-700 mt-1">
-          You have been redirected to complete your application. We'll check with you later about its completion status.
+          You have been redirected to complete your application. Please confirm your application status when prompted.
         </p>
       </div>
     );
@@ -95,6 +102,14 @@ export default function ApplicationStatusForm({
       >
         {isLoading ? "Redirecting..." : "Apply on External Site"}
       </button>
+      
+      {/* Pass the showModal state to the parent component */}
+      <input 
+        type="hidden" 
+        id="trigger-application-modal" 
+        value={showModal ? "true" : "false"} 
+        onChange={() => {}} // React requires an onChange handler for controlled inputs
+      />
     </div>
   );
 }

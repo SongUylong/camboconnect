@@ -12,9 +12,18 @@ import {
   Filter, 
   Eye, 
   Download, 
-  ArrowUpDown 
+  ArrowUpDown,
+  Tag
 } from "lucide-react";
 import { format } from "date-fns";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter,
+  DialogTrigger
+} from "@/components/ui/dialog";
 
 interface Opportunity {
   id: string;
@@ -41,6 +50,7 @@ interface Opportunity {
 interface Category {
   id: string;
   name: string;
+  description?: string;
 }
 
 export default function AdminOpportunitiesPage() {
@@ -51,6 +61,14 @@ export default function AdminOpportunitiesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Category management state
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [categoryName, setCategoryName] = useState("");
+  const [categoryDescription, setCategoryDescription] = useState("");
+  const [categoryError, setCategoryError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Parse search params
   const query = searchParams.get('q') || "";
@@ -138,6 +156,106 @@ export default function AdminOpportunitiesPage() {
     }
   };
 
+  // Category management functions
+  const resetCategoryForm = () => {
+    setCategoryName("");
+    setCategoryDescription("");
+    setCategoryError("");
+    setEditingCategory(null);
+    setIsAddingCategory(false);
+  };
+
+  const handleAddCategory = () => {
+    setIsAddingCategory(true);
+    setEditingCategory(null);
+    setCategoryName("");
+    setCategoryDescription("");
+    setCategoryError("");
+  };
+
+  const handleEditCategory = (category: Category) => {
+    setEditingCategory(category);
+    setCategoryName(category.name);
+    setCategoryDescription(category.description || "");
+    setCategoryError("");
+    setIsAddingCategory(false);
+  };
+
+  const handleDeleteCategory = async (categoryId: string) => {
+    if (!confirm("Are you sure you want to delete this category? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/categories/${categoryId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete category');
+      }
+
+      // Refresh categories
+      const categoriesRes = await fetch('/api/admin/categories');
+      if (!categoriesRes.ok) throw new Error('Failed to fetch categories');
+      const categoriesData = await categoriesRes.json();
+      
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      alert(error instanceof Error ? error.message : 'An error occurred while deleting the category');
+    }
+  };
+
+  const handleSubmitCategory = async () => {
+    // Validate form
+    if (!categoryName.trim()) {
+      setCategoryError("Category name is required");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setCategoryError("");
+
+    try {
+      const url = editingCategory 
+        ? `/api/admin/categories/${editingCategory.id}` 
+        : '/api/admin/categories';
+      
+      const method = editingCategory ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: categoryName.trim(),
+          description: categoryDescription.trim() || null,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to save category');
+      }
+
+      // Refresh categories
+      const categoriesRes = await fetch('/api/admin/categories');
+      if (!categoriesRes.ok) throw new Error('Failed to fetch categories');
+      const categoriesData = await categoriesRes.json();
+      
+      setCategories(categoriesData);
+      resetCategoryForm();
+    } catch (error) {
+      console.error('Error saving category:', error);
+      setCategoryError(error instanceof Error ? error.message : 'An error occurred while saving the category');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <MainLayout>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
@@ -148,6 +266,136 @@ export default function AdminOpportunitiesPage() {
               <Plus className="h-4 w-4 mr-2" />
               Add New Opportunity
             </Link>
+            
+            <Dialog>
+              <DialogTrigger asChild>
+                <button className="btn btn-outline">
+                  <Tag className="h-4 w-4 mr-2" />
+                  Manage Categories
+                </button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Manage Categories</DialogTitle>
+                </DialogHeader>
+                
+                <div className="py-4">
+                  {/* Category Form */}
+                  {(isAddingCategory || editingCategory) ? (
+                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                      <h3 className="text-lg font-medium mb-4">
+                        {editingCategory ? 'Edit Category' : 'Add New Category'}
+                      </h3>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <label htmlFor="categoryName" className="block text-sm font-medium text-gray-700 mb-1">
+                            Category Name *
+                          </label>
+                          <input
+                            type="text"
+                            id="categoryName"
+                            value={categoryName}
+                            onChange={(e) => setCategoryName(e.target.value)}
+                            className="input w-full"
+                            placeholder="Enter category name"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="categoryDescription" className="block text-sm font-medium text-gray-700 mb-1">
+                            Description (Optional)
+                          </label>
+                          <textarea
+                            id="categoryDescription"
+                            value={categoryDescription}
+                            onChange={(e) => setCategoryDescription(e.target.value)}
+                            className="input w-full h-24"
+                            placeholder="Enter category description"
+                          />
+                        </div>
+                        
+                        {categoryError && (
+                          <div className="text-red-500 text-sm">{categoryError}</div>
+                        )}
+                        
+                        <div className="flex justify-end space-x-2">
+                          <button 
+                            type="button" 
+                            onClick={resetCategoryForm}
+                            className="btn btn-outline"
+                          >
+                            Cancel
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={handleSubmitCategory}
+                            className="btn btn-primary"
+                            disabled={isSubmitting}
+                          >
+                            {isSubmitting ? 'Saving...' : 'Save Category'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-medium">Categories</h3>
+                      </div>
+                      
+                      {categories.length === 0 ? (
+                        <p className="text-gray-500 text-center py-4">No categories found. Add your first category.</p>
+                      ) : (
+                        <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                          {categories.map((category) => (
+                            <div 
+                              key={category.id} 
+                              className="flex justify-between items-center p-3 border border-gray-200 rounded-md hover:bg-gray-50"
+                            >
+                              <div>
+                                <h4 className="font-medium">{category.name}</h4>
+                                {category.description && (
+                                  <p className="text-sm text-gray-500">{category.description}</p>
+                                )}
+                              </div>
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => handleEditCategory(category)}
+                                  className="text-blue-600 hover:text-blue-800"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteCategory(category.id)}
+                                  className="text-red-600 hover:text-red-800"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                
+                <DialogFooter>
+                  {!isAddingCategory && !editingCategory && (
+                    <button 
+                      type="button" 
+                      onClick={handleAddCategory}
+                      className="btn btn-primary"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add New Category
+                    </button>
+                  )}
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            
             <Link href="/admin/opportunities/export" className="btn btn-outline">
               <Download className="h-4 w-4 mr-2" />
               Export

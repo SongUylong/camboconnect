@@ -79,14 +79,15 @@ export function OpportunityCard({ opportunity }: OpportunityCardProps) {
     // Toggle bookmark state optimistically
     setIsBookmarked(!isBookmarked);
 
-    // API call to update bookmark status would go here
+    // API call to update bookmark status
     try {
-      // await fetch(`/api/opportunities/${opportunity.id}/bookmark`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ bookmarked: !isBookmarked }),
-      // });
-      // Actual implementation would handle API errors and revert state if needed
+      await fetch(`/api/opportunities/${opportunity.id}/bookmark`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookmarked: !isBookmarked }),
+      });
+      // Refresh the page to update UI
+      router.refresh();
     } catch (error) {
       // Revert on error
       setIsBookmarked(isBookmarked);

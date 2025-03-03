@@ -38,18 +38,6 @@ export default async function AdminDashboardPage() {
     }),
   ]);
 
-  // Recent opportunities
-  const recentOpportunities = await db.opportunity.findMany({
-    take: 5,
-    orderBy: {
-      createdAt: "desc",
-    },
-    include: {
-      organization: true,
-      category: true,
-    },
-  });
-
   return (
     <MainLayout>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
@@ -135,52 +123,6 @@ export default async function AdminDashboardPage() {
                 <h3 className="text-sm font-medium text-gray-500">Applications</h3>
                 <p className="text-2xl font-semibold text-gray-900">{counts[3]}</p>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Recent Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Recent Opportunities */}
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-medium text-gray-900">Recent Opportunities</h2>
-              <Link href="/admin/opportunities" className="text-sm text-blue-600 hover:text-blue-800">
-                View all
-              </Link>
-            </div>
-            
-            <div className="divide-y divide-gray-200">
-              {recentOpportunities.map((opportunity) => (
-                <div key={opportunity.id} className="py-3">
-                  <Link 
-                    href={`/admin/opportunities/${opportunity.id}`}
-                    className="block hover:bg-gray-50 -mx-3 px-3 py-2 rounded-md transition-colors"
-                  >
-                    <h3 className="text-sm font-medium text-gray-900">{opportunity.title}</h3>
-                    <div className="mt-1 flex items-center text-xs text-gray-500">
-                      <span>{opportunity.organization.name}</span>
-                      <span className="mx-2">•</span>
-                      <span>{opportunity.category.name}</span>
-                      <span className="mx-2">•</span>
-                      <span>Added {format(new Date(opportunity.createdAt), 'MMM d, yyyy')}</span>
-                    </div>
-                    <div className="mt-1">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        opportunity.status === 'ACTIVE' 
-                          ? 'bg-green-100 text-green-800' 
-                          : opportunity.status === 'CLOSING_SOON'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : opportunity.status === 'OPENING_SOON'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {opportunity.status.replace('_', ' ')}
-                      </span>
-                    </div>
-                  </Link>
-                </div>
-              ))}
             </div>
           </div>
         </div>
