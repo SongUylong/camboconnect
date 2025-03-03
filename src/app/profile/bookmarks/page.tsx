@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { Search, Bookmark, Building2, MapPin, Calendar, ExternalLink } from "lucide-react";
+import { Search, Bookmark, Building2, MapPin, Calendar, ExternalLink, Trash2, AlertCircle } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -38,6 +38,11 @@ export default function BookmarksPage() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [removingBookmarkId, setRemovingBookmarkId] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | null;
+  }>({ message: "", type: null });
 
   useEffect(() => {
     // Redirect if not logged in
@@ -68,6 +73,16 @@ export default function BookmarksPage() {
     }
   }, [session, router]);
 
+  // Clear notification after 3 seconds
+  useEffect(() => {
+    if (notification.type) {
+      const timer = setTimeout(() => {
+        setNotification({ message: "", type: null });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
   const filteredBookmarks = bookmarks.filter((bookmark) => {
     const matchesSearch = bookmark.title
       .toLowerCase()
@@ -79,10 +94,12 @@ export default function BookmarksPage() {
     return matchesSearch && matchesFilter;
   });
 
-  const handleRemoveBookmark = async (bookmarkId: string) => {
+  const handleRemoveBookmark = async (bookmarkId: string, opportunityId: string) => {
     try {
+      setRemovingBookmarkId(bookmarkId);
+      
       // API call to remove bookmark
-      const response = await fetch(`/api/opportunities/${bookmarkId}/bookmark`, {
+      const response = await fetch(`/api/opportunities/${opportunityId}/bookmark`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bookmarked: false }),
@@ -94,8 +111,28 @@ export default function BookmarksPage() {
       
       // Remove from local state
       setBookmarks((prev) => prev.filter((b) => b.bookmarkId !== bookmarkId));
+      
+      // Show success notification
+      setNotification({
+        message: "Bookmark removed successfully",
+        type: "success"
+      });
+      
+      // Force revalidation of the opportunities page
+      await fetch('/api/revalidate?path=/opportunities', { method: 'POST' });
+      
+      // Optionally navigate to opportunities page
+      // router.push('/opportunities');
     } catch (error) {
       console.error("Failed to remove bookmark:", error);
+      
+      // Show error notification
+      setNotification({
+        message: "Failed to remove bookmark. Please try again.",
+        type: "error"
+      });
+    } finally {
+      setRemovingBookmarkId(null);
     }
   };
 
@@ -132,6 +169,26 @@ export default function BookmarksPage() {
             </Select>
           </div>
         </div>
+
+        {/* Notification */}
+        {notification.type && (
+          <div 
+            className={`mb-4 p-3 rounded-md ${
+              notification.type === "success" 
+                ? "bg-green-50 text-green-700 border border-green-200" 
+                : "bg-red-50 text-red-700 border border-red-200"
+            }`}
+          >
+            <div className="flex items-center">
+              {notification.type === "success" ? (
+                <Bookmark className="h-5 w-5 mr-2" />
+              ) : (
+                <AlertCircle className="h-5 w-5 mr-2" />
+              )}
+              {notification.message}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-4">
           {isLoading ? (
@@ -202,20 +259,31 @@ export default function BookmarksPage() {
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRemoveBookmark(bookmark.bookmarkId)}
-                      title="Remove bookmark"
-                    >
-                      <Bookmark className="w-4 h-4 fill-current" />
-                    </Button>
                     <p className="text-sm text-muted-foreground">
                       Saved {format(new Date(bookmark.bookmarkedAt), 'PP')}
                     </p>
                   </div>
                 </div>
-                <div className="flex justify-end mt-4">
+                <div className="flex justify-between items-center mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                    onClick={() => handleRemoveBookmark(bookmark.bookmarkId, bookmark.id)}
+                    disabled={removingBookmarkId === bookmark.bookmarkId}
+                  >
+                    {removingBookmarkId === bookmark.bookmarkId ? (
+                      <>
+                        <div className="animate-spin h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full mr-2"></div>
+                        Removing...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Remove Bookmark
+                      </>
+                    )}
+                  </Button>
                   <Link href={`/opportunities/${bookmark.id}`}>
                     <Button variant="outline" size="sm" className="flex items-center">
                       View Details

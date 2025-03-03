@@ -86,7 +86,11 @@ export function OpportunityCard({ opportunity }: OpportunityCardProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bookmarked: !isBookmarked }),
       });
-      // Refresh the page to update UI
+      
+      // Revalidate the opportunities page
+      await fetch('/api/revalidate?path=/opportunities', { method: 'POST' });
+      
+      // Force a refresh of the current page
       router.refresh();
     } catch (error) {
       // Revert on error
@@ -115,7 +119,7 @@ export function OpportunityCard({ opportunity }: OpportunityCardProps) {
           </div>
           <button
             onClick={handleBookmarkClick}
-            className="text-gray-400 hover:text-blue-600 focus:outline-none"
+            className={`text-gray-400 hover:text-blue-600 focus:outline-none ${isBookmarked ? 'text-blue-600' : ''}`}
             aria-label={isBookmarked ? "Remove bookmark" : "Add bookmark"}
           >
             <Bookmark

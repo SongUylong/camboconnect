@@ -19,7 +19,6 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const baseNavigation: NavigationItem[] = [
-    { name: "Home", href: "/" },
     { name: "Opportunities", href: "/opportunities" },
     { name: "Community", href: "/community" },
   ];

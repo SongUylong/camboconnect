@@ -51,7 +51,11 @@ export function BookmarkButton({ opportunityId }: BookmarkButtonProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bookmarked: !isBookmarked }),
       });
-      // Refresh the page to update UI
+      
+      // Revalidate the opportunities page
+      await fetch('/api/revalidate?path=/opportunities', { method: 'POST' });
+      
+      // Navigate to the current page to force a refresh
       router.refresh();
     } catch (error) {
       // Revert on error
