@@ -11,6 +11,15 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { BackButton } from "@/components/ui/back-button";
 import { ViewCounter } from "@/components/opportunities/view-counter";
+import { Opportunity, Organization, Category, Participation, User, PrivacyLevel } from "@prisma/client";
+
+type ExtendedOpportunity = Opportunity & {
+  organization: Pick<Organization, "id" | "name" | "website">;
+  category: Pick<Category, "id" | "name">;
+  participations: Array<Participation & {
+    user: Pick<User, "id" | "firstName" | "lastName" | "profileImage" | "privacyLevel">;
+  }>;
+};
 
 export default async function OpportunityDetailPage({
   params,
@@ -29,9 +38,24 @@ export default async function OpportunityDetailPage({
   const opportunity = await db.opportunity.findUnique({
     where: { id: params.id },
     include: {
-      organization: true,
-      category: true,
+      organization: {
+        select: {
+          id: true,
+          name: true,
+          website: true,
+        },
+      },
+      category: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
       participations: {
+        where: {
+          privacyLevel: PrivacyLevel.PUBLIC,
+        },
+        take: 10,
         include: {
           user: {
             select: {
@@ -43,13 +67,9 @@ export default async function OpportunityDetailPage({
             },
           },
         },
-        where: {
-          isPublic: true,
-        },
-        take: 10,
       },
     },
-  });
+  }) as ExtendedOpportunity | null;
 
   if (!opportunity) {
     notFound();
@@ -165,7 +185,7 @@ export default async function OpportunityDetailPage({
 
               {/* Previous Participants */}
               <section className="mt-8">
-                <h2 className="text-xl font-semibold text-gray-900">Previous Participants</h2>
+                <h2 className="text-xl font-semibold text-gray-900">Participants</h2>
                 <div className="mt-4">
                   <PreviousParticipants participations={opportunity.participations} />
                 </div>

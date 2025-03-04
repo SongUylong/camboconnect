@@ -21,7 +21,7 @@ export function ViewCounter({ opportunityId }: ViewCounterProps) {
   }, []);
 
   useEffect(() => {
-    if (timeSpent >= 60 && !incremented) { // 120 seconds = 2 minutes
+    if (timeSpent >= 30 && !incremented) { // 120 seconds = 2 minutes
       // Send request to increment view count
       const incrementViewCount = async () => {
         if (session?.user?.id) {

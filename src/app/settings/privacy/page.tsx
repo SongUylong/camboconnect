@@ -1,228 +1,231 @@
 "use client";
 
-import { MainLayout } from "@/components/layout/main-layout";
 import { useState, useEffect } from "react";
-import { Shield, ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { MainLayout } from "@/components/layout/main-layout";
 import { toast } from "sonner";
+import { Lock, Eye, EyeOff, Users } from "lucide-react";
+
+type PrivacyLevel = "PUBLIC" | "FRIENDS_ONLY" | "ONLY_ME";
+
+interface PrivacySettings {
+  educationPrivacy: PrivacyLevel;
+  experiencePrivacy: PrivacyLevel;
+  skillsPrivacy: PrivacyLevel;
+  contactUrlPrivacy: PrivacyLevel;
+}
 
 export default function PrivacySettingsPage() {
-  const [user, setUser] = useState<{
-    id: string;
-    privacyLevel: string;
-    twoFactorEnabled: boolean;
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: session } = useSession();
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+  const [settings, setSettings] = useState<PrivacySettings>({
+    educationPrivacy: "ONLY_ME",
+    experiencePrivacy: "ONLY_ME",
+    skillsPrivacy: "ONLY_ME",
+    contactUrlPrivacy: "ONLY_ME",
+  });
 
-  // Fetch user data
   useEffect(() => {
-    async function fetchUserData() {
+    if (!session) {
+      router.push("/login");
+      return;
+    }
+
+    const fetchSettings = async () => {
       try {
-        const response = await fetch("/api/user/profile");
-        if (!response.ok) {
-          if (response.status === 401) {
-            router.push("/login");
-            return;
-          }
-          throw new Error("Failed to fetch user data");
-        }
+        const response = await fetch("/api/profile/privacy");
+        if (!response.ok) throw new Error("Failed to fetch privacy settings");
         
         const data = await response.json();
-        setUser(data.user);
+        setSettings(data);
       } catch (error) {
-        console.error("Error fetching user data:", error);
+        console.error("Error fetching privacy settings:", error);
+        toast.error("Failed to load privacy settings");
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
-    }
-    
-    fetchUserData();
-  }, [router]);
+    };
 
-  // Handle privacy level update
-  const updatePrivacyLevel = async (privacyLevel: string) => {
+    fetchSettings();
+  }, [session, router]);
+
+  const handlePrivacyChange = async (field: keyof PrivacySettings, value: PrivacyLevel) => {
     try {
-      const response = await fetch("/api/user/update-privacy", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ privacyLevel }),
+      const response = await fetch("/api/profile/privacy", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: value }),
       });
-      
-      if (!response.ok) {
-        throw new Error("Failed to update privacy settings");
-      }
-      
-      // Update local state
-      setUser(prev => prev ? { ...prev, privacyLevel } : null);
-      toast.success("Privacy settings updated successfully");
+
+      if (!response.ok) throw new Error("Failed to update privacy settings");
+
+      setSettings(prev => ({ ...prev, [field]: value }));
+      toast.success("Privacy settings updated");
     } catch (error) {
       console.error("Error updating privacy settings:", error);
-      toast.error("Failed to update privacy settings. Please try again.");
+      toast.error("Failed to update privacy settings");
     }
   };
 
-  // Handle 2FA toggle
-  const toggle2FA = async (enable: boolean) => {
-    try {
-      const endpoint = enable ? "/api/user/enable-2fa" : "/api/user/disable-2fa";
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to ${enable ? "enable" : "disable"} 2FA`);
-      }
-      
-      // Update local state
-      setUser(prev => prev ? { ...prev, twoFactorEnabled: enable } : null);
-      toast.success(`Two-factor authentication ${enable ? "enabled" : "disabled"} successfully`);
-    } catch (error) {
-      console.error(`Error ${enable ? "enabling" : "disabling"} 2FA:`, error);
-      toast.error(`Failed to ${enable ? "enable" : "disable"} 2FA. Please try again.`);
+  const getPrivacyIcon = (level: PrivacyLevel) => {
+    switch (level) {
+      case "PUBLIC":
+        return <Eye className="h-5 w-5" />;
+      case "FRIENDS_ONLY":
+        return <Users className="h-5 w-5" />;
+      case "ONLY_ME":
+        return <EyeOff className="h-5 w-5" />;
     }
   };
 
-  if (loading) {
+  const getPrivacyLabel = (level: PrivacyLevel) => {
+    switch (level) {
+      case "PUBLIC":
+        return "Public";
+      case "FRIENDS_ONLY":
+        return "Friends Only";
+      case "ONLY_ME":
+        return "Only Me";
+    }
+  };
+
+  if (isLoading) {
     return (
       <MainLayout>
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <p>Loading...</p>
+        <div className="container mx-auto py-8">
+          <div className="animate-pulse">
+            <div className="h-8 w-48 bg-gray-200 rounded mb-4"></div>
+            <div className="space-y-4">
+              <div className="h-24 bg-gray-200 rounded"></div>
+              <div className="h-24 bg-gray-200 rounded"></div>
+              <div className="h-24 bg-gray-200 rounded"></div>
+              <div className="h-24 bg-gray-200 rounded"></div>
+            </div>
           </div>
         </div>
       </MainLayout>
     );
   }
 
-  if (!user) {
-    router.push("/login");
-    return null;
-  }
-
   return (
     <MainLayout>
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <Link href="/profile" className="flex items-center text-blue-600 hover:text-blue-800">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Profile
-          </Link>
-        </div>
-        
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center">
-              <Shield className="h-6 w-6 text-blue-600 mr-2" />
-              <h1 className="text-2xl font-bold text-gray-900">Privacy Settings</h1>
-            </div>
-            <p className="mt-2 text-gray-600">
-              Manage your privacy preferences and security settings.
-            </p>
+      <div className="container mx-auto py-8">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-center mb-6">
+            <Lock className="h-6 w-6 text-gray-600 mr-2" />
+            <h1 className="text-2xl font-bold text-gray-900">Privacy Settings</h1>
           </div>
-          
-          <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Profile Visibility</h2>
-            
-            <div className="space-y-4">
-              <div className="flex items-start">
-                <div className="flex items-center h-5">
-                  <input
-                    id="public"
-                    name="privacyLevel"
-                    type="radio"
-                    value="PUBLIC"
-                    checked={user.privacyLevel === "PUBLIC"}
-                    onChange={() => updatePrivacyLevel("PUBLIC")}
-                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
+
+          <div className="bg-white rounded-lg shadow">
+            <div className="p-6">
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Profile Information Privacy</h2>
+              
+              <div className="space-y-6">
+                {/* Education Privacy */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Education Information
+                  </label>
+                  <div className="flex items-center space-x-4">
+                    {["PUBLIC", "FRIENDS_ONLY", "ONLY_ME"].map((level) => (
+                      <button
+                        key={level}
+                        onClick={() => handlePrivacyChange("educationPrivacy", level as PrivacyLevel)}
+                        className={`flex items-center px-4 py-2 rounded-md ${
+                          settings.educationPrivacy === level
+                            ? "bg-blue-100 text-blue-700 border border-blue-300"
+                            : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                        }`}
+                      >
+                        {getPrivacyIcon(level as PrivacyLevel)}
+                        <span className="ml-2">{getPrivacyLabel(level as PrivacyLevel)}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="ml-3 text-sm">
-                  <label htmlFor="public" className="font-medium text-gray-700">Public Profile</label>
-                  <p className="text-gray-500">Anyone can see your profile and participation history.</p>
+
+                {/* Experience Privacy */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Experience Information
+                  </label>
+                  <div className="flex items-center space-x-4">
+                    {["PUBLIC", "FRIENDS_ONLY", "ONLY_ME"].map((level) => (
+                      <button
+                        key={level}
+                        onClick={() => handlePrivacyChange("experiencePrivacy", level as PrivacyLevel)}
+                        className={`flex items-center px-4 py-2 rounded-md ${
+                          settings.experiencePrivacy === level
+                            ? "bg-blue-100 text-blue-700 border border-blue-300"
+                            : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                        }`}
+                      >
+                        {getPrivacyIcon(level as PrivacyLevel)}
+                        <span className="ml-2">{getPrivacyLabel(level as PrivacyLevel)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Skills Privacy */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Skills Information
+                  </label>
+                  <div className="flex items-center space-x-4">
+                    {["PUBLIC", "FRIENDS_ONLY", "ONLY_ME"].map((level) => (
+                      <button
+                        key={level}
+                        onClick={() => handlePrivacyChange("skillsPrivacy", level as PrivacyLevel)}
+                        className={`flex items-center px-4 py-2 rounded-md ${
+                          settings.skillsPrivacy === level
+                            ? "bg-blue-100 text-blue-700 border border-blue-300"
+                            : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                        }`}
+                      >
+                        {getPrivacyIcon(level as PrivacyLevel)}
+                        <span className="ml-2">{getPrivacyLabel(level as PrivacyLevel)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Contact URLs Privacy */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Contact URLs
+                  </label>
+                  <div className="flex items-center space-x-4">
+                    {["PUBLIC", "FRIENDS_ONLY", "ONLY_ME"].map((level) => (
+                      <button
+                        key={level}
+                        onClick={() => handlePrivacyChange("contactUrlPrivacy", level as PrivacyLevel)}
+                        className={`flex items-center px-4 py-2 rounded-md ${
+                          settings.contactUrlPrivacy === level
+                            ? "bg-blue-100 text-blue-700 border border-blue-300"
+                            : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                        }`}
+                      >
+                        {getPrivacyIcon(level as PrivacyLevel)}
+                        <span className="ml-2">{getPrivacyLabel(level as PrivacyLevel)}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-              
-              <div className="flex items-start">
-                <div className="flex items-center h-5">
-                  <input
-                    id="friends-only"
-                    name="privacyLevel"
-                    type="radio"
-                    value="FRIENDS_ONLY"
-                    checked={user.privacyLevel === "FRIENDS_ONLY"}
-                    onChange={() => updatePrivacyLevel("FRIENDS_ONLY")}
-                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                </div>
-                <div className="ml-3 text-sm">
-                  <label htmlFor="friends-only" className="font-medium text-gray-700">Friends Only</label>
-                  <p className="text-gray-500">Only friends can see your detailed profile and participation history.</p>
-                </div>
+
+              <div className="mt-8 pt-6 border-t border-gray-200">
+                <h3 className="text-sm font-medium text-gray-700 mb-4">Always Public Information</h3>
+                <ul className="text-sm text-gray-600 space-y-2">
+                  <li>• Username</li>
+                  <li>• Email</li>
+                  <li>• Number of Participations</li>
+                  <li>• Number of Applications</li>
+                  <li>• Friends Count</li>
+                </ul>
               </div>
-              
-              <div className="flex items-start">
-                <div className="flex items-center h-5">
-                  <input
-                    id="private"
-                    name="privacyLevel"
-                    type="radio"
-                    value="ONLY_ME"
-                    checked={user.privacyLevel === "ONLY_ME"}
-                    onChange={() => updatePrivacyLevel("ONLY_ME")}
-                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                </div>
-                <div className="ml-3 text-sm">
-                  <label htmlFor="private" className="font-medium text-gray-700">Private Profile</label>
-                  <p className="text-gray-500">Only you can see your detailed profile and participation history.</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Two-Factor Authentication</h2>
-              
-              <div className="flex items-center">
-                <div className={`h-3 w-3 rounded-full ${user.twoFactorEnabled ? "bg-green-500" : "bg-gray-300"} mr-2`}></div>
-                <span className="text-gray-600">
-                  {user.twoFactorEnabled ? "Enabled" : "Disabled"}
-                </span>
-              </div>
-              
-              <p className="mt-2 text-sm text-gray-500">
-                {user.twoFactorEnabled 
-                  ? "Two-factor authentication is enabled. You will receive a verification code via email when signing in."
-                  : "Enable two-factor authentication to add an extra layer of security to your account."}
-              </p>
-              
-              {!user.twoFactorEnabled && (
-                <div className="mt-4">
-                  <button
-                    onClick={() => toggle2FA(true)}
-                    className="btn btn-outline btn-sm"
-                  >
-                    Enable 2FA
-                  </button>
-                </div>
-              )}
-              
-              {user.twoFactorEnabled && (
-                <div className="mt-4">
-                  <button
-                    onClick={() => toggle2FA(false)}
-                    className="btn btn-outline btn-sm text-red-600 border-red-600 hover:bg-red-50"
-                  >
-                    Disable 2FA
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>

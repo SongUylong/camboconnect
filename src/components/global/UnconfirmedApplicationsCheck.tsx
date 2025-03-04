@@ -7,6 +7,7 @@ import { useApplication } from "@/contexts/application-context";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useApplicationStore } from "@/store/applicationStore";
 
 export function UnconfirmedApplicationsCheck() {
   const { data: session } = useSession();
@@ -17,6 +18,7 @@ export function UnconfirmedApplicationsCheck() {
     currentOpportunity, 
     setCurrentOpportunity 
   } = useApplication();
+  const { setApplied } = useApplicationStore();
 
   useEffect(() => {
     const checkUnconfirmedApplications = async () => {
@@ -71,7 +73,7 @@ export function UnconfirmedApplicationsCheck() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             year: new Date().getFullYear(),
-            isPublic: true
+            privacyLevel: "PUBLIC"
           }),
         });
 
@@ -79,6 +81,8 @@ export function UnconfirmedApplicationsCheck() {
           throw new Error('Failed to create participation record');
         }
 
+        // Update the application store
+        setApplied(currentOpportunity.id);
         toast.success('Application completed successfully!');
       } else {
         toast.info('Application status updated');

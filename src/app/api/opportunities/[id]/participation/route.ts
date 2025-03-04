@@ -12,7 +12,7 @@ type ParamsType = {
 
 const participationSchema = z.object({
   year: z.number().int().min(2000).max(2100),
-  isPublic: z.boolean().default(true),
+  privacyLevel: z.enum(["PUBLIC", "ONLY_ME"]).default("ONLY_ME"),
   feedback: z.string().optional()
 });
 
@@ -64,10 +64,10 @@ export async function POST(request: Request, { params }: ParamsType) {
     // Create participation record
     const participation = await db.participation.create({
       data: {
-        userId,
-        opportunityId,
         year: validatedData.year,
-        isPublic: validatedData.isPublic,
+        privacyLevel: validatedData.privacyLevel,
+        userId: session.user.id,
+        opportunityId: opportunityId,
         feedback: validatedData.feedback
       }
     });

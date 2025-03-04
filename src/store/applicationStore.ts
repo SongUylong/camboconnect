@@ -12,12 +12,14 @@ interface ApplicationState {
   currentOpportunityId: string | null;
   currentTitle: string | null;
   setApplied: (opportunityId: string) => void;
+  isApplied: (opportunityId: string) => boolean;
   addUnconfirmedApplication: (opportunityId: string, title: string) => void;
   removeUnconfirmedApplication: (opportunityId: string) => void;
   setShowConfirmationModal: (show: boolean, opportunityId?: string, title?: string) => void;
+  resetState: () => void;
 }
 
-export const useApplicationStore = create<ApplicationState>((set) => ({
+export const useApplicationStore = create<ApplicationState>((set, get) => ({
   appliedOpportunities: [],
   unconfirmedApplications: [],
   showConfirmationModal: false,
@@ -26,8 +28,12 @@ export const useApplicationStore = create<ApplicationState>((set) => ({
 
   setApplied: (opportunityId: string) => {
     set((state) => ({
-      appliedOpportunities: [...state.appliedOpportunities, opportunityId]
+      appliedOpportunities: [...new Set([...state.appliedOpportunities, opportunityId])]
     }));
+  },
+
+  isApplied: (opportunityId: string) => {
+    return get().appliedOpportunities.includes(opportunityId);
   },
 
   addUnconfirmedApplication: (opportunityId: string, title: string) => {
@@ -47,6 +53,16 @@ export const useApplicationStore = create<ApplicationState>((set) => ({
       showConfirmationModal: show,
       currentOpportunityId: opportunityId || null,
       currentTitle: title || null
+    }));
+  },
+
+  resetState: () => {
+    set(() => ({
+      appliedOpportunities: [],
+      unconfirmedApplications: [],
+      showConfirmationModal: false,
+      currentOpportunityId: null,
+      currentTitle: null
     }));
   }
 })); 

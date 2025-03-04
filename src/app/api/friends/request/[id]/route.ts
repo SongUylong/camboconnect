@@ -3,40 +3,39 @@ import { db } from '@/lib/prisma';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 
-interface ParamsType {
+type ParamsType = {
   params: {
     id: string;
   };
-}
+};
 
 export async function PUT(req: Request, { params }: ParamsType) {
   try {
-    const { id } = params;
     const session = await getServerSession(authOptions);
     
-    // Check authentication
-    if (!session || !session.user.id) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
-    
-    const userId = session.user.id;
+
+    const { id } = params;
     const body = await req.json();
     const { status } = body;
-    
-    // Validate status
-    if (!status || !['ACCEPTED', 'DECLINED'].includes(status)) {
+
+    if (!['ACCEPTED', 'DECLINED'].includes(status)) {
       return NextResponse.json(
-        { error: 'Invalid status. Must be ACCEPTED or DECLINED' },
+        { error: 'Invalid status' },
         { status: 400 }
       );
     }
-    
-    // Find the friend request
+
+    // Check if friend request exists and user is the receiver
     const friendRequest = await db.friendRequest.findUnique({
-      where: { id },
+      where: {
+        id,
+      },
       include: {
         sender: {
           select: {
@@ -45,87 +44,109 @@ export async function PUT(req: Request, { params }: ParamsType) {
             lastName: true,
           },
         },
-        receiver: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
       },
     });
-    
+
     if (!friendRequest) {
       return NextResponse.json(
         { error: 'Friend request not found' },
         { status: 404 }
       );
     }
-    
-    // Verify that the current user is the receiver of the request
-    if (friendRequest.receiverId !== userId) {
+
+    if (friendRequest.receiverId !== session.user.id) {
       return NextResponse.json(
-        { error: 'Unauthorized to respond to this friend request' },
+        { error: 'Unauthorized' },
         { status: 403 }
       );
     }
-    
-    // Update the friend request status
-    await db.friendRequest.update({
-      where: { id },
-      data: { status },
+
+    // Update friend request status
+    const updatedRequest = await db.friendRequest.update({
+      where: {
+        id,
+      },
+      data: {
+        status,
+      },
     });
-    
+
+    // If accepted, create friendship
     if (status === 'ACCEPTED') {
-      // Create friendship entries (bidirectional)
-      await db.friendship.createMany({
-        data: [
-          { userId: friendRequest.senderId, friendId: friendRequest.receiverId },
-          { userId: friendRequest.receiverId, friendId: friendRequest.senderId },
-        ],
+      await db.friendship.create({
+        data: {
+          userId: friendRequest.senderId,
+          friendId: friendRequest.receiverId,
+        },
       });
-      
-      // Create notifications for both users
-      await db.notification.createMany({
-        data: [
-          {
-            userId: friendRequest.senderId,
-            type: 'FRIEND_REQUEST',
-            message: `${friendRequest.receiver.firstName} ${friendRequest.receiver.lastName} accepted your friend request`,
-            relatedEntityId: friendRequest.receiverId,
-          },
-          {
-            userId: friendRequest.receiverId,
-            type: 'FRIEND_REQUEST',
-            message: `You and ${friendRequest.sender.firstName} ${friendRequest.sender.lastName} are now friends`,
-            relatedEntityId: friendRequest.senderId,
-          },
-        ],
-      });
-      
-      return NextResponse.json({
-        message: 'Friend request accepted',
-        friendship: true,
-      });
-    } else {
-      // Create notification only for sender
+
+      // Create notification for sender
       await db.notification.create({
         data: {
           userId: friendRequest.senderId,
           type: 'FRIEND_REQUEST',
-          message: `${friendRequest.receiver.firstName} ${friendRequest.receiver.lastName} declined your friend request`,
-          relatedEntityId: friendRequest.receiverId,
+          message: `${session.user.firstName} ${session.user.lastName} accepted your friend request`,
+          relatedEntityId: friendRequest.id,
         },
       });
-      
-      return NextResponse.json({
-        message: 'Friend request declined',
-      });
     }
+
+    return NextResponse.json(updatedRequest);
   } catch (error) {
-    console.error('Error responding to friend request:', error);
+    console.error('Error updating friend request:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to update friend request' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: Request, { params }: ParamsType) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const { id } = params;
+
+    // Check if friend request exists and user is involved
+    const friendRequest = await db.friendRequest.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!friendRequest) {
+      return NextResponse.json(
+        { error: 'Friend request not found' },
+        { status: 404 }
+      );
+    }
+
+    if (friendRequest.senderId !== session.user.id && friendRequest.receiverId !== session.user.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 403 }
+      );
+    }
+
+    // Delete friend request
+    await db.friendRequest.delete({
+      where: {
+        id,
+      },
+    });
+
+    return NextResponse.json({ message: 'Friend request deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting friend request:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete friend request' },
       { status: 500 }
     );
   }

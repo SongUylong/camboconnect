@@ -61,6 +61,10 @@ model User {
   twoFactorEnabled  Boolean             @default(false)
   twoFactorMethod   TwoFactorMethod?
   privacyLevel      PrivacyLevel        @default(ONLY_ME)
+  educationPrivacy  PrivacyLevel        @default(ONLY_ME)
+  experiencePrivacy PrivacyLevel        @default(ONLY_ME)
+  skillsPrivacy     PrivacyLevel        @default(ONLY_ME)
+  contactUrlPrivacy PrivacyLevel        @default(ONLY_ME)
   bookmarks         Bookmark[]
   applications      Application[]
   notifications     Notification[]
@@ -271,7 +275,7 @@ model Participation {
   id                String              @id @default(uuid())
   year              Int
   feedback          String?
-  isPublic          Boolean             @default(false)
+  privacyLevel      PrivacyLevel        @default(ONLY_ME)
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   userId            String

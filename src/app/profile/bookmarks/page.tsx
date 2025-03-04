@@ -1,34 +1,36 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { Search, Bookmark, Building2, MapPin, Calendar, ExternalLink, Trash2, AlertCircle } from "lucide-react";
+import { Search, Bookmark, AlertCircle } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { format } from "date-fns";
 import { MainLayout } from "@/components/layout/main-layout";
 import { useBookmarkStore } from "@/store/bookmarkStore";
+import { OpportunityCard } from "@/components/opportunities/opportunity-card";
 
 interface BookmarkedOpportunity {
   id: string;
   bookmarkId: string;
   title: string;
+  shortDescription: string;
+  deadline: Date;
+  status: "OPENING_SOON" | "ACTIVE" | "CLOSING_SOON" | "CLOSED";
+  visitCount: number;
+  isPopular: boolean;
+  isNew: boolean;
   organization: {
     id: string;
     name: string;
-    logo?: string;
+    logo?: string | null;
   };
   category: {
     id: string;
     name: string;
   };
-  status: string;
-  deadline: Date;
+  isBookmarked: boolean;
   bookmarkedAt: Date;
 }
 
@@ -39,7 +41,6 @@ export default function BookmarksPage() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [removingBookmarkId, setRemovingBookmarkId] = useState<string | null>(null);
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error" | null;
@@ -62,10 +63,18 @@ export default function BookmarksPage() {
           throw new Error("Failed to fetch bookmarks");
         }
         const data = await response.json();
-        setBookmarks(data);
+        
+        // Transform dates to Date objects
+        const transformedData = data.map((bookmark: BookmarkedOpportunity) => ({
+          ...bookmark,
+          deadline: new Date(bookmark.deadline),
+          bookmarkedAt: new Date(bookmark.bookmarkedAt)
+        }));
+        
+        setBookmarks(transformedData);
         
         // Initialize the global bookmark store with current bookmarks
-        setInitialBookmarks(data.map((bookmark: BookmarkedOpportunity) => bookmark.id));
+        setInitialBookmarks(transformedData.map((bookmark: BookmarkedOpportunity) => bookmark.id));
         
         setIsLoading(false);
       } catch (error) {
@@ -99,48 +108,6 @@ export default function BookmarksPage() {
     const matchesFilter = filter === "all" || bookmark.category.name.toLowerCase() === filter.toLowerCase();
     return matchesSearch && matchesFilter;
   });
-
-  const handleRemoveBookmark = async (bookmarkId: string, opportunityId: string) => {
-    try {
-      setRemovingBookmarkId(bookmarkId);
-      
-      // API call to remove bookmark
-      const response = await fetch(`/api/opportunities/${opportunityId}/bookmark`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookmarked: false }),
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to remove bookmark");
-      }
-      
-      // Remove from local state
-      setBookmarks((prev) => prev.filter((b) => b.bookmarkId !== bookmarkId));
-      
-      // Remove from global state
-      removeBookmark(opportunityId);
-      
-      // Show success notification
-      setNotification({
-        message: "Bookmark removed successfully",
-        type: "success"
-      });
-      
-      // Force router refresh
-      router.refresh();
-    } catch (error) {
-      console.error("Failed to remove bookmark:", error);
-      
-      // Show error notification
-      setNotification({
-        message: "Failed to remove bookmark. Please try again.",
-        type: "error"
-      });
-    } finally {
-      setRemovingBookmarkId(null);
-    }
-  };
 
   // Get unique categories for filter
   const uniqueCategories = Array.from(new Set(bookmarks.map(b => b.category.name)));
@@ -196,14 +163,14 @@ export default function BookmarksPage() {
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {isLoading ? (
-            <div className="text-center py-8">
+            <div className="col-span-full text-center py-8">
               <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
               <p className="mt-2 text-gray-500">Loading bookmarks...</p>
             </div>
           ) : filteredBookmarks.length === 0 ? (
-            <div className="text-center py-8 bg-white rounded-lg border border-gray-200 p-6">
+            <div className="col-span-full text-center py-8 bg-white rounded-lg border border-gray-200 p-6">
               <Bookmark className="h-12 w-12 text-gray-300 mx-auto" />
               <h3 className="mt-2 text-lg font-medium text-gray-900">No bookmarks found</h3>
               <p className="mt-1 text-gray-500">
@@ -221,83 +188,7 @@ export default function BookmarksPage() {
             </div>
           ) : (
             filteredBookmarks.map((bookmark) => (
-              <Card key={bookmark.id} className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-medium text-lg">
-                      <Link 
-                        href={`/opportunities/${bookmark.id}`}
-                        className="hover:text-blue-600"
-                      >
-                        {bookmark.title}
-                      </Link>
-                    </h3>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                      <Building2 className="w-4 h-4" />
-                      <Link 
-                        href={`/community/${bookmark.organization.id}`}
-                        className="hover:text-blue-600"
-                      >
-                        {bookmark.organization.name}
-                      </Link>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="w-4 h-4" />
-                      <span>
-                        Deadline: {format(new Date(bookmark.deadline), 'PP')}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <Badge variant="outline">{bookmark.category.name}</Badge>
-                      <Badge 
-                        variant={
-                          bookmark.status === "ACTIVE" 
-                            ? "success" 
-                            : bookmark.status === "CLOSING_SOON"
-                            ? "warning"
-                            : bookmark.status === "OPENING_SOON"
-                            ? "secondary"
-                            : "destructive"
-                        }
-                      >
-                        {bookmark.status.replace('_', ' ')}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <p className="text-sm text-muted-foreground">
-                      Saved {format(new Date(bookmark.bookmarkedAt), 'PP')}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center mt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                    onClick={() => handleRemoveBookmark(bookmark.bookmarkId, bookmark.id)}
-                    disabled={removingBookmarkId === bookmark.bookmarkId}
-                  >
-                    {removingBookmarkId === bookmark.bookmarkId ? (
-                      <>
-                        <div className="animate-spin h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full mr-2"></div>
-                        Removing...
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Remove Bookmark
-                      </>
-                    )}
-                  </Button>
-                  <Link href={`/opportunities/${bookmark.id}`}>
-                    <Button variant="outline" size="sm" className="flex items-center">
-                      View Details
-                      <ExternalLink className="ml-1 h-3 w-3" />
-                    </Button>
-                  </Link>
-                </div>
-              </Card>
+              <OpportunityCard key={bookmark.id} opportunity={bookmark} />
             ))
           )}
         </div>

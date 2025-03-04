@@ -1,20 +1,21 @@
 import { MainLayout } from "@/components/layout/main-layout";
-import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/prisma";
+import { db } from "@/lib/db";
 import { Award, Bookmark, Briefcase, Calendar, Edit, Eye, GraduationCap, Link as LinkIcon, Settings, User, Users, Building } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import dynamic from "next/dynamic";
 import { Organization, Follow, Education, Experience, Skill, SocialLink, Application, Participation, Bookmark as BookmarkType, Opportunity } from "@prisma/client";
 import { FollowingOrgCard } from "@/components/profile/following-org-card";
-
-// Import the SettingsPopover component with dynamic import to avoid SSR issues
-const SettingsPopover = dynamic(() => import("./settings-popover"), { ssr: false });
+import { ParticipationPrivacyToggle } from "@/components/profile/participation-privacy-toggle";
 
 // Import the WelcomeModal component with dynamic import
 const ProfileClientWrapper = dynamic(() => import("@/components/profile/profile-client-wrapper"), { ssr: false });
+
+// Import the SettingsPopover component with dynamic import to avoid SSR issues
+const SettingsPopover = dynamic(() => import("./settings-popover"), { ssr: false });
 
 type ExtendedOrganization = Organization & {
   _count: {
@@ -435,12 +436,11 @@ export default async function ProfilePage() {
                               <span>{participation.year}</span>
                             </div>
                           </div>
-                          <div className="flex items-center">
-                            <div className={`badge ${
-                              participation.isPublic ? "badge-success" : "badge-secondary"
-                            }`}>
-                              {participation.isPublic ? "Public" : "Private"}
-                            </div>
+                          <div className="flex items-center space-x-4">
+                            <ParticipationPrivacyToggle
+                              participationId={participation.id}
+                              initialPrivacyLevel={participation.privacyLevel}
+                            />
                           </div>
                         </div>
                         

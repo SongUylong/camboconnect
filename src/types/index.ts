@@ -121,17 +121,13 @@ export type User = {
     id: string;
     year: number;
     feedback?: string | null;
-    isPublic: boolean;
+    privacyLevel: PrivacyLevel;
+    createdAt: Date;
+    updatedAt: Date;
     userId: string;
     opportunityId: string;
-    opportunity: Opportunity;
-    user: {
-      id: string;
-      firstName: string;
-      lastName: string;
-      profileImage?: string | null;
-      privacyLevel: PrivacyLevel;
-    };
+    user?: User;
+    opportunity?: Opportunity;
   };
   
   // Messaging related types

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { OrganizationCard } from "@/components/community/organization-card";
 import { FollowButton } from "@/components/community/follow-button";
 import { CommunitySearch } from "@/components/community/community-search";
+import { OpportunityCard } from "@/components/opportunities/opportunity-card";
 
 // Define the organization type
 type Organization = {
@@ -21,17 +22,26 @@ type Organization = {
   termsOfService?: string | null;
 };
 
-// Define the opportunity type
+// Define the opportunity type to match OpportunityCard props
 type Opportunity = {
   id: string;
   title: string;
   shortDescription: string;
-  deadline: string;
-  status: string;
+  deadline: Date;
+  status: "OPENING_SOON" | "ACTIVE" | "CLOSING_SOON" | "CLOSED";
+  visitCount: number;
+  isPopular: boolean;
+  isNew: boolean;
+  organization: {
+    id: string;
+    name: string;
+    logo?: string | null;
+  };
   category: {
     id: string;
     name: string;
   };
+  isBookmarked?: boolean;
 };
 
 // Define the category type
@@ -530,34 +540,16 @@ export function CommunityClient({
                     <p className="text-gray-500">No opportunities available</p>
                   </div>
                 ) : (
-                  <div className="mt-4 space-y-4">
+                  <div className="space-y-4">
                     {filteredOpportunities.map((opportunity) => (
-                      <Link 
+                      <OpportunityCard
                         key={opportunity.id}
-                        href={`/opportunities/${opportunity.id}`}
-                        className="block bg-white border border-gray-200 rounded-md p-4 hover:shadow-md transition-shadow"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="text-md font-medium text-gray-900">{opportunity.title}</h3>
-                            <div className="mt-1 flex items-center">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(opportunity.status)}`}>
-                                {getStatusText(opportunity.status)}
-                              </span>
-                              <span className="ml-2 text-xs text-gray-500">
-                                {opportunity.category.name}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="text-xs text-gray-500 flex items-center">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            <span>Deadline: {formatDate(opportunity.deadline)}</span>
-                          </div>
-                        </div>
-                        <p className="mt-2 text-sm text-gray-600 line-clamp-2">
-                          {opportunity.shortDescription}
-                        </p>
-                      </Link>
+                        opportunity={{
+                          ...opportunity,
+                          deadline: new Date(opportunity.deadline),
+                        }}
+                        variant="compact"
+                      />
                     ))}
                     
                     {selectedOrganization.opportunityCount > opportunities.length && (

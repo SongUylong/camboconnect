@@ -1,5 +1,7 @@
 import { db } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 
 export async function GET(
   request: NextRequest,
@@ -7,6 +9,7 @@ export async function GET(
 ) {
   try {
     const organizationId = params.id;
+    const session = await getServerSession(authOptions);
     
     if (!organizationId) {
       return NextResponse.json(
@@ -52,18 +55,61 @@ export async function GET(
       whereClause.status = status;
     }
 
-    // Fetch opportunities
+    // Fetch opportunities with all necessary fields
     const opportunities = await db.opportunity.findMany({
       where: whereClause,
       orderBy: {
         deadline: "asc",
       },
-      include: {
-        category: true,
+      select: {
+        id: true,
+        title: true,
+        shortDescription: true,
+        deadline: true,
+        status: true,
+        visitCount: true,
+        isPopular: true,
+        isNew: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            logo: true,
+          },
+        },
+        bookmarks: session?.user?.id ? {
+          where: {
+            userId: session.user.id,
+          },
+          select: {
+            id: true,
+          },
+        } : undefined,
       },
     });
 
-    return NextResponse.json(opportunities);
+    // Transform the data to match OpportunityCard props
+    const transformedOpportunities = opportunities.map(opp => ({
+      id: opp.id,
+      title: opp.title,
+      shortDescription: opp.shortDescription,
+      deadline: opp.deadline,
+      status: opp.status,
+      visitCount: opp.visitCount,
+      isPopular: opp.isPopular,
+      isNew: opp.isNew,
+      organization: opp.organization,
+      category: opp.category,
+      isBookmarked: opp.bookmarks && opp.bookmarks.length > 0,
+    }));
+
+    return NextResponse.json(transformedOpportunities);
   } catch (error) {
     console.error("Error fetching opportunities:", error);
     return NextResponse.json(

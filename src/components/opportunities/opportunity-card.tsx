@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useBookmarkStore } from "@/store/bookmarkStore";
+import { useApplicationStore } from "@/store/applicationStore";
 
 type OpportunityCardProps = {
   opportunity: {
@@ -29,12 +30,21 @@ type OpportunityCardProps = {
     };
     isBookmarked?: boolean;
   };
+  variant?: "default" | "compact";
 };
 
-export function OpportunityCard({ opportunity }: OpportunityCardProps) {
+export function OpportunityCard({ opportunity, variant = "default" }: OpportunityCardProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const { isBookmarked, addBookmark, removeBookmark } = useBookmarkStore();
+  const { isApplied, appliedOpportunities } = useApplicationStore();
+
+  // Debug log when component mounts or updates
+  useEffect(() => {
+    console.log('OpportunityCard rendered for:', opportunity.id);
+    console.log('Current applied opportunities:', appliedOpportunities);
+    console.log('Is this opportunity applied?', isApplied(opportunity.id));
+  }, [opportunity.id, appliedOpportunities, isApplied]);
 
   const revalidatePaths = async () => {
     try {
@@ -130,6 +140,70 @@ export function OpportunityCard({ opportunity }: OpportunityCardProps) {
     }
   };
 
+  const hasApplied = isApplied(opportunity.id);
+  console.log(`Opportunity ${opportunity.id} applied status:`, hasApplied);
+
+  if (variant === "compact") {
+    return (
+      <Link
+        href={`/opportunities/${opportunity.id}`}
+        className="block bg-white hover:bg-gray-50 transition-colors duration-200 border-b border-gray-200 last:border-b-0"
+      >
+        <div className="p-4">
+          <div className="flex justify-between items-start">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`badge ${getStatusBadgeClass(opportunity.status)}`}>
+                  {getStatusText(opportunity.status)}
+                </span>
+                {opportunity.isNew && (
+                  <span className="badge badge-primary">New</span>
+                )}
+                {opportunity.isPopular && (
+                  <span className="badge badge-secondary">Popular</span>
+                )}
+                {hasApplied && (
+                  <span className="badge badge-warning">Applied</span>
+                )}
+              </div>
+              <h3 className="text-base font-medium text-gray-900 truncate">{opportunity.title}</h3>
+              <div className="mt-1 flex items-center text-sm text-gray-500 gap-2">
+                <span>{opportunity.organization.name}</span>
+                <span>•</span>
+                <span>{opportunity.category.name}</span>
+                <span>•</span>
+                <span>Deadline: {format(new Date(opportunity.deadline), "PPP")}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 ml-4">
+              <div className="flex items-center text-sm text-gray-500">
+                <Eye className="h-4 w-4 mr-1" />
+                <span>{opportunity.visitCount}</span>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleBookmarkClick(e);
+                }}
+                className={`text-gray-400 hover:text-blue-600 focus:outline-none ${
+                  isBookmarked(opportunity.id) ? 'text-blue-600' : ''
+                }`}
+                aria-label={isBookmarked(opportunity.id) ? "Remove bookmark" : "Add bookmark"}
+              >
+                <Bookmark
+                  className={`h-5 w-5 ${
+                    isBookmarked(opportunity.id) ? "fill-blue-600 text-blue-600" : ""
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+      </Link>
+    );
+  }
+
   return (
     <Link
       href={`/opportunities/${opportunity.id}`}
@@ -146,6 +220,9 @@ export function OpportunityCard({ opportunity }: OpportunityCardProps) {
             )}
             {opportunity.isPopular && (
               <span className="badge badge-secondary ml-2">Popular</span>
+            )}
+            {hasApplied && (
+              <span className="badge badge-warning ml-2">Applied</span>
             )}
           </div>
           <button

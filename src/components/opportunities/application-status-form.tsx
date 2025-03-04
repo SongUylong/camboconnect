@@ -22,7 +22,7 @@ export default function ApplicationStatusForm({
   const { data: session } = useSession();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const { appliedOpportunities, setApplied } = useApplicationStore();
+  const { appliedOpportunities, setApplied, addUnconfirmedApplication } = useApplicationStore();
   const { setShowConfirmationModal, setCurrentOpportunity } = useApplication();
 
   // Check initial application status
@@ -74,13 +74,16 @@ export default function ApplicationStatusForm({
         body: JSON.stringify({
           statusId: "pending_confirmation",
           isApplied: false,
-          isConfirm: false // Explicitly set to false when opening external link
+          isConfirm: false
         }),
       });
       
       if (!response.ok) {
         throw new Error('Failed to update application status');
       }
+      
+      // Add to unconfirmed applications in store
+      addUnconfirmedApplication(opportunityId, title);
       
       // Open external link
       window.open(externalLink, '_blank');

@@ -5,6 +5,7 @@ import { AuthProvider } from "@/components/auth/auth-provider";
 import { ApplicationProvider } from "@/contexts/application-context";
 import { Toaster } from "sonner";
 import { UnconfirmedApplicationsCheck } from "@/components/global/UnconfirmedApplicationsCheck";
+import { ApplicationStateInitializer } from "@/components/global/ApplicationStateInitializer";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -22,6 +23,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <ApplicationProvider>
+            <ApplicationStateInitializer />
             {children}
             <UnconfirmedApplicationsCheck />  
           </ApplicationProvider>

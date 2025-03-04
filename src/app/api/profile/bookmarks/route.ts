@@ -40,6 +40,12 @@ export async function GET(req: Request) {
       id: bookmark.opportunity.id,
       bookmarkId: bookmark.id,
       title: bookmark.opportunity.title,
+      shortDescription: bookmark.opportunity.shortDescription,
+      deadline: bookmark.opportunity.deadline,
+      status: bookmark.opportunity.status,
+      visitCount: bookmark.opportunity.visitCount,
+      isPopular: bookmark.opportunity.isPopular,
+      isNew: bookmark.opportunity.isNew,
       organization: {
         id: bookmark.opportunity.organization.id,
         name: bookmark.opportunity.organization.name,
@@ -49,8 +55,7 @@ export async function GET(req: Request) {
         id: bookmark.opportunity.category.id,
         name: bookmark.opportunity.category.name,
       },
-      status: bookmark.opportunity.status,
-      deadline: bookmark.opportunity.deadline,
+      isBookmarked: true, // Since this is from bookmarks, it's always true
       bookmarkedAt: bookmark.createdAt,
     }));
     

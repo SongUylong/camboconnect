@@ -6,6 +6,14 @@ import { db } from "@/lib/prisma";
 // Define the valid privacy levels based on the Prisma schema
 type PrivacyLevel = "PUBLIC" | "FRIENDS_ONLY" | "ONLY_ME";
 
+interface PrivacySettings {
+  privacyLevel?: PrivacyLevel;
+  educationPrivacy?: PrivacyLevel;
+  experiencePrivacy?: PrivacyLevel;
+  skillsPrivacy?: PrivacyLevel;
+  contactUrlPrivacy?: PrivacyLevel;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -19,27 +27,43 @@ export async function POST(request: NextRequest) {
 
     // Parse JSON data
     const data = await request.json();
-    const privacyLevelRaw = data.privacyLevel as string;
+    
+    // Validate privacy settings
+    const validPrivacyLevels = ["PUBLIC", "FRIENDS_ONLY", "ONLY_ME"];
+    const privacySettings: PrivacySettings = {};
+    
+    // Validate each privacy setting
+    const fieldsToCheck = [
+      'privacyLevel',
+      'educationPrivacy',
+      'experiencePrivacy',
+      'skillsPrivacy',
+      'contactUrlPrivacy'
+    ];
 
-    // Validate privacy level
-    if (!["PUBLIC", "FRIENDS_ONLY", "ONLY_ME"].includes(privacyLevelRaw)) {
-      return NextResponse.json(
-        { success: false, message: "Invalid privacy level" },
-        { status: 400 }
-      );
+    for (const field of fieldsToCheck) {
+      if (data[field] && !validPrivacyLevels.includes(data[field])) {
+        return NextResponse.json(
+          { success: false, message: `Invalid privacy level for ${field}` },
+          { status: 400 }
+        );
+      }
+      if (data[field]) {
+        privacySettings[field as keyof PrivacySettings] = data[field] as PrivacyLevel;
+      }
     }
-
-    const privacyLevel = privacyLevelRaw as PrivacyLevel;
 
     // Update user privacy settings
     await db.user.update({
       where: { id: session.user.id },
-      data: { 
-        privacyLevel: privacyLevel as any // Use type assertion to bypass type checking
-      },
+      data: privacySettings,
     });
 
-    return NextResponse.json({ success: true, message: "Privacy settings updated successfully" });
+    return NextResponse.json({ 
+      success: true, 
+      message: "Privacy settings updated successfully",
+      settings: privacySettings
+    });
   } catch (error) {
     console.error("Error updating privacy settings:", error);
     return NextResponse.json(
