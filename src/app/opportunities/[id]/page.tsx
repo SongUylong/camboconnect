@@ -184,6 +184,7 @@ export default async function OpportunityDetailPage({
                 ) : (
                   <div className="mt-4">
                     <ApplicationStatusForm 
+                      title="Apply for this Opportunity"
                       opportunityId={opportunity.id} 
                       externalLink={opportunity.externalLink}
                     />
