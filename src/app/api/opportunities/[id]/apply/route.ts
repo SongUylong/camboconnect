@@ -38,44 +38,53 @@ export async function POST(req: Request, { params }: ParamsType) {
       );
     }
     
-    // Create or update application status
-    const statusType = await db.applicationStatusType.create({
-      data: {
-        isApplied,
-        isConfirm,
-      },
-    });
-    
     // Check if application already exists
     const existingApplication = await db.application.findFirst({
       where: {
         userId,
         opportunityId: id,
       },
+      include: {
+        status: true
+      }
     });
     
     let application;
     
     if (existingApplication) {
-      // Update existing application
-      application = await db.application.update({
+      // Update existing application status
+      const updatedStatus = await db.applicationStatusType.update({
         where: {
-          id: existingApplication.id,
+          id: existingApplication.status.id
         },
         data: {
-          statusId: statusType.id,
+          isApplied,
+          isConfirm,
+        },
+      });
+
+      application = await db.application.findUnique({
+        where: {
+          id: existingApplication.id,
         },
         include: {
           status: true,
         },
       });
     } else {
-      // Create new application
+      // Create new application with new status
+      const newStatus = await db.applicationStatusType.create({
+        data: {
+          isApplied,
+          isConfirm,
+        },
+      });
+
       application = await db.application.create({
         data: {
           userId,
           opportunityId: id,
-          statusId: statusType.id,
+          statusId: newStatus.id,
         },
         include: {
           status: true,

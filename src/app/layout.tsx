@@ -4,7 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/components/auth/auth-provider";
 import { ApplicationProvider } from "@/contexts/application-context";
 import { Toaster } from "sonner";
-
+import { UnconfirmedApplicationsCheck } from "@/components/global/UnconfirmedApplicationsCheck";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -23,6 +23,7 @@ export default function RootLayout({
         <AuthProvider>
           <ApplicationProvider>
             {children}
+            <UnconfirmedApplicationsCheck />  
           </ApplicationProvider>
         </AuthProvider>
         <Toaster position="top-right" richColors />

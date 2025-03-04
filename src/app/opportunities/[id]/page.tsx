@@ -7,7 +7,6 @@ import { Bookmark, Calendar, ExternalLink, Globe, Info, Mail, Users, ArrowLeft }
 import { BookmarkButton } from "@/components/opportunities/bookmark-button";
 import { PreviousParticipants } from "@/components/opportunities/previous-participants";
 import ApplicationStatusForm from "@/components/opportunities/application-status-form";
-import { ApplicationCheckModal } from "@/components/opportunities/application-check-modal";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { BackButton } from "@/components/ui/back-button";
@@ -187,11 +186,6 @@ export default async function OpportunityDetailPage({
                       title="Apply for this Opportunity"
                       opportunityId={opportunity.id} 
                       externalLink={opportunity.externalLink}
-                    />
-                    <ApplicationCheckModal 
-                      opportunityId={opportunity.id}
-                      opportunityTitle={opportunity.title}
-                      organizationName={opportunity.organization.name}
                     />
                   </div>
                 )}

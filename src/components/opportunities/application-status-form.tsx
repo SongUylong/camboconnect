@@ -4,8 +4,9 @@ import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ApplicationCheckModal } from "@/components/opportunities/application-check-modal";
 import { useApplicationStore } from "@/store/applicationStore";
+import { toast } from "sonner";
+import { useApplication } from "@/contexts/application-context";
 
 interface ApplicationStatusFormProps {
   opportunityId: string;
@@ -21,7 +22,8 @@ export default function ApplicationStatusForm({
   const { data: session } = useSession();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const { appliedOpportunities, setShowConfirmationModal, setApplied } = useApplicationStore();
+  const { appliedOpportunities, setApplied } = useApplicationStore();
+  const { setShowConfirmationModal, setCurrentOpportunity } = useApplication();
 
   // Check initial application status
   useEffect(() => {
@@ -33,8 +35,16 @@ export default function ApplicationStatusForm({
         if (!response.ok) throw new Error('Failed to fetch application status');
         
         const data = await response.json();
-        if (data.status?.isApplied) {
+        
+        // If application exists and is confirmed as applied, update store
+        if (data.status?.isApplied && data.status?.isConfirm) {
           setApplied(opportunityId);
+        }
+        
+        // Show confirmation modal if application exists but is not confirmed
+        if (data.status && data.status.isConfirm === false) {
+          setCurrentOpportunity({ id: opportunityId, title });
+          setShowConfirmationModal(true);
         }
       } catch (error) {
         console.error('Error checking application status:', error);
@@ -42,7 +52,7 @@ export default function ApplicationStatusForm({
     };
 
     checkApplicationStatus();
-  }, [opportunityId, session?.user?.id, setApplied]);
+  }, [opportunityId, session?.user?.id, setApplied, setShowConfirmationModal, setCurrentOpportunity, title]);
 
   const handleExternalApplication = async () => {
     if (!session) {
@@ -57,13 +67,14 @@ export default function ApplicationStatusForm({
     setIsLoading(true);
     
     try {
-      // Create application with initial state
+      // Create application with initial state - explicitly set isConfirm to false
       const response = await fetch(`/api/opportunities/${opportunityId}/apply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           statusId: "pending_confirmation",
-          isApplied: false
+          isApplied: false,
+          isConfirm: false // Explicitly set to false when opening external link
         }),
       });
       
@@ -74,11 +85,16 @@ export default function ApplicationStatusForm({
       // Open external link
       window.open(externalLink, '_blank');
       
-      // Show confirmation modal
-      setShowConfirmationModal(true, opportunityId);
+      // Show confirmation modal using the site-wide context
+      setCurrentOpportunity({ id: opportunityId, title });
+      setShowConfirmationModal(true);
+      
+      // Show info message to user
+      toast.info('Please confirm your application status after completing the external application.');
       
     } catch (error) {
       console.error("Failed to submit application status:", error);
+      toast.error("Failed to start application process. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -115,7 +131,6 @@ export default function ApplicationStatusForm({
       >
         {isLoading ? "Redirecting..." : hasApplied ? "Applied" : "Apply on External Site"}
       </button>
-      <ApplicationCheckModal opportunityId={opportunityId} title={title} />
     </div>
   );
 }

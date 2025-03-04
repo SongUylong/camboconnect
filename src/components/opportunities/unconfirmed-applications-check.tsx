@@ -45,14 +45,36 @@ export function UnconfirmedApplicationsCheck() {
     if (!currentOpportunity) return;
     
     try {
-      await fetch(`/api/opportunities/${currentOpportunity.id}/apply`, {
+      // Update application status
+      const response = await fetch(`/api/opportunities/${currentOpportunity.id}/apply`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          statusId: hasCompleted ? "applied" : "not_applied",
           isApplied: hasCompleted,
           isConfirm: true,
         }),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to update application status');
+      }
+
+      if (hasCompleted) {
+        // Create participation record
+        const participationResponse = await fetch(`/api/opportunities/${currentOpportunity.id}/participation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            year: new Date().getFullYear(),
+            isPublic: true
+          }),
+        });
+
+        if (!participationResponse.ok) {
+          throw new Error('Failed to create participation record');
+        }
+      }
 
       // Move to next application or close modal if done
       if (currentApplicationIndex < unconfirmedApplications.length - 1) {
