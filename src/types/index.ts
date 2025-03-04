@@ -112,8 +112,9 @@ export type User = {
   
   export type ApplicationStatusType = {
     id: string;
-    name: string;
-    description?: string | null;
+    isApplied: boolean;
+    createdAt: Date;
+    updatedAt: Date;
   };
   
   export type Participation = {

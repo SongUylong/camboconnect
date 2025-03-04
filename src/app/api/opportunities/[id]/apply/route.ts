@@ -24,7 +24,7 @@ export async function POST(req: Request, { params }: ParamsType) {
     
     const userId = session.user.id;
     const body = await req.json();
-    const { statusId } = body;
+    const { isApplied, isConfirm } = body;
     
     // Check if opportunity exists
     const opportunity = await db.opportunity.findUnique({
@@ -38,28 +38,13 @@ export async function POST(req: Request, { params }: ParamsType) {
       );
     }
     
-    // Get the appropriate application status type
-    let statusType;
-    if (statusId === "pending") {
-      statusType = await db.applicationStatusType.findFirst({
-        where: { name: "Pending Confirmation" },
-      });
-    } else if (statusId === "applied") {
-      statusType = await db.applicationStatusType.findFirst({
-        where: { name: "Applied" },
-      });
-    } else if (statusId === "not_applied") {
-      statusType = await db.applicationStatusType.findFirst({
-        where: { name: "Not Applied" },
-      });
-    }
-    
-    if (!statusType) {
-      return NextResponse.json(
-        { error: 'Invalid application status' },
-        { status: 400 }
-      );
-    }
+    // Create or update application status
+    const statusType = await db.applicationStatusType.create({
+      data: {
+        isApplied,
+        isConfirm,
+      },
+    });
     
     // Check if application already exists
     const existingApplication = await db.application.findFirst({
@@ -103,7 +88,9 @@ export async function POST(req: Request, { params }: ParamsType) {
       data: {
         userId,
         type: 'APPLICATION_UPDATE',
-        message: `Your application status for ${opportunity.title} has been updated to ${application.status.name}`,
+        message: isConfirm 
+          ? `Your application for ${opportunity.title} has been ${isApplied ? 'completed' : 'started'}`
+          : `Please confirm your application status for ${opportunity.title}`,
         relatedEntityId: id,
       },
     });

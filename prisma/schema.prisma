@@ -221,8 +221,8 @@ model Application {
 // Application Status Type model for dynamic application statuses
 model ApplicationStatusType {
   id                String              @id @default(uuid())
-  name              String              @unique
-  description       String?
+  isApplied         Boolean             @default(false)
+  isConfirm         Boolean             @default(true)
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   applications      Application[]

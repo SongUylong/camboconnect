@@ -4,21 +4,24 @@ import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useApplication } from "@/contexts/application-context";
 
 interface ApplicationStatusFormProps {
   opportunityId: string;
   externalLink?: string | null;
+  title: string;
 }
 
 export default function ApplicationStatusForm({ 
   opportunityId, 
-  externalLink 
+  externalLink,
+  title
 }: ApplicationStatusFormProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const { setShowConfirmationModal, setCurrentOpportunity } = useApplication();
 
   const handleExternalApplication = async () => {
     if (!session) {
@@ -33,12 +36,13 @@ export default function ApplicationStatusForm({
     setIsLoading(true);
     
     try {
-      // Create application with "Pending" status
+      // Create application with initial state
       const response = await fetch(`/api/opportunities/${opportunityId}/apply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          statusId: "pending", // This will be handled by the API to get the correct status ID
+          isApplied: false,
+          isConfirm: false,
         }),
       });
       
@@ -46,16 +50,12 @@ export default function ApplicationStatusForm({
         throw new Error('Failed to update application status');
       }
       
-      // Redirect to external link
+      // Set current opportunity and show modal
+      setCurrentOpportunity({ id: opportunityId, title });
+      setShowConfirmationModal(true);
+      
+      // Open external link
       window.open(externalLink, '_blank');
-      
-      // Show the modal immediately after redirecting
-      setShowModal(true);
-      
-      // Store in localStorage that we've started an application that needs confirmation
-      localStorage.setItem(`application-started-${opportunityId}`, 'true');
-      
-      setSubmitSuccess(true);
       
     } catch (error) {
       console.error("Failed to submit application status:", error);
@@ -80,9 +80,9 @@ export default function ApplicationStatusForm({
   if (submitSuccess) {
     return (
       <div className="bg-green-50 p-4 rounded-md">
-        <h3 className="text-green-800 font-medium">Application Started</h3>
+        <h3 className="text-green-800 font-medium">Application Status Updated</h3>
         <p className="text-green-700 mt-1">
-          You have been redirected to complete your application. Please confirm your application status when prompted.
+          Your application status has been successfully updated.
         </p>
       </div>
     );
@@ -102,14 +102,6 @@ export default function ApplicationStatusForm({
       >
         {isLoading ? "Redirecting..." : "Apply on External Site"}
       </button>
-      
-      {/* Pass the showModal state to the parent component */}
-      <input 
-        type="hidden" 
-        id="trigger-application-modal" 
-        value={showModal ? "true" : "false"} 
-        onChange={() => {}} // React requires an onChange handler for controlled inputs
-      />
     </div>
   );
 }

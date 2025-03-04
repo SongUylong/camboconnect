@@ -55,7 +55,12 @@ type ExtendedUser = {
   })[];
   applications: (Application & {
     opportunity: ExtendedOpportunity;
-    status: { id: string; name: string };
+    status: { 
+      id: string; 
+      isApplied: boolean;
+      createdAt: Date;
+      updatedAt: Date;
+    };
   })[];
   participations: (Participation & {
     opportunity: ExtendedOpportunity;
@@ -80,7 +85,7 @@ export default async function ProfilePage() {
   }
 
   // Fetch the user's full profile
-  const user = (await db.user.findUnique({
+  const user = await db.user.findUnique({
     where: { id: session.user.id },
     include: {
       followedOrgs: {
@@ -163,7 +168,7 @@ export default async function ProfilePage() {
         },
       },
     },
-  })) as ExtendedUser;
+  }) as unknown as ExtendedUser;
 
   if (!user) {
     redirect("/login");
@@ -508,15 +513,11 @@ export default async function ProfilePage() {
                           </div>
                           <div className="flex items-center">
                             <div className={`badge ${
-                              application.status.name === "Applied" 
-                                ? "badge-primary" 
-                                : application.status.name === "Not Applied"
-                                ? "badge-danger"
-                                : application.status.name === "Pending Confirmation"
-                                ? "badge-warning"
-                                : "badge-secondary"
-                             }`}>
-                               {application.status.name}
+                              application.status.isApplied 
+                                ? "badge-success" 
+                                : "badge-warning"
+                            }`}>
+                              {application.status.isApplied ? "Applied" : "Not Applied"}
                             </div>
                           </div>
                         </div>
