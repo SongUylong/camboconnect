@@ -3,10 +3,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
-// GET /api/friends - Get all friends/connections
+// GET /api/friends - Get all friends
 export async function GET(req: NextRequest) {
   try {
-    // Get the authenticated user
     const session = await getServerSession(authOptions);
     
     if (!session?.user) {
@@ -18,91 +17,55 @@ export async function GET(req: NextRequest) {
     
     const userId = session.user.id;
     
-    // Get query parameters
-    const url = new URL(req.url);
-    const status = url.searchParams.get("status") || "accepted"; // pending, accepted, all
-    
-    // Build the query based on status
-    let query = {};
-    
-    if (status === "pending") {
-      // Get pending friend requests (received)
-      query = {
-        receiverId: userId,
-        status: "PENDING",
-      };
-    } else if (status === "sent") {
-      // Get sent friend requests
-      query = {
-        senderId: userId,
-        status: "PENDING",
-      };
-    } else if (status === "accepted") {
-      // Get accepted connections (friends)
-      query = {
+    // Fetch all friendships where the user is either the user or the friend
+    const friendships = await db.friendship.findMany({
+      where: {
         OR: [
-          { senderId: userId, status: "ACCEPTED" },
-          { receiverId: userId, status: "ACCEPTED" },
-        ],
-      };
-    } else if (status === "all") {
-      // Get all connections regardless of status
-      query = {
-        OR: [
-          { senderId: userId },
-          { receiverId: userId },
-        ],
-      };
-    }
-    
-    // Fetch connections with user details
-    const connections = await db.connection.findMany({
-      where: query,
+          { userId: userId },
+          { friendId: userId }
+        ]
+      },
       include: {
-        sender: {
+        user: {
           select: {
             id: true,
-            name: true,
+            firstName: true,
+            lastName: true,
             email: true,
-            image: true,
-            role: true,
-            location: true,
-            company: true,
-          },
+            profileImage: true,
+            bio: true,
+          }
         },
-        receiver: {
+        friend: {
           select: {
             id: true,
-            name: true,
+            firstName: true,
+            lastName: true,
             email: true,
-            image: true,
-            role: true,
-            location: true,
-            company: true,
-          },
-        },
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
+            profileImage: true,
+            bio: true,
+          }
+        }
+      }
     });
     
-    // Transform the data to return the other user in each connection
-    const friends = connections.map((connection) => {
-      const isSender = connection.senderId === userId;
-      const otherUser = isSender ? connection.receiver : connection.sender;
+    // Transform the data to return the friend's information
+    const friends = friendships.map((friendship) => {
+      // If the user is the 'user' in the friendship, return the 'friend' data
+      // If the user is the 'friend' in the friendship, return the 'user' data
+      const friendData = friendship.userId === userId ? friendship.friend : friendship.user;
       
       return {
-        connectionId: connection.id,
-        status: connection.status,
-        createdAt: connection.createdAt,
-        updatedAt: connection.updatedAt,
-        user: otherUser,
-        isSender,
+        id: friendData.id,
+        firstName: friendData.firstName,
+        lastName: friendData.lastName,
+        email: friendData.email,
+        profileImage: friendData.profileImage,
+        bio: friendData.bio,
       };
     });
     
-    return NextResponse.json(friends);
+    return NextResponse.json({ friends });
   } catch (error) {
     console.error("Error fetching friends:", error);
     return NextResponse.json(
@@ -125,45 +88,45 @@ export async function POST(req: NextRequest) {
     }
     
     const userId = session.user.id;
-    const { receiverId } = await req.json();
+    const { friendId } = await req.json();
     
-    if (!receiverId) {
+    if (!friendId) {
       return NextResponse.json(
-        { error: "Receiver ID is required" },
+        { error: "Friend ID is required" },
         { status: 400 }
       );
     }
     
     // Check if user is trying to add themselves
-    if (userId === receiverId) {
+    if (userId === friendId) {
       return NextResponse.json(
         { error: "You cannot add yourself as a friend" },
         { status: 400 }
       );
     }
     
-    // Check if connection already exists
-    const existingConnection = await db.connection.findFirst({
+    // Check if friendship already exists
+    const existingFriendship = await db.friendship.findFirst({
       where: {
         OR: [
-          { senderId: userId, receiverId },
-          { senderId: receiverId, receiverId: userId },
+          { userId: userId, friendId: friendId },
+          { userId: friendId, friendId: userId },
         ],
       },
     });
     
-    if (existingConnection) {
+    if (existingFriendship) {
       return NextResponse.json(
-        { error: "Connection already exists", status: existingConnection.status },
+        { error: "Friendship already exists" },
         { status: 400 }
       );
     }
     
-    // Create new connection (friend request)
-    const newConnection = await db.connection.create({
+    // Create friend request
+    const friendRequest = await db.friendRequest.create({
       data: {
         senderId: userId,
-        receiverId,
+        receiverId: friendId,
         status: "PENDING",
       },
     });
@@ -171,15 +134,14 @@ export async function POST(req: NextRequest) {
     // Create notification for the receiver
     await db.notification.create({
       data: {
-        userId: receiverId,
+        userId: friendId,
         type: "FRIEND_REQUEST",
-        message: `You have a new connection request`,
-        actorId: userId,
-        read: false,
+        message: `You have a new friend request`,
+        isRead: false
       },
     });
     
-    return NextResponse.json(newConnection);
+    return NextResponse.json(friendRequest);
   } catch (error) {
     console.error("Error sending friend request:", error);
     return NextResponse.json(
@@ -189,100 +151,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PATCH /api/friends - Accept or reject a friend request
-export async function PATCH(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-    
-    const userId = session.user.id;
-    const { connectionId, action } = await req.json();
-    
-    if (!connectionId || !action) {
-      return NextResponse.json(
-        { error: "Connection ID and action are required" },
-        { status: 400 }
-      );
-    }
-    
-    // Verify the connection exists and user is the receiver
-    const connection = await db.connection.findUnique({
-      where: { id: connectionId },
-      include: { sender: { select: { id: true, name: true } } },
-    });
-    
-    if (!connection) {
-      return NextResponse.json(
-        { error: "Connection not found" },
-        { status: 404 }
-      );
-    }
-    
-    // Check if user is the receiver of the request
-    if (connection.receiverId !== userId) {
-      return NextResponse.json(
-        { error: "You are not authorized to perform this action" },
-        { status: 403 }
-      );
-    }
-    
-    // Check if the connection is already accepted or rejected
-    if (connection.status !== "PENDING") {
-      return NextResponse.json(
-        { error: `Connection is already ${connection.status.toLowerCase()}` },
-        { status: 400 }
-      );
-    }
-    
-    // Update connection status based on action
-    let status;
-    if (action === "accept") {
-      status = "ACCEPTED";
-    } else if (action === "reject") {
-      status = "REJECTED";
-    } else {
-      return NextResponse.json(
-        { error: "Invalid action. Must be 'accept' or 'reject'" },
-        { status: 400 }
-      );
-    }
-    
-    // Update the connection
-    const updatedConnection = await db.connection.update({
-      where: { id: connectionId },
-      data: { status },
-    });
-    
-    // Create notification for the sender
-    if (status === "ACCEPTED") {
-      await db.notification.create({
-        data: {
-          userId: connection.senderId,
-          type: "FRIEND_ACCEPTED",
-          message: `Your connection request was accepted`,
-          actorId: userId,
-          read: false,
-        },
-      });
-    }
-    
-    return NextResponse.json(updatedConnection);
-  } catch (error) {
-    console.error("Error updating friend request:", error);
-    return NextResponse.json(
-      { error: "Failed to update friend request" },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE /api/friends - Remove a connection
+// DELETE /api/friends?friendId=xxx - Remove a friend
 export async function DELETE(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -296,45 +165,30 @@ export async function DELETE(req: NextRequest) {
     
     const userId = session.user.id;
     const url = new URL(req.url);
-    const connectionId = url.searchParams.get("connectionId");
+    const friendId = url.searchParams.get("friendId");
     
-    if (!connectionId) {
+    if (!friendId) {
       return NextResponse.json(
-        { error: "Connection ID is required" },
+        { error: "Friend ID is required" },
         { status: 400 }
       );
     }
     
-    // Verify the connection exists and user is part of it
-    const connection = await db.connection.findUnique({
-      where: { id: connectionId },
-    });
-    
-    if (!connection) {
-      return NextResponse.json(
-        { error: "Connection not found" },
-        { status: 404 }
-      );
-    }
-    
-    // Check if user is part of the connection
-    if (connection.senderId !== userId && connection.receiverId !== userId) {
-      return NextResponse.json(
-        { error: "You are not authorized to perform this action" },
-        { status: 403 }
-      );
-    }
-    
-    // Delete the connection
-    await db.connection.delete({
-      where: { id: connectionId },
+    // Delete the friendship
+    await db.friendship.deleteMany({
+      where: {
+        OR: [
+          { userId: userId, friendId: friendId },
+          { userId: friendId, friendId: userId }
+        ]
+      }
     });
     
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error removing connection:", error);
+    console.error("Error removing friend:", error);
     return NextResponse.json(
-      { error: "Failed to remove connection" },
+      { error: "Failed to remove friend" },
       { status: 500 }
     );
   }

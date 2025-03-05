@@ -76,10 +76,24 @@ export function Header() {
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             {session ? (
               <>
+                {/* Friends button */}
+                <Link
+                  href="/friends"
+                  className={`relative rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mr-2 ${
+                    isActive("/friends") ? "text-blue-500" : ""
+                  }`}
+                >
+                  <span className="absolute -inset-1.5" />
+                  <span className="sr-only">View friends</span>
+                  <Users className="h-6 w-6" aria-hidden="true" />
+                </Link>
+
                 {/* Bookmark button */}
                 <Link
                   href="/profile/bookmarks"
-                  className="relative rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mr-2"
+                  className={`relative rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mr-2 ${
+                    isActive("/profile/bookmarks") ? "text-blue-500" : ""
+                  }`}
                 >
                   <span className="absolute -inset-1.5" />
                   <span className="sr-only">View bookmarks</span>
@@ -178,6 +192,15 @@ export function Header() {
                   </div>
                 </div>
                 <div className="ml-auto flex items-center space-x-2">
+                  {/* Mobile friends button */}
+                  <Link
+                    href="/friends"
+                    className="rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
+                    <span className="sr-only">View friends</span>
+                    <Users className="h-6 w-6" aria-hidden="true" />
+                  </Link>
+
                   {/* Mobile bookmark button */}
                   <Link
                     href="/profile/bookmarks"
