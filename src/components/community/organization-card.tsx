@@ -33,6 +33,8 @@ export function OrganizationCard({ organization }: OrganizationCardProps) {
                 src={organization.logo}
                 alt={organization.name}
                 className="h-full w-full object-cover"
+                referrerPolicy="no-referrer"
+                crossOrigin="anonymous"
               />
             ) : (
               <Building className="h-6 w-6 text-gray-400" />

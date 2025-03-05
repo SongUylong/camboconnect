@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { PrivacyLevel } from "@prisma/client";
 
 interface ParamsType {
   params: {
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest, { params }: ParamsType) {
     const userId = session.user.id;
     const { id } = params;
     
-    // Get the user profile
+    // Get the user profile with all privacy settings
     const user = await db.user.findUnique({
       where: { id },
       select: {
@@ -34,6 +35,44 @@ export async function GET(req: NextRequest, { params }: ParamsType) {
         profileImage: true,
         bio: true,
         privacyLevel: true,
+        educationPrivacy: true,
+        experiencePrivacy: true,
+        skillsPrivacy: true,
+        contactUrlPrivacy: true,
+        educationEntries: {
+          select: {
+            id: true,
+            school: true,
+            degree: true,
+            field: true,
+            startDate: true,
+            endDate: true,
+          },
+        },
+        experienceEntries: {
+          select: {
+            id: true,
+            title: true,
+            company: true,
+            location: true,
+            startDate: true,
+            endDate: true,
+            description: true,
+          },
+        },
+        skillEntries: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        socialLinks: {
+          select: {
+            id: true,
+            platform: true,
+            url: true,
+          },
+        },
       }
     });
     
@@ -63,14 +102,37 @@ export async function GET(req: NextRequest, { params }: ParamsType) {
       }
     });
 
-    // Add friendship status to the response
-    const response = {
-      ...user,
-      isFriend: !!friendship,
-      hasPendingRequest: !!pendingRequest
+    // Determine what information to share based on privacy settings and relationship
+    const isSelf = userId === id;
+    const isFriend = !!friendship;
+    const canViewPrivateInfo = isSelf || isFriend;
+
+    // Filter information based on privacy settings
+    const filteredProfile = {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: canViewPrivateInfo || user.privacyLevel === PrivacyLevel.PUBLIC ? user.email : null,
+      profileImage: user.profileImage,
+      bio: canViewPrivateInfo || user.privacyLevel === PrivacyLevel.PUBLIC ? user.bio : null,
+      privacyLevel: user.privacyLevel,
+      isFriend,
+      hasPendingRequest: !!pendingRequest,
+      education: canViewPrivateInfo || user.educationPrivacy === PrivacyLevel.PUBLIC 
+        ? user.educationEntries 
+        : [],
+      experience: canViewPrivateInfo || user.experiencePrivacy === PrivacyLevel.PUBLIC 
+        ? user.experienceEntries 
+        : [],
+      skills: canViewPrivateInfo || user.skillsPrivacy === PrivacyLevel.PUBLIC 
+        ? user.skillEntries 
+        : [],
+      socialLinks: canViewPrivateInfo || user.contactUrlPrivacy === PrivacyLevel.PUBLIC 
+        ? user.socialLinks 
+        : [],
     };
     
-    return NextResponse.json(response);
+    return NextResponse.json(filteredProfile);
   } catch (error) {
     console.error("Error fetching user profile:", error);
     return NextResponse.json(

@@ -123,6 +123,8 @@ export function FriendsList({ searchQuery }: FriendsListProps) {
                     src={friend.profileImage}
                     alt={`${friend.firstName}'s profile`}
                     className="h-16 w-16 rounded-full object-cover"
+                    referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
                   />
                 ) : (
                   <User className="h-8 w-8 text-gray-500" />

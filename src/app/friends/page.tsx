@@ -11,12 +11,25 @@ import { FriendRequestsList } from "@/components/friends/friend-requests-list";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function FriendsPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Redirect if not authenticated
-  if (!session) {
+  // Show loading state while checking session
+  if (status === "loading") {
+    return (
+      <MainLayout>
+        <div className="container mx-auto py-8 px-4">
+          <div className="flex justify-center items-center min-h-[400px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Only redirect if we're sure there's no session
+  if (status === "unauthenticated") {
     router.push("/login");
     return null;
   }

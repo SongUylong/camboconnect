@@ -207,6 +207,8 @@ export default async function ProfilePage() {
                         src={user.profileImage} 
                         alt={`${user.firstName} ${user.lastName}`} 
                         className="h-full w-full object-cover"
+                        referrerPolicy="no-referrer"
+                        crossOrigin="anonymous"
                       />
                     )
                   ) : (

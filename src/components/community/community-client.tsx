@@ -340,6 +340,8 @@ export function CommunityClient({
                           src={organization.logo}
                           alt={organization.name}
                           className="h-full w-full object-cover"
+                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
                         />
                       ) : (
                         <div className="h-6 w-6 text-gray-400">🏢</div>
@@ -368,6 +370,8 @@ export function CommunityClient({
                       src={selectedOrganization.logo}
                       alt={selectedOrganization.name}
                       className="h-full w-full object-cover"
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
                     />
                   ) : (
                     <div className="h-8 w-8 text-gray-400">🏢</div>

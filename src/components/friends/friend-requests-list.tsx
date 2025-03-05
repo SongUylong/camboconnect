@@ -133,6 +133,8 @@ export function FriendRequestsList({ searchQuery }: FriendRequestsListProps) {
                   src={request.sender.profileImage}
                   alt={`${request.sender.firstName}'s profile`}
                   className="h-12 w-12 rounded-full object-cover"
+                  referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
                 />
               ) : (
                 <User className="h-6 w-6 text-gray-500" />

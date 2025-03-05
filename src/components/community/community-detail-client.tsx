@@ -180,6 +180,8 @@ export function CommunityDetailClient({
                   src={organization.logo}
                   alt={organization.name}
                   className="h-full w-full object-cover"
+                  referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
                 />
               ) : (
                 <Building className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400" />

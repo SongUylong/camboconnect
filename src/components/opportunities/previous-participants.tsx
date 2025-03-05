@@ -1,10 +1,12 @@
 "use client";
 
-import { User, UserPlus } from "lucide-react";
+import { User } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { FriendActions } from "@/components/friend-actions";
+import { useFriendStore } from "@/store/use-friend-store";
 
 type Participation = {
   id: string;
@@ -25,87 +27,85 @@ interface PreviousParticipantsProps {
 
 export function PreviousParticipants({ participations }: PreviousParticipantsProps) {
   const { data: session } = useSession();
-  const router = useRouter();
-  const [friendRequests, setFriendRequests] = useState<Record<string, boolean>>({});
+  const { setInitialState } = useFriendStore();
+
+  useEffect(() => {
+    // Initialize friend store with participants data
+    // You'll need to fetch the friendship status for these users from your API
+    const initializeFriendStore = async () => {
+      try {
+        const response = await fetch("/api/friends");
+        if (!response.ok) throw new Error("Failed to fetch friends");
+        const data = await response.json();
+        
+        const friendIds = data.friends.map((friend: any) => friend.id);
+        const pendingRequestsResponse = await fetch("/api/friends/requests");
+        if (!pendingRequestsResponse.ok) throw new Error("Failed to fetch pending requests");
+        const pendingData = await pendingRequestsResponse.json();
+        
+        const pendingRequestIds = pendingData.requests.map((request: any) => request.sender.id);
+        
+        setInitialState(friendIds, pendingRequestIds);
+      } catch (error) {
+        console.error("Error initializing friend store:", error);
+      }
+    };
+
+    if (session?.user) {
+      initializeFriendStore();
+    }
+  }, [session, setInitialState]);
 
   if (participations.length === 0) {
     return (
-      <div className="bg-gray-50 p-4 rounded-md text-center">
-        <p className="text-gray-500">No previous participants found.</p>
+      <div className="text-center py-8">
+        <User className="mx-auto h-12 w-12 text-gray-400" />
+        <h3 className="mt-2 text-sm font-medium text-gray-900">No participants yet</h3>
+        <p className="mt-1 text-sm text-gray-500">
+          Be the first to participate in this opportunity.
+        </p>
       </div>
     );
   }
 
-  const sendFriendRequest = async (userId: string) => {
-    if (!session) {
-      router.push("/login");
-      return;
-    }
-
-    // Optimistically update UI
-    setFriendRequests({ ...friendRequests, [userId]: true });
-
-    try {
-      // In a real app, send API request
-      // await fetch('/api/friends/request', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ receiverId: userId }),
-      // });
-    } catch (error) {
-      // Revert on error
-      setFriendRequests({ ...friendRequests, [userId]: false });
-      console.error("Failed to send friend request:", error);
-    }
-  };
-
   return (
-    <div className="border border-gray-200 rounded-md overflow-hidden">
-      <ul className="divide-y divide-gray-200">
-        {participations.map((participation) => (
-          <li key={participation.id} className="p-4 hover:bg-gray-50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                  {participation.user.profileImage ? (
-                    <img
-                      src={participation.user.profileImage}
-                      alt={`${participation.user.firstName} ${participation.user.lastName}`}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <User className="h-6 w-6 text-gray-500" />
-                  )}
-                </div>
-                <div className="ml-3">
-                  <Link
-                    href={`/profile/${participation.user.id}`}
-                    className="text-sm font-medium text-gray-900 hover:text-blue-600"
-                  >
-                    {participation.user.firstName} {participation.user.lastName}
-                  </Link>
-                  <p className="text-sm text-gray-500">Participated in {participation.year}</p>
-                </div>
-              </div>
-              
-              {session && session.user.id !== participation.user.id && (
-                <button
-                  onClick={() => sendFriendRequest(participation.user.id)}
-                  disabled={!!friendRequests[participation.user.id]}
-                  className={`btn btn-sm ${
-                    friendRequests[participation.user.id]
-                      ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                      : "btn-outline"
-                  }`}
-                >
-                  <UserPlus className="h-4 w-4 mr-1" />
-                  {friendRequests[participation.user.id] ? "Friend Request Sent" : "Add Friend"}
-                </button>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {participations.map((participation) => (
+        <div
+          key={participation.id}
+          className="bg-white rounded-lg border border-gray-200 p-4 flex items-start space-x-4"
+        >
+          <div className="flex-shrink-0">
+            <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+              {participation.user.profileImage ? (
+                <img
+                  src={participation.user.profileImage}
+                  alt={`${participation.user.firstName}'s profile`}
+                  className="h-10 w-10 rounded-full object-cover"
+                  referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
+                />
+              ) : (
+                <User className="h-5 w-5 text-gray-500" />
               )}
             </div>
-          </li>
-        ))}
-      </ul>
+          </div>
+          <div className="flex-1 min-w-0">
+            <Link
+              href={`/profile/${participation.user.id}`}
+              className="text-sm font-medium text-gray-900 hover:text-blue-600 truncate block"
+            >
+              {participation.user.firstName} {participation.user.lastName}
+            </Link>
+            <p className="text-sm text-gray-500">Participated in {participation.year}</p>
+            {session?.user?.id !== participation.user.id && (
+              <div className="mt-2">
+                <FriendActions userId={participation.user.id} />
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
