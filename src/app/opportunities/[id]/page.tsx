@@ -187,7 +187,7 @@ export default async function OpportunityDetailPage({
               <section className="mt-8">
                 <h2 className="text-xl font-semibold text-gray-900">Participants</h2>
                 <div className="mt-4">
-                  <PreviousParticipants participations={opportunity.participations} />
+                  <PreviousParticipants participations={opportunity.participations} showOpportunity={true} />
                 </div>
               </section>
 
