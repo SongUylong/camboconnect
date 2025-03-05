@@ -28,14 +28,39 @@ export async function POST(req: Request) {
     
     const { email, token, newPassword } = validationResult.data;
     
-    // Find user by email
+    // Find user by email and include OAuth accounts
     const user = await db.user.findUnique({
       where: { email },
+      include: {
+        accounts: true,
+      },
     });
     
     if (!user) {
       return NextResponse.json(
         { success: false, error: "Invalid or expired token" },
+        { status: 400 }
+      );
+    }
+
+    // Check if user is using OAuth
+    if (user.accounts && user.accounts.length > 0) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "This account uses social login. Please sign in with your social provider." 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Check if user has a password set
+    if (!user.password) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "This account doesn't have a password set. Please sign in with your social provider." 
+        },
         { status: 400 }
       );
     }

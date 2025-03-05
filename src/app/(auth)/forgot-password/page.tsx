@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Mail, Clock } from "lucide-react";
+import { ArrowLeft, Mail, Clock, AlertCircle } from "lucide-react";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -31,6 +31,8 @@ export default function ForgotPasswordPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isOAuthAccount, setIsOAuthAccount] = useState(false);
+  const [oAuthProvider, setOAuthProvider] = useState<string>("");
   
   const form = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -42,6 +44,7 @@ export default function ForgotPasswordPage() {
   const onSubmit = async (data: ForgotPasswordFormValues) => {
     try {
       setIsSubmitting(true);
+      setIsOAuthAccount(false);
       
       // Call API to send password reset email
       const response = await fetch("/api/auth/forgot-password", {
@@ -53,6 +56,13 @@ export default function ForgotPasswordPage() {
       const result = await response.json();
       
       if (!response.ok) {
+        if (result.error?.includes("social login") || result.error?.includes("social provider")) {
+          setIsOAuthAccount(true);
+          // Try to extract provider name from error message
+          const provider = result.error.match(/sign in with your (.*?) account/i)?.[1] || "social";
+          setOAuthProvider(provider);
+          throw new Error(result.error);
+        }
         throw new Error(result.error || "Failed to send password reset email");
       }
       
@@ -60,7 +70,9 @@ export default function ForgotPasswordPage() {
       toast.success("Password reset link sent to your email");
     } catch (error) {
       console.error("Error sending password reset email:", error);
-      toast.error((error as Error).message || "Failed to send password reset email. Please try again.");
+      if (!isOAuthAccount) {
+        toast.error((error as Error).message || "Failed to send password reset email. Please try again.");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -103,6 +115,22 @@ export default function ForgotPasswordPage() {
               <p className="text-sm text-muted-foreground">
                 If you don't see it in your inbox, please check your spam folder.
               </p>
+            </div>
+          ) : isOAuthAccount ? (
+            <div className="text-center py-6 space-y-4">
+              <div className="bg-yellow-100 mx-auto rounded-full p-4 w-fit">
+                <AlertCircle className="h-8 w-8 text-yellow-600" />
+              </div>
+              <h3 className="font-medium text-lg">Social Login Account</h3>
+              <p className="text-muted-foreground">
+                This email is associated with a {oAuthProvider} login account. Please sign in using your {oAuthProvider} account instead.
+              </p>
+              <Button 
+                onClick={() => router.push('/login')}
+                className="w-full mt-4"
+              >
+                Back to Login
+              </Button>
             </div>
           ) : (
             <Form {...form}>
