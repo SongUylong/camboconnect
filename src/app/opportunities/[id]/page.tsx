@@ -53,7 +53,26 @@ export default async function OpportunityDetailPage({
       },
       participations: {
         where: {
-          privacyLevel: PrivacyLevel.PUBLIC,
+          OR: [
+            { privacyLevel: PrivacyLevel.PUBLIC },
+            {
+              AND: [
+                { privacyLevel: PrivacyLevel.FRIENDS_ONLY },
+                {
+                  user: {
+                    friends: {
+                      some: {
+                        OR: [
+                          { userId: session.user.id },
+                          { friendId: session.user.id }
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
         },
         take: 10,
         include: {

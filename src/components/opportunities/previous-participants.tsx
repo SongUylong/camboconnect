@@ -1,12 +1,14 @@
 "use client";
 
-import { User } from "lucide-react";
+import { User, Users } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { FriendActions } from "@/components/friend-actions";
 import { useFriendStore } from "@/store/use-friend-store";
 import Image from "next/image";
+import { TooltipProvider } from "@radix-ui/react-tooltip";
+import { Tooltip } from "@/components/ui/tooltip";
 
 type Participation = {
   id: string;
@@ -83,70 +85,78 @@ export function PreviousParticipants({ participations, showOpportunity = false }
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {participations.map((participation) => (
-        <div
-          key={participation.id}
-          className="bg-white rounded-lg border border-gray-200 p-4 flex items-start space-x-4"
-        >
-          <div className="flex-shrink-0">
-            <div className="relative h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-
-              {
-              participation.user.profileImage ? (
-                <Image
-                  src={getProfileImageUrl(participation.user.profileImage) || '/default-avatar.png'}
-                  alt={`${participation.user.firstName}'s profile`}
-                  fill
-                  className="object-cover"
-                  sizes="40px"
-                />
-              ) : (
-                <User className="h-5 w-5 text-gray-500" />
-              )}
-            </div>
-
-          </div>
-
-          <div className="flex-1 min-w-0">
-              {
-                showOpportunity && (
-                   <Link
-              href={`/profile/${participation.user.id}`}
-              className="text-sm font-medium text-gray-900 hover:text-blue-600 truncate block"
-            >
-              {participation.user.firstName} {participation.user.lastName}
-                  </Link>
-                )
-              }
-           
-            {showOpportunity ? (
-              <p className="text-sm text-gray-500">Participated in {participation.year}</p>
-            ) : (
-              participation.opportunity && (
-                <div className="mt-1">
-                  <Link
-                    href={`/opportunities/${participation.opportunity.id}`}
-                    className="text-sm text-blue-600 hover:text-blue-800 truncate block"
-                  >
-                    {participation.opportunity.title}
-                  </Link>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {new Date(participation.opportunity.startDate).getFullYear()}
-                    {participation.opportunity.endDate && 
-                      ` - ${new Date(participation.opportunity.endDate).getFullYear()}`}
-                  </p>
+    <TooltipProvider>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {participations.map((participation) => (
+          <div
+            key={participation.id}
+            className="bg-white rounded-lg border border-gray-200 p-4"
+          >
+            <div className="flex items-start space-x-4">
+              <div className="flex-shrink-0">
+                <div className="relative h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                  {participation.user.profileImage ? (
+                    <Image
+                      src={getProfileImageUrl(participation.user.profileImage) || '/default-avatar.png'}
+                      alt={`${participation.user.firstName}'s profile`}
+                      fill
+                      className="object-cover"
+                      sizes="40px"
+                    />
+                  ) : (
+                    <User className="h-5 w-5 text-gray-500" />
+                  )}
                 </div>
-              )
-            )}
-            {session?.user?.id !== participation.user.id && (
-              <div className="mt-2">
-                <FriendActions userId={participation.user.id} />
               </div>
-            )}
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  {showOpportunity && (
+                    <Link
+                      href={`/profile/${participation.user.id}`}
+                      className="text-sm font-medium text-gray-900 hover:text-blue-600 truncate block"
+                    >
+                      {participation.user.firstName} {participation.user.lastName}
+                    </Link>
+                  )}
+                  {participation.privacyLevel === 'FRIENDS_ONLY' && (
+                    <Tooltip content="Visible to friends only">
+                      <div className="flex items-center cursor-pointer">
+                        <Users className="h-4 w-4 text-blue-500" />
+                      </div>
+                    </Tooltip>
+                  )}
+                </div>
+             
+                {showOpportunity ? (
+                  <p className="text-sm text-gray-500">Participated in {participation.year}</p>
+                ) : (
+                  participation.opportunity && (
+                    <div className="mt-1">
+                      <Link
+                        href={`/opportunities/${participation.opportunity.id}`}
+                        className="text-sm text-blue-600 hover:text-blue-800 truncate block"
+                      >
+                        {participation.opportunity.title}
+                      </Link>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(participation.opportunity.startDate).getFullYear()}
+                        {participation.opportunity.endDate && 
+                          ` - ${new Date(participation.opportunity.endDate).getFullYear()}`}
+                      </p>
+                    </div>
+                  )
+                )}
+                {session?.user?.id !== participation.user.id && (
+                  <div className="mt-2">
+                    <FriendActions userId={participation.user.id} />
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </TooltipProvider>
   );
 }
