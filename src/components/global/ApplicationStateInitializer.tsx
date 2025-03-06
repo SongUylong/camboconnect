@@ -19,7 +19,6 @@ export function ApplicationStateInitializer() {
       try {
         // Reset state before initializing
         resetState();
-        console.log('State reset completed');
 
         const response = await fetch('/api/applications');
         if (!response.ok) {
@@ -31,19 +30,15 @@ export function ApplicationStateInitializer() {
         // Initialize the store with confirmed applications
         data.applications.forEach((app: any) => {
           if (app.status?.isApplied && app.status?.isConfirm) {
-            console.log('Setting applied for opportunity:', app.opportunityId);
             setApplied(app.opportunityId);
           }
         });
-
-        console.log('Application state initialized successfully');
       } catch (error) {
         console.error('Error initializing application state:', error);
         toast.error('Failed to load your applications. Please refresh the page.');
       }
     };
 
-    console.log('Initializing application state for pathname:', pathname);
     initializeApplicationState();
   }, [session?.user?.id, status, setApplied, resetState, pathname]);
 

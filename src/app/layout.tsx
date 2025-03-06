@@ -25,7 +25,6 @@ export default function RootLayout({
           <ApplicationProvider>
             <ApplicationStateInitializer />
             {children}
-            <UnconfirmedApplicationsCheck />  
           </ApplicationProvider>
         </AuthProvider>
         <Toaster position="top-right" richColors />

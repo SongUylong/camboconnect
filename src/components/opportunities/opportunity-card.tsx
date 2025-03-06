@@ -39,13 +39,6 @@ export function OpportunityCard({ opportunity, variant = "default" }: Opportunit
   const { isBookmarked, addBookmark, removeBookmark } = useBookmarkStore();
   const { isApplied, appliedOpportunities } = useApplicationStore();
 
-  // Debug log when component mounts or updates
-  useEffect(() => {
-    console.log('OpportunityCard rendered for:', opportunity.id);
-    console.log('Current applied opportunities:', appliedOpportunities);
-    console.log('Is this opportunity applied?', isApplied(opportunity.id));
-  }, [opportunity.id, appliedOpportunities, isApplied]);
-
   const revalidatePaths = async () => {
     try {
       // Revalidate all related paths
