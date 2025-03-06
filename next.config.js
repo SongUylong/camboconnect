@@ -1,8 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   images: {
     domains: [
-      'lh3.googleusercontent.com',  // Google profile pictures
+      'avatars.githubusercontent.com',
     ],
   },
 }

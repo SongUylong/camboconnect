@@ -133,7 +133,7 @@ export default function ApplicationStatusForm({
         disabled={isLoading || !externalLink || hasApplied}
       >
         {isLoading ? "Redirecting..." : hasApplied ? "Applied" : "Apply on External Site"}
-      </button>
+      </button>x``
     </div>
   );
 }
