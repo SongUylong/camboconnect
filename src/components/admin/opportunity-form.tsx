@@ -75,9 +75,9 @@ export default function OpportunityForm({
     
     if (type === 'checkbox') {
       const { checked } = e.target as HTMLInputElement;
-      setFormData(prev => ({ ...prev, [name]: checked }));
+      setFormData((prev: FormData) => ({ ...prev, [name]: checked }));
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData((prev: FormData) => ({ ...prev, [name]: value }));
     }
   };
   

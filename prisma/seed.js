@@ -460,28 +460,28 @@ async function main() {
       opportunityId: createdOpportunities[0].id, // Cambodia Hackathon (as if it happened last year too)
       year: previousYear,
       feedback: 'Great experience, learned a lot and made valuable connections.',
-      isPublic: true
+      privacyLevel: 'PUBLIC'
     },
     {
       userId: createdUsers[2].id, // Sara Chen
       opportunityId: createdOpportunities[0].id, // Cambodia Hackathon
       year: previousYear,
       feedback: 'Challenging but rewarding experience. Would participate again.',
-      isPublic: true
+      privacyLevel: 'PUBLIC'
     },
     {
       userId: createdUsers[3].id, // Malik Johnson
       opportunityId: createdOpportunities[4].id, // Startup Weekend
       year: previousYear,
       feedback: 'Amazing mentors and great networking opportunities.',
-      isPublic: true
+      privacyLevel: 'PUBLIC'
     },
     {
       userId: createdUsers[4].id, // Ana Kim
       opportunityId: createdOpportunities[3].id, // AI Challenge
       year: previousYear,
       feedback: 'The competition was well-organized with interesting problem statements.',
-      isPublic: false
+      privacyLevel: 'ONLY_ME'
     }
   ]
   

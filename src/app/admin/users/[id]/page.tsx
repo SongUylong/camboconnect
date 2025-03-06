@@ -36,6 +36,40 @@ interface UserData {
   profile: UserProfile;
 }
 
+interface Friend {
+  id: string;
+  name: string;
+  image?: string;
+  location?: string;
+  role?: string;
+  company?: string;
+  connectionDate: Date;
+  mutualConnections?: number;
+}
+
+interface Participation {
+  id: string;
+  title: string;
+  organization: {
+    id: string;
+    name: string;
+    logo?: string;
+  };
+  location: string;
+  startDate: Date;
+  endDate?: Date;
+  status: "active" | "completed" | "upcoming";
+  role: string;
+  description: string;
+}
+
+interface Activity {
+  id: string;
+  type: string;
+  timestamp: Date;
+  details: string;
+}
+
 export default function AdminUserDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -43,139 +77,41 @@ export default function AdminUserDetailPage() {
   
   const [user, setUser] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [friends, setFriends] = useState([]);
-  const [participations, setParticipations] = useState([]);
-  const [activities, setActivities] = useState([]);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [participations, setParticipations] = useState<Participation[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         setIsLoading(true);
-        // In a real app, fetch user data from API
-        // const response = await fetch(`/api/admin/users/${userId}`);
-        // const data = await response.json();
-        // setUser(data);
         
-        // Mock data for demonstration
-        setUser({
-          id: userId,
-          name: "John Doe",
-          email: "john.doe@example.com",
-          image: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
-          phone: "+855 12 345 678",
-          location: "Phnom Penh, Cambodia",
-          role: "user",
-          status: "active",
-          createdAt: new Date("2023-01-15"),
-          lastActive: new Date(),
-          profile: {
-            bio: "Software developer with 5 years of experience in web development.",
-            skills: ["JavaScript", "React", "Node.js", "TypeScript"],
-            education: [
-              {
-                school: "Royal University of Phnom Penh",
-                degree: "Bachelor of Computer Science",
-                fieldOfStudy: "Computer Science",
-                startDate: new Date("2015-09-01"),
-                endDate: new Date("2019-06-30"),
-              }
-            ],
-            experience: [
-              {
-                company: "Tech Cambodia",
-                position: "Frontend Developer",
-                location: "Phnom Penh",
-                startDate: new Date("2019-08-01"),
-                endDate: new Date("2022-12-31"),
-                description: "Developed and maintained web applications using React."
-              }
-            ],
-            links: {
-              linkedin: "https://linkedin.com/in/johndoe",
-              github: "https://github.com/johndoe"
-            }
-          }
-        });
+        // Fetch user data
+        const userResponse = await fetch(`/api/admin/users/${userId}`);
+        if (!userResponse.ok) throw new Error("Failed to fetch user data");
+        const userData = await userResponse.json();
+        setUser(userData);
         
-        // Mock friends data
-        setFriends([
-          {
-            id: "friend1",
-            name: "Jane Smith",
-            image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Jane",
-            location: "Phnom Penh, Cambodia",
-            role: "Designer",
-            company: "Creative Studio",
-            connectionDate: new Date("2023-03-15"),
-            mutualConnections: 5
-          },
-          {
-            id: "friend2",
-            name: "David Kim",
-            image: "https://api.dicebear.com/7.x/avataaars/svg?seed=David",
-            location: "Siem Reap, Cambodia",
-            role: "Developer",
-            company: "Tech Solutions",
-            connectionDate: new Date("2023-05-20"),
-            mutualConnections: 3
-          }
-        ]);
+        // Fetch friends data
+        const friendsResponse = await fetch(`/api/admin/users/${userId}/friends`);
+        if (friendsResponse.ok) {
+          const friendsData = await friendsResponse.json();
+          setFriends(friendsData.friends);
+        }
         
-        // Mock participations data
-        setParticipations([
-          {
-            id: "part1",
-            title: "Web Development Workshop",
-            organization: {
-              id: "org1",
-              name: "Cambodia Tech Community",
-              logo: "https://api.dicebear.com/7.x/identicon/svg?seed=org1"
-            },
-            location: "Phnom Penh",
-            startDate: new Date("2023-06-10"),
-            endDate: new Date("2023-06-12"),
-            status: "completed",
-            role: "Participant",
-            description: "Three-day workshop on modern web development techniques."
-          },
-          {
-            id: "part2",
-            title: "Hackathon 2023",
-            organization: {
-              id: "org2",
-              name: "Cambodia Innovation Hub",
-              logo: "https://api.dicebear.com/7.x/identicon/svg?seed=org2"
-            },
-            location: "Phnom Penh",
-            startDate: new Date("2023-08-15"),
-            endDate: new Date("2023-08-17"),
-            status: "completed",
-            role: "Team Lead",
-            description: "48-hour hackathon focused on solving local community challenges."
-          }
-        ]);
+        // Fetch participations data
+        const participationsResponse = await fetch(`/api/admin/users/${userId}/participations`);
+        if (participationsResponse.ok) {
+          const participationsData = await participationsResponse.json();
+          setParticipations(participationsData.participations);
+        }
         
-        // Mock activity data
-        setActivities([
-          {
-            id: "act1",
-            type: "login",
-            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-            details: "Logged in from Phnom Penh, Cambodia"
-          },
-          {
-            id: "act2",
-            type: "profile_update",
-            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
-            details: "Updated profile information"
-          },
-          {
-            id: "act3",
-            type: "connection_request",
-            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5), // 5 days ago
-            details: "Sent connection request to Jane Smith"
-          }
-        ]);
+        // Fetch activity data
+        const activitiesResponse = await fetch(`/api/admin/users/${userId}/activities`);
+        if (activitiesResponse.ok) {
+          const activitiesData = await activitiesResponse.json();
+          setActivities(activitiesData.activities);
+        }
         
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -190,8 +126,11 @@ export default function AdminUserDetailPage() {
 
   const handleSuspendUser = async () => {
     try {
-      // In a real app, call API to suspend user
-      // await fetch(`/api/admin/users/${userId}/suspend`, { method: 'POST' });
+      const response = await fetch(`/api/admin/users/${userId}/suspend`, { 
+        method: 'POST' 
+      });
+      
+      if (!response.ok) throw new Error("Failed to suspend user");
       
       toast.success("User has been suspended");
       setUser(prev => prev ? { ...prev, status: "suspended" } : null);
@@ -203,8 +142,11 @@ export default function AdminUserDetailPage() {
   
   const handleActivateUser = async () => {
     try {
-      // In a real app, call API to activate user
-      // await fetch(`/api/admin/users/${userId}/activate`, { method: 'POST' });
+      const response = await fetch(`/api/admin/users/${userId}/activate`, { 
+        method: 'POST' 
+      });
+      
+      if (!response.ok) throw new Error("Failed to activate user");
       
       toast.success("User has been activated");
       setUser(prev => prev ? { ...prev, status: "active" } : null);
@@ -216,8 +158,11 @@ export default function AdminUserDetailPage() {
   
   const handlePromoteToAdmin = async () => {
     try {
-      // In a real app, call API to promote user
-      // await fetch(`/api/admin/users/${userId}/promote`, { method: 'POST' });
+      const response = await fetch(`/api/admin/users/${userId}/promote`, { 
+        method: 'POST' 
+      });
+      
+      if (!response.ok) throw new Error("Failed to promote user");
       
       toast.success("User has been promoted to admin");
       setUser(prev => prev ? { ...prev, role: "admin" } : null);
@@ -399,7 +344,6 @@ export default function AdminUserDetailPage() {
                   key={friend.id}
                   friend={friend}
                   onViewProfile={handleViewProfile}
-                  onMessage={() => {}}
                   onRemoveConnection={() => {}}
                 />
               ))}

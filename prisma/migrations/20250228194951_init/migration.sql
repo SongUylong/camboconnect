@@ -157,7 +157,7 @@ CREATE TABLE "Participation" (
     "id" TEXT NOT NULL,
     "year" INTEGER NOT NULL,
     "feedback" TEXT,
-    "isPublic" BOOLEAN NOT NULL DEFAULT false,
+    "privacyLevel" "PrivacyLevel" NOT NULL DEFAULT 'ONLY_ME',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "userId" TEXT NOT NULL,

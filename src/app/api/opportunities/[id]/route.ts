@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/prisma';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { PrivacyLevel } from '@prisma/client';
 
 interface ParamsType {
   params: {
@@ -36,7 +37,7 @@ export async function GET(req: Request, { params }: ParamsType) {
         } : false,
         participations: {
           where: {
-            isPublic: true,
+            privacyLevel: PrivacyLevel.PUBLIC,
           },
           include: {
             user: {

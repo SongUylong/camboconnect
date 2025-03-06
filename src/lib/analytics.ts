@@ -152,6 +152,6 @@ async function updateJsonCounter(date: Date, field: string, id: string) {
     select: { [field]: true },
   });
   
-  const counters = stats?.[field] as Record<string, number> || {};
+  const counters = (stats?.[field] as Record<string, number> | undefined) ?? {};
   return { ...counters, [id]: (counters[id] || 0) + 1 };
 }

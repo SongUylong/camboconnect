@@ -1,14 +1,43 @@
-import { Opportunity, OpportunityType, Organization, User } from "@prisma/client";
+import { Opportunity, Organization, User } from "@prisma/client";
 
 export type OpportunityWithRelations = Opportunity & {
   organization: Organization;
-  applicants?: User[];
+  category: {
+    id: string;
+    name: string;
+  };
+  participations: Array<{
+    id: string;
+    year: number;
+    user: Pick<User, "id" | "firstName" | "lastName" | "profileImage" | "privacyLevel">;
+  }>;
+};
+
+export type OpportunityWithOrganization = Opportunity & {
+  organization: Organization;
+};
+
+export type OpportunityCard = Pick<
+  Opportunity,
+  | "id"
+  | "title"
+  | "shortDescription"
+  | "deadline"
+  | "status"
+  | "isPopular"
+  | "isNew"
+> & {
+  organization: Pick<Organization, "id" | "name" | "logo">;
+  category: {
+    id: string;
+    name: string;
+  };
 };
 
 export interface OpportunityFormData {
   title: string;
   description: string;
-  type: OpportunityType;
+  type: string;
   location: string;
   requirements: string[];
   deadline: Date;
@@ -19,7 +48,7 @@ export interface OpportunityFormData {
 }
 
 export interface OpportunityFilters {
-  type?: OpportunityType;
+  type?: string;
   location?: string;
   isRemote?: boolean;
   organizationId?: string;

@@ -1,18 +1,13 @@
-import jwt, { JwtPayload } from "jsonwebtoken";
-
-interface SignOptions {
-  expiresIn?: string | number;
-}
+import jwt, { JwtPayload, SignOptions } from "jsonwebtoken";
 
 export function signJwtAccessToken(
   payload: JwtPayload,
-  options: SignOptions = {}
+  options: { expiresIn?: string | number } = {}
 ) {
   const secret = process.env.JWT_SECRET || "default-secret";
   const token = jwt.sign(payload, secret, {
     expiresIn: options.expiresIn || "1h",
-  });
-  
+  } as SignOptions);
   return token;
 }
 

@@ -23,7 +23,7 @@ export function OpportunityFilter({ categories }: FilterProps) {
   const [sort, setSort] = useState<string>(searchParams.get("sort") || "latest");
 
   useEffect(() => {
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams(searchParams.toString());
     
     if (status) {
       params.set("status", status);
