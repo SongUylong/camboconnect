@@ -7,7 +7,6 @@ export async function middleware(request: NextRequest) {
   
   // Paths that require authentication
   const protectedPaths = [
-    '/opportunities/',
     '/profile',
     '/notifications',
     '/settings',
@@ -23,8 +22,17 @@ export async function middleware(request: NextRequest) {
     url.searchParams.set('callbackUrl', request.nextUrl.pathname);
     return NextResponse.redirect(url);
   }
+
+  // Add cache-control headers for opportunities page
+  const response = NextResponse.next();
+  if (request.nextUrl.pathname.startsWith('/opportunities')) {
+    // Don't override existing cache-control headers if they exist
+    if (!response.headers.has('Cache-Control')) {
+      response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=59');
+    }
+  }
   
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {

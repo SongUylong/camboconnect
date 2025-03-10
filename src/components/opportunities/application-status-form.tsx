@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useApplicationStore } from "@/store/applicationStore";
 import { toast } from "sonner";
 import { useApplication } from "@/contexts/application-context";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 interface ApplicationStatusFormProps {
   opportunityId: string;
@@ -129,11 +130,17 @@ export default function ApplicationStatusForm({
       </p>
       <button
         onClick={handleExternalApplication}
-        className={`btn ${hasApplied ? 'btn-success' : 'btn-primary'}`}
+        className={`btn ${hasApplied ? 'btn-success' : 'btn-primary'} flex items-center justify-center min-w-[150px]`}
         disabled={isLoading || !externalLink || hasApplied}
       >
-        {isLoading ? "Redirecting..." : hasApplied ? "Applied" : "Apply on External Site"}
-      </button>x``
+        {isLoading ? (
+          <LoadingSpinner size="sm" text="Redirecting..." />
+        ) : hasApplied ? (
+          "Applied"
+        ) : (
+          "Apply on External Site"
+        )}
+      </button>
     </div>
   );
 }

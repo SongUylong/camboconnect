@@ -8,6 +8,9 @@ import { OrganizationCard } from "@/components/community/organization-card";
 import { FollowButton } from "@/components/community/follow-button";
 import { CommunitySearch } from "@/components/community/community-search";
 import { OpportunityCard } from "@/components/opportunities/opportunity-card";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { useLoadingState } from '@/hooks/useLoadingState';
 
 // Define the organization type
 type Organization = {
@@ -63,6 +66,7 @@ export function CommunityClient({
 }: CommunityClientProps) {
   const router = useRouter();
   const urlSearchParams = useSearchParams();
+  const { withLoading } = useLoadingState();
   const [layout, setLayout] = useState(initialLayout);
   const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
   const [organizations, setOrganizations] = useState<Organization[]>(initialOrganizations || []);
@@ -128,7 +132,9 @@ export function CommunityClient({
     
     try {
       // Use the opportunities endpoint with getCategories=true to get only categories for this organization
-      const response = await fetch(`/api/organizations/${selectedOrganization.id}/opportunities?getCategories=true`);
+      const response = await withLoading(
+        fetch(`/api/organizations/${selectedOrganization.id}/opportunities?getCategories=true`)
+      );
       if (response.ok) {
         const data = await response.json();
         setCategories(data);
@@ -161,7 +167,12 @@ export function CommunityClient({
       }
       
       const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
-      const response = await fetch(`/api/organizations/${organizationId}/opportunities${queryString}`);
+      
+      // Use the withLoading function to wrap the fetch operation
+      const response = await withLoading(async () => {
+        console.log(`Fetching opportunities from: /api/organizations/${organizationId}/opportunities${queryString}`);
+        return fetch(`/api/organizations/${organizationId}/opportunities${queryString}`);
+      });
       
       if (response.ok) {
         const data = await response.json();
@@ -536,8 +547,11 @@ export function CommunityClient({
                 </div>
                 
                 {isLoadingOpportunities ? (
-                  <div className="mt-4 flex justify-center">
-                    <div className="animate-pulse text-gray-500">Loading opportunities...</div>
+                  <div className="mt-4 space-y-4">
+                    <LoadingSkeleton count={3} height="h-24" />
+                    <div className="flex justify-center">
+                      <LoadingSpinner size="md" text="Loading opportunities..." />
+                    </div>
                   </div>
                 ) : filteredOpportunities.length === 0 ? (
                   <div className="mt-4 bg-gray-50 rounded-md p-4 text-center">

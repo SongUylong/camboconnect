@@ -20,6 +20,7 @@ import {
   CheckCircle,
   XCircle
 } from "lucide-react";
+import { useLoadingState } from '@/hooks/useLoadingState';
 
 interface OpportunityData {
   id: string;
@@ -67,6 +68,7 @@ export default function AdminOpportunityDetailPage() {
   const router = useRouter();
   const params = useParams();
   const opportunityId = params.id as string;
+  const { withLoading, startLoading, stopLoading } = useLoadingState();
   
   const [opportunity, setOpportunity] = useState<OpportunityData | null>(null);
   const [applicants, setApplicants] = useState<Applicant[]>([]);
@@ -77,6 +79,9 @@ export default function AdminOpportunityDetailPage() {
     const fetchOpportunityData = async () => {
       try {
         setIsLoading(true);
+        // Start loading state
+        startLoading();
+        
         // In a real app, fetch opportunity data from API
         // const response = await fetch(`/api/admin/opportunities/${opportunityId}`);
         // const data = await response.json();
@@ -192,17 +197,18 @@ export default function AdminOpportunityDetailPage() {
             }
           }
         ]);
-        
       } catch (error) {
         console.error("Error fetching opportunity data:", error);
         toast.error("Failed to load opportunity data");
       } finally {
         setIsLoading(false);
+        // End loading state
+        stopLoading();
       }
     };
     
     fetchOpportunityData();
-  }, [opportunityId]);
+  }, [opportunityId, startLoading, stopLoading]);
 
   const handleEditOpportunity = () => {
     router.push(`/admin/opportunities/${opportunityId}/edit`);

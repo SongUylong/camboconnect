@@ -9,14 +9,14 @@ services:
       - /app/node_modules
       - /app/.next
     ports:
-      - "3000:3000"
+      - "3001:3000"  # Changed to 3001 on the host machine
     env_file:
       - .env.docker.local
     environment:
       - NODE_ENV=development
       - HOSTNAME=0.0.0.0
-      - NEXTAUTH_URL=http://localhost:3000
-      - NEXTAUTH_URL_INTERNAL=http://localhost:3000
+      - NEXTAUTH_URL=http://localhost:3001  # Updated to reflect the new port
+      - NEXTAUTH_URL_INTERNAL=http://localhost:3001
     networks:
       - app_network
     command: npm run dev
@@ -27,7 +27,7 @@ services:
       dockerfile: Dockerfile
       target: runner
     ports:
-      - "3000:3000"
+      - "3000:3000"  # Keeps 3000 for production
     env_file:
       - .env.docker.local
     environment:

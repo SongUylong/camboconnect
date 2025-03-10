@@ -15,9 +15,8 @@ interface SearchParams {
   q?: string;
 }
 
-// Set export const dynamic to force dynamic rendering
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// Remove force-dynamic and set appropriate revalidation
+export const revalidate = 30;
 
 export default async function OpportunitiesPage({
   searchParams,

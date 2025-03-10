@@ -89,7 +89,11 @@ export async function GET(req: Request) {
       };
     });
     
-    return NextResponse.json(transformedOpportunities);
+    return NextResponse.json(transformedOpportunities, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=59',
+      },
+    });
   } catch (error) {
     console.error('Error fetching opportunities:', error);
     return NextResponse.json(
