@@ -27,6 +27,7 @@
         "@radix-ui/react-tooltip": "^1.1.8",
         "@tailwindcss/typography": "^0.5.16",
         "@types/jsonwebtoken": "^9.0.9",
+        "@vercel/speed-insights": "^1.2.0",
         "bcrypt": "^5.1.1",
         "class-variance-authority": "^0.7.0",
         "clsx": "^2.1.1",

@@ -7,6 +7,8 @@ import { Toaster } from "sonner";
 import { UnconfirmedApplicationsCheck } from "@/components/global/UnconfirmedApplicationsCheck";
 import { ApplicationStateInitializer } from "@/components/global/ApplicationStateInitializer";
 import { NavigationProvider } from "@/providers/navigation-provider";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -31,6 +33,7 @@ export default function RootLayout({
           </AuthProvider>
         </NavigationProvider>
         <Toaster position="top-right" richColors />
+        <SpeedInsights />
       </body>
     </html>
   );
