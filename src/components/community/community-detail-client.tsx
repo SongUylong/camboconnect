@@ -2,9 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Building, Calendar, Filter, Globe, Users, X, ChevronDown, Search } from "lucide-react";
+import { ArrowLeft, Building, Calendar, Filter, Globe, Users, X, ChevronDown, Search, Loader2 } from "lucide-react";
 import { FollowButton } from "@/components/community/follow-button";
 import { OpportunityCard } from "@/components/opportunities/opportunity-card";
+import { useOrganizationOpportunities } from '@/hooks/use-opportunities';
+import { useBookmarkOpportunity, useUnbookmarkOpportunity } from '@/hooks/use-opportunities';
+import { toast } from 'sonner';
 
 // Define types
 type Organization = {
@@ -80,63 +83,35 @@ export function CommunityDetailClient({
   const [activeFilterCount, setActiveFilterCount] = useState(0);
   const filterMenuRef = useRef<HTMLDivElement>(null);
 
-  // Fetch opportunities when filters change
-  useEffect(() => {
-    fetchOpportunities();
-  }, [categoryFilter, statusFilter]);
+  // Build query parameters for filters
+  const queryParams = new URLSearchParams();
+  if (statusFilter) {
+    queryParams.set("status", statusFilter);
+  }
+  if (categoryFilter) {
+    queryParams.set("category", categoryFilter);
+  }
 
-  // Fetch opportunities based on current filters
-  const fetchOpportunities = async () => {
-    setIsLoading(true);
+  // Use React Query hooks
+  const { data: opportunitiesData, isLoading: queryLoading } = useOrganizationOpportunities(
+    organization.id,
+    queryParams
+  );
+  const bookmarkOpportunity = useBookmarkOpportunity();
+  const unbookmarkOpportunity = useUnbookmarkOpportunity();
+
+  const handleBookmark = async (opportunityId: string, isBookmarked: boolean) => {
     try {
-      // Build query parameters for filters
-      const queryParams = new URLSearchParams();
-      if (statusFilter) {
-        queryParams.set("status", statusFilter);
-      }
-      if (categoryFilter) {
-        queryParams.set("category", categoryFilter);
-      }
-      
-      const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
-      const response = await fetch(`/api/organizations/${organization.id}/opportunities${queryString}`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        // Transform API response to match the expected Opportunity type
-        const transformedData = data.map((item: any) => {
-          // Ensure all required properties exist
-          const opportunity = {
-            ...item,
-            deadline: new Date(item.deadline),
-            visitCount: typeof item.visitCount === 'number' ? item.visitCount : 0,
-            isPopular: !!item.isPopular,
-            isNew: !!item.isNew,
-            isBookmarked: !!item.isBookmarked,
-            // Ensure organization data is properly structured
-            organization: {
-              id: item.organization?.id || organization.id,
-              name: item.organization?.name || organization.name,
-              logo: item.organization?.logo || organization.logo
-            },
-            // Ensure category data is properly structured
-            category: {
-              id: item.category?.id || "",
-              name: item.category?.name || "Uncategorized"
-            }
-          };
-          return opportunity;
-        });
-        setOpportunities(transformedData);
+      if (isBookmarked) {
+        await unbookmarkOpportunity.mutateAsync(opportunityId);
+        toast.success('Opportunity unbookmarked');
       } else {
-        console.error("Failed to fetch opportunities:", response.statusText);
-        setOpportunities([]);
+        await bookmarkOpportunity.mutateAsync(opportunityId);
+        toast.success('Opportunity bookmarked');
       }
     } catch (error) {
-      console.error("Failed to fetch opportunities:", error);
-      setOpportunities([]);
-    } finally {
-      setIsLoading(false);
+      console.error('Error toggling bookmark:', error);
+      toast.error('Failed to update bookmark');
     }
   };
 
@@ -155,6 +130,19 @@ export function CommunityDetailClient({
     setCategoryFilter("");
     setStatusFilter("");
   };
+
+  if (queryLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-[200px]">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  // Filter opportunities based on search query
+  const filteredOpportunities = opportunities.filter((opportunity) =>
+    opportunity.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
@@ -378,8 +366,12 @@ export function CommunityDetailClient({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {opportunities.map((opportunity) => (
-              <OpportunityCard key={opportunity.id} opportunity={opportunity} />
+            {filteredOpportunities.map((opportunity) => (
+              <OpportunityCard
+                key={opportunity.id}
+                opportunity={opportunity}
+                onBookmark={(isBookmarked) => handleBookmark(opportunity.id, isBookmarked)}
+              />
             ))}
           </div>
         )}

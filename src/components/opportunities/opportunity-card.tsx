@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, Eye, ExternalLink } from "lucide-react";
+import { Bookmark, Eye, ExternalLink, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { useState, useEffect } from "react";
@@ -31,13 +31,15 @@ type OpportunityCardProps = {
     isBookmarked?: boolean;
   };
   variant?: "default" | "compact";
+  onBookmark?: (isBookmarked: boolean) => Promise<void>;
 };
 
-export function OpportunityCard({ opportunity, variant = "default" }: OpportunityCardProps) {
+export function OpportunityCard({ opportunity, variant = "default", onBookmark }: OpportunityCardProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const { isBookmarked, addBookmark, removeBookmark } = useBookmarkStore();
   const { isApplied, appliedOpportunities } = useApplicationStore();
+  const [isBookmarking, setIsBookmarking] = useState(false);
 
   const revalidatePaths = async () => {
     try {
@@ -136,6 +138,17 @@ export function OpportunityCard({ opportunity, variant = "default" }: Opportunit
   const hasApplied = isApplied(opportunity.id);
   console.log(`Opportunity ${opportunity.id} applied status:`, hasApplied);
 
+  const handleBookmark = async () => {
+    if (!onBookmark) return;
+    
+    try {
+      setIsBookmarking(true);
+      await onBookmark(!!opportunity.isBookmarked);
+    } finally {
+      setIsBookmarking(false);
+    }
+  };
+
   if (variant === "compact") {
     return (
       <Link
@@ -174,21 +187,21 @@ export function OpportunityCard({ opportunity, variant = "default" }: Opportunit
                 <span>{opportunity.visitCount}</span>
               </div>
               <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleBookmarkClick(e);
-                }}
+                onClick={handleBookmark}
+                disabled={isBookmarking}
                 className={`text-gray-400 hover:text-blue-600 focus:outline-none ${
-                  isBookmarked(opportunity.id) ? 'text-blue-600' : ''
+                  opportunity.isBookmarked ? 'text-blue-600' : ''
                 }`}
-                aria-label={isBookmarked(opportunity.id) ? "Remove bookmark" : "Add bookmark"}
               >
-                <Bookmark
-                  className={`h-5 w-5 ${
-                    isBookmarked(opportunity.id) ? "fill-blue-600 text-blue-600" : ""
-                  }`}
-                />
+                {isBookmarking ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Bookmark
+                    className={`h-5 w-5 ${
+                      opportunity.isBookmarked ? "fill-blue-600 text-blue-600" : ""
+                    }`}
+                  />
+                )}
               </button>
             </div>
           </div>
@@ -219,17 +232,21 @@ export function OpportunityCard({ opportunity, variant = "default" }: Opportunit
             )}
           </div>
           <button
-            onClick={handleBookmarkClick}
+            onClick={handleBookmark}
+            disabled={isBookmarking}
             className={`text-gray-400 hover:text-blue-600 focus:outline-none ${
-              isBookmarked(opportunity.id) ? 'text-blue-600' : ''
+              opportunity.isBookmarked ? 'text-blue-600' : ''
             }`}
-            aria-label={isBookmarked(opportunity.id) ? "Remove bookmark" : "Add bookmark"}
           >
-            <Bookmark
-              className={`h-5 w-5 ${
-                isBookmarked(opportunity.id) ? "fill-blue-600 text-blue-600" : ""
-              }`}
-            />
+            {isBookmarking ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Bookmark
+                className={`h-5 w-5 ${
+                  opportunity.isBookmarked ? "fill-blue-600 text-blue-600" : ""
+                }`}
+              />
+            )}
           </button>
         </div>
 

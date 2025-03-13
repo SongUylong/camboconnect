@@ -1,13 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/components/auth/auth-provider";
-import { ApplicationProvider } from "@/contexts/application-context";
 import { Toaster } from "sonner";
-import { UnconfirmedApplicationsCheck } from "@/components/global/UnconfirmedApplicationsCheck";
-import { ApplicationStateInitializer } from "@/components/global/ApplicationStateInitializer";
-import { NavigationProvider } from "@/providers/navigation-provider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Providers } from "@/providers/providers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,16 +20,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <NavigationProvider>
-          <AuthProvider>
-            <ApplicationProvider>
-              <ApplicationStateInitializer />
-              {children}
-            </ApplicationProvider>
-          </AuthProvider>
-        </NavigationProvider>
-        <Toaster position="top-right" richColors />
-        <SpeedInsights />
+        <Providers>
+          {children}
+          <Toaster position="top-right" richColors />
+          <SpeedInsights />
+        </Providers>
       </body>
     </html>
   );
