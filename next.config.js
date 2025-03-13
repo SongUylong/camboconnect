@@ -12,8 +12,6 @@ const nextConfig = {
       'randomuser.me',
       'images.unsplash.com'
     ],
-    // Add unoptimized option for Docker
-    unoptimized: process.env.NODE_ENV === 'production',
   },
 }
 
