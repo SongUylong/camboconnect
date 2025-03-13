@@ -1,6 +1,6 @@
-import { Opportunity, Organization, User } from "@prisma/client";
+import { Opportunity as PrismaOpportunity, Organization, User } from "@prisma/client";
 
-export type OpportunityWithRelations = Opportunity & {
+export type OpportunityWithRelations = PrismaOpportunity & {
   organization: Organization;
   category: {
     id: string;
@@ -13,12 +13,12 @@ export type OpportunityWithRelations = Opportunity & {
   }>;
 };
 
-export type OpportunityWithOrganization = Opportunity & {
+export type OpportunityWithOrganization = PrismaOpportunity & {
   organization: Organization;
 };
 
 export type OpportunityCard = Pick<
-  Opportunity,
+  PrismaOpportunity,
   | "id"
   | "title"
   | "shortDescription"
@@ -56,10 +56,52 @@ export interface OpportunityFilters {
   search?: string;
 }
 
+export interface OpportunityResponse {
+  opportunities: Opportunity[];
+  totalCount: number;
+  totalPages: number;
+  currentPage: number;
+  limit: number;
+}
+
 export interface ApplicationData {
   opportunityId: string;
   userId: string;
   coverLetter?: string;
   resumeUrl?: string;
   status: "PENDING" | "ACCEPTED" | "REJECTED";
+}
+
+// This is the type used by the OpportunityCard component
+export interface Opportunity {
+  id: string;
+  title: string;
+  description: string;
+  shortDescription: string;
+  eligibility: string;
+  applicationProcess: string;
+  benefits: string;
+  contactInfo: string;
+  externalLink?: string | null;
+  deadline: Date;
+  startDate?: Date | null;
+  endDate?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  status: "OPENING_SOON" | "ACTIVE" | "CLOSING_SOON" | "CLOSED";
+  categoryId: string;
+  category: {
+    id: string;
+    name: string;
+  };
+  visitCount: number;
+  isPopular: boolean;
+  isNew: boolean;
+  organizationId: string;
+  organization: {
+    id: string;
+    name: string;
+    logo?: string | null;
+  };
+  isBookmarked?: boolean;
 }

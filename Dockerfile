@@ -12,6 +12,9 @@ COPY prisma ./prisma/
 # Install dependencies with exact versions
 RUN npm ci
 
+# Copy environment variables for build
+COPY .env.docker.local .env
+
 # Generate Prisma Client
 RUN npx prisma generate
 

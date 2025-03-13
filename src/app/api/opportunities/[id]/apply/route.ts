@@ -1,112 +1,83 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/prisma';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { z } from 'zod';
 
-type ParamsType = {
-  params: {
-    id: string;
-  };
-};
+const applicationSchema = z.object({
+  status: z.enum(['PENDING', 'ACCEPTED', 'REJECTED']),
+});
 
-export async function POST(req: Request, { params }: ParamsType) {
+export async function POST(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = params;
     const session = await getServerSession(authOptions);
-    
-    // Check authentication
-    if (!session || !session.user.id) {
+    if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
-    
-    const userId = session.user.id;
-    const body = await req.json();
-    const { isApplied, isConfirm } = body;
-    
+
+    const body = await request.json();
+    const validatedData = applicationSchema.parse(body);
+
     // Check if opportunity exists
     const opportunity = await db.opportunity.findUnique({
-      where: { id },
+      where: { id: params.id },
     });
-    
+
     if (!opportunity) {
       return NextResponse.json(
         { error: 'Opportunity not found' },
         { status: 404 }
       );
     }
-    
-    // Check if application already exists
+
+    // Check if user has already applied
     const existingApplication = await db.application.findFirst({
       where: {
-        userId,
-        opportunityId: id,
+        opportunityId: params.id,
+        userId: session.user.id,
       },
-      include: {
-        status: true
-      }
     });
-    
-    let application;
-    
+
     if (existingApplication) {
-      // Update existing application status
-      const updatedStatus = await db.applicationStatusType.update({
-        where: {
-          id: existingApplication.status.id
-        },
-        data: {
-          isApplied,
-          isConfirm,
-        },
-      });
-
-      application = await db.application.findUnique({
-        where: {
-          id: existingApplication.id,
-        },
-        include: {
-          status: true,
-        },
-      });
-    } else {
-      // Create new application with new status
-      const newStatus = await db.applicationStatusType.create({
-        data: {
-          isApplied,
-          isConfirm,
-        },
-      });
-
-      application = await db.application.create({
-        data: {
-          userId,
-          opportunityId: id,
-          statusId: newStatus.id,
-        },
-        include: {
-          status: true,
-        },
-      });
+      return NextResponse.json(
+        { error: 'You have already applied for this opportunity' },
+        { status: 400 }
+      );
     }
-    
-    // Create a notification for the user
-    await db.notification.create({
+
+    // Create application status
+    const status = await db.applicationStatusType.create({
       data: {
-        userId,
-        type: 'APPLICATION_UPDATE',
-        message: isConfirm 
-          ? `Your application for ${opportunity.title} has been ${isApplied ? 'completed' : 'started'}`
-          : `Please confirm your application status for ${opportunity.title}`,
-        relatedEntityId: id,
+        isApplied: validatedData.status === 'ACCEPTED',
+        isConfirm: true,
       },
     });
-    
-    return NextResponse.json(application);
+
+    // Create application
+    const application = await db.application.create({
+      data: {
+        opportunityId: params.id,
+        userId: session.user.id,
+        statusId: status.id,
+      },
+    });
+
+    return NextResponse.json(application, { status: 201 });
   } catch (error) {
-    console.error('Error handling application:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid request data', details: error.errors },
+        { status: 400 }
+      );
+    }
+
+    console.error('Error creating application:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

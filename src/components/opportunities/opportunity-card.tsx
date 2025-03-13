@@ -8,31 +8,13 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useBookmarkStore } from "@/store/bookmarkStore";
 import { useApplicationStore } from "@/store/applicationStore";
+import { Opportunity } from "@/types";
 
-type OpportunityCardProps = {
-  opportunity: {
-    id: string;
-    title: string;
-    shortDescription: string;
-    deadline: Date;
-    status: "OPENING_SOON" | "ACTIVE" | "CLOSING_SOON" | "CLOSED";
-    visitCount: number;
-    isPopular: boolean;
-    isNew: boolean;
-    organization: {
-      id: string;
-      name: string;
-      logo?: string | null;
-    };
-    category: {
-      id: string;
-      name: string;
-    };
-    isBookmarked?: boolean;
-  };
+interface OpportunityCardProps {
+  opportunity: Opportunity;
   variant?: "default" | "compact";
   onBookmark?: (isBookmarked: boolean) => Promise<void>;
-};
+}
 
 export function OpportunityCard({ opportunity, variant = "default", onBookmark }: OpportunityCardProps) {
   const { data: session } = useSession();

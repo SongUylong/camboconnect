@@ -264,3 +264,12 @@ export type User = {
     ORGANIZATION_UPDATE = "ORGANIZATION_UPDATE",
     NEW_MESSAGE = "NEW_MESSAGE"
   }
+
+// Export all types from their respective files
+export * from './opportunity';
+// No need to export from category since it's already defined above
+// export * from './category';
+// No need to export from organization since it's already defined above
+// export * from './organization';
+// No need to export from user since it's already defined above
+// export * from './user';

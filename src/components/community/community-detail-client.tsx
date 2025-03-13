@@ -5,9 +5,11 @@ import Link from "next/link";
 import { ArrowLeft, Building, Calendar, Filter, Globe, Users, X, ChevronDown, Search, Loader2 } from "lucide-react";
 import { FollowButton } from "@/components/community/follow-button";
 import { OpportunityCard } from "@/components/opportunities/opportunity-card";
+import { OpportunityFilter } from "@/components/opportunities/opportunity-filter";
 import { useOrganizationOpportunities } from '@/hooks/use-opportunities';
 import { useBookmarkOpportunity, useUnbookmarkOpportunity } from '@/hooks/use-opportunities';
 import { toast } from 'sonner';
+import { Category, Opportunity as BaseOpportunity, OpportunityStatus } from "@/types";
 
 // Define types
 type Organization = {
@@ -23,30 +25,10 @@ type Organization = {
 };
 
 // Updated Opportunity type to match OpportunityCard props
-type Opportunity = {
-  id: string;
-  title: string;
-  shortDescription: string;
-  deadline: Date;
-  status: "OPENING_SOON" | "ACTIVE" | "CLOSING_SOON" | "CLOSED";
-  visitCount: number;
-  isPopular: boolean;
-  isNew: boolean;
-  organization: {
-    id: string;
-    name: string;
-    logo?: string | null;
-  };
-  category: {
-    id: string;
-    name: string;
-  };
-  isBookmarked?: boolean;
-};
-
-type Category = {
-  id: string;
-  name: string;
+type Opportunity = Omit<BaseOpportunity, 'status'> & {
+  status: OpportunityStatus;
+  categoryId: string;
+  organizationId: string;
 };
 
 interface CommunityDetailClientProps {
@@ -93,12 +75,133 @@ export function CommunityDetailClient({
   }
 
   // Use React Query hooks
-  const { data: opportunitiesData, isLoading: queryLoading } = useOrganizationOpportunities(
+  const { data: opportunitiesData, isLoading: queryLoading, refetch } = useOrganizationOpportunities(
     organization.id,
     queryParams
   );
   const bookmarkOpportunity = useBookmarkOpportunity();
   const unbookmarkOpportunity = useUnbookmarkOpportunity();
+
+  // Update opportunities when data changes from API
+  useEffect(() => {
+    if (opportunitiesData?.opportunities) {
+      const transformedOpportunities = opportunitiesData.opportunities.map(opp => ({
+        ...opp,
+        deadline: new Date(opp.deadline),
+        startDate: opp.startDate ? new Date(opp.startDate) : null,
+        endDate: opp.endDate ? new Date(opp.endDate) : null,
+        status: opp.status as OpportunityStatus,
+        categoryId: opp.category.id,
+        organizationId: opp.organization.id
+      })) as unknown as Opportunity[];
+      
+      setOpportunities(transformedOpportunities);
+    }
+  }, [opportunitiesData]);
+
+  // Update active filter count
+  useEffect(() => {
+    const count = [statusFilter, categoryFilter].filter(filter => filter !== "").length;
+    setActiveFilterCount(count);
+  }, [statusFilter, categoryFilter]);
+
+  // Handle category filter change
+  const handleCategoryChange = (value: string) => {
+    setCategoryFilter(value);
+    // Update query params
+    const params = new URLSearchParams(queryParams.toString());
+    if (value) {
+      params.set("category", value);
+    } else {
+      params.delete("category");
+    }
+    
+    // Update URL without navigation
+    window.history.replaceState(
+      {},
+      '',
+      `${window.location.pathname}?${params.toString()}`
+    );
+    
+    // Apply optimistic UI
+    if (opportunitiesData?.opportunities) {
+      const filtered = opportunitiesData.opportunities.filter(opp => {
+        const matchesCategory = !value || opp.category.id === value;
+        const matchesStatus = !statusFilter || opp.status === statusFilter;
+        return matchesCategory && matchesStatus;
+      }).map(opp => ({
+        ...opp,
+        deadline: new Date(opp.deadline),
+        startDate: opp.startDate ? new Date(opp.startDate) : null,
+        endDate: opp.endDate ? new Date(opp.endDate) : null,
+        status: opp.status as OpportunityStatus,
+        categoryId: opp.category.id,
+        organizationId: opp.organization.id
+      })) as unknown as Opportunity[];
+      
+      setOpportunities(filtered);
+    }
+    
+    // Trigger refetch
+    refetch();
+  };
+
+  // Handle status filter change
+  const handleStatusChange = (value: string) => {
+    setStatusFilter(value);
+    // Update query params
+    const params = new URLSearchParams(queryParams.toString());
+    if (value) {
+      params.set("status", value);
+    } else {
+      params.delete("status");
+    }
+    
+    // Update URL without navigation
+    window.history.replaceState(
+      {},
+      '',
+      `${window.location.pathname}?${params.toString()}`
+    );
+    
+    // Apply optimistic UI
+    if (opportunitiesData?.opportunities) {
+      const filtered = opportunitiesData.opportunities.filter(opp => {
+        const matchesStatus = !value || opp.status === value;
+        const matchesCategory = !categoryFilter || opp.category.id === categoryFilter;
+        return matchesStatus && matchesCategory;
+      }).map(opp => ({
+        ...opp,
+        deadline: new Date(opp.deadline),
+        startDate: opp.startDate ? new Date(opp.startDate) : null,
+        endDate: opp.endDate ? new Date(opp.endDate) : null,
+        status: opp.status as OpportunityStatus,
+        categoryId: opp.category.id,
+        organizationId: opp.organization.id
+      })) as unknown as Opportunity[];
+      
+      setOpportunities(filtered);
+    }
+    
+    // Trigger refetch
+    refetch();
+  };
+
+  // Reset all filters
+  const resetFilters = () => {
+    setCategoryFilter("");
+    setStatusFilter("");
+    
+    // Update URL without navigation
+    window.history.replaceState(
+      {},
+      '',
+      window.location.pathname
+    );
+    
+    // Trigger refetch
+    refetch();
+  };
 
   const handleBookmark = async (opportunityId: string, isBookmarked: boolean) => {
     try {
@@ -123,12 +226,6 @@ export function CommunityDetailClient({
       month: 'short', 
       day: 'numeric' 
     });
-  };
-
-  // Reset all filters
-  const resetFilters = () => {
-    setCategoryFilter("");
-    setStatusFilter("");
   };
 
   if (queryLoading) {
@@ -291,7 +388,7 @@ export function CommunityDetailClient({
                         </label>
                         <select
                           value={categoryFilter}
-                          onChange={(e) => setCategoryFilter(e.target.value)}
+                          onChange={(e) => handleCategoryChange(e.target.value)}
                           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
                           <option value="">All Categories</option>
@@ -310,7 +407,7 @@ export function CommunityDetailClient({
                         </label>
                         <select
                           value={statusFilter}
-                          onChange={(e) => setStatusFilter(e.target.value)}
+                          onChange={(e) => handleStatusChange(e.target.value)}
                           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
                           <option value="">All Statuses</option>
@@ -369,7 +466,23 @@ export function CommunityDetailClient({
             {filteredOpportunities.map((opportunity) => (
               <OpportunityCard
                 key={opportunity.id}
-                opportunity={opportunity}
+                opportunity={{
+                  ...opportunity,
+                  description: opportunity.description || '',
+                  eligibility: opportunity.eligibility || '',
+                  applicationProcess: opportunity.applicationProcess || '',
+                  benefits: opportunity.benefits || '',
+                  contactInfo: opportunity.contactInfo || '',
+                  externalLink: opportunity.externalLink || null,
+                  deadline: new Date(opportunity.deadline),
+                  startDate: opportunity.startDate ? new Date(opportunity.startDate) : null,
+                  endDate: opportunity.endDate ? new Date(opportunity.endDate) : null,
+                  createdAt: opportunity.createdAt || new Date(),
+                  updatedAt: opportunity.updatedAt || new Date(),
+                  categoryId: opportunity.category.id,
+                  organizationId: opportunity.organization.id,
+                  status: opportunity.status as OpportunityStatus
+                }}
                 onBookmark={(isBookmarked) => handleBookmark(opportunity.id, isBookmarked)}
               />
             ))}

@@ -11,6 +11,10 @@ import { OpportunityCard } from "@/components/opportunities/opportunity-card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { useLoadingState } from '@/hooks/useLoadingState';
+import { OpportunityFilter } from "@/components/opportunities/opportunity-filter";
+import { Input } from "@/components/ui/input";
+import { Category, Opportunity as BaseOpportunity, OpportunityStatus } from "@/types";
+import { useFetchOpportunities } from "@/hooks/useQueryHooks";
 
 // Define the organization type
 type Organization = {
@@ -26,31 +30,10 @@ type Organization = {
 };
 
 // Define the opportunity type to match OpportunityCard props
-type Opportunity = {
-  id: string;
-  title: string;
-  shortDescription: string;
-  deadline: Date;
-  status: "OPENING_SOON" | "ACTIVE" | "CLOSING_SOON" | "CLOSED";
-  visitCount: number;
-  isPopular: boolean;
-  isNew: boolean;
-  organization: {
-    id: string;
-    name: string;
-    logo?: string | null;
-  };
-  category: {
-    id: string;
-    name: string;
-  };
-  isBookmarked?: boolean;
-};
-
-// Define the category type
-type Category = {
-  id: string;
-  name: string;
+type Opportunity = Omit<BaseOpportunity, 'status'> & {
+  status: OpportunityStatus;
+  categoryId: string;
+  organizationId: string;
 };
 
 interface CommunityClientProps {
@@ -104,6 +87,33 @@ export function CommunityClient({
       fetchOpportunities(selectedOrganization.id);
     }
   }, [selectedOrganization, statusFilter, categoryFilter]);
+
+  // Apply optimistic UI for filters
+  useEffect(() => {
+    if (opportunities.length > 0 && (statusFilter || categoryFilter)) {
+      // Calculate active filter count
+      const activeCount = [statusFilter, categoryFilter].filter(f => f).length;
+      
+      // Apply optimistic filtering
+      const filteredOpps = opportunities.filter(opp => {
+        let matchesStatus = true;
+        let matchesCategory = true;
+        
+        if (statusFilter) {
+          matchesStatus = opp.status === statusFilter;
+        }
+        
+        if (categoryFilter) {
+          matchesCategory = opp.category.id === categoryFilter;
+        }
+        
+        return matchesStatus && matchesCategory;
+      });
+      
+      // No need to update state here as the fetchOpportunities will be triggered
+      // by the previous useEffect and will update the opportunities
+    }
+  }, [statusFilter, categoryFilter, opportunities]);
 
   // Fetch categories when selected organization changes
   useEffect(() => {
@@ -189,12 +199,46 @@ export function CommunityClient({
     }
   };
 
+  // Handle category filter change
+  const handleCategoryChange = (value: string) => {
+    setCategoryFilter(value);
+    
+    // Apply optimistic filtering
+    if (opportunities.length > 0) {
+      const filteredOpps = opportunities.filter(opp => {
+        const matchesCategory = !value || opp.category.id === value;
+        const matchesStatus = !statusFilter || opp.status === statusFilter;
+        return matchesCategory && matchesStatus;
+      });
+      
+      // We don't update the opportunities state here because
+      // the fetchOpportunities will be triggered by the useEffect
+    }
+  };
+
   // Handle layout toggle
   const toggleLayout = (newLayout: string) => {
     const params = new URLSearchParams(urlSearchParams.toString());
     params.set("layout", newLayout);
     router.push(`/community?${params.toString()}`);
     setLayout(newLayout);
+  };
+
+  // Handle status filter change
+  const handleStatusChange = (value: string) => {
+    setStatusFilter(value);
+    
+    // Apply optimistic filtering
+    if (opportunities.length > 0) {
+      const filteredOpps = opportunities.filter(opp => {
+        const matchesStatus = !value || opp.status === value;
+        const matchesCategory = !categoryFilter || opp.category.id === categoryFilter;
+        return matchesStatus && matchesCategory;
+      });
+      
+      // We don't update the opportunities state here because
+      // the fetchOpportunities will be triggered by the useEffect
+    }
   };
 
   // Format date for display
@@ -492,7 +536,7 @@ export function CommunityClient({
                               </label>
                               <select
                                 value={categoryFilter}
-                                onChange={(e) => setCategoryFilter(e.target.value)}
+                                onChange={(e) => handleCategoryChange(e.target.value)}
                                 className="input w-full text-sm"
                               >
                                 <option value="">All Categories</option>
@@ -511,7 +555,7 @@ export function CommunityClient({
                               </label>
                               <select
                                 value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
+                                onChange={(e) => handleStatusChange(e.target.value)}
                                 className="input w-full text-sm"
                               >
                                 <option value="">All Statuses</option>
@@ -565,6 +609,19 @@ export function CommunityClient({
                         opportunity={{
                           ...opportunity,
                           deadline: new Date(opportunity.deadline),
+                          description: opportunity.description || '',
+                          eligibility: opportunity.eligibility || '',
+                          applicationProcess: opportunity.applicationProcess || '',
+                          benefits: opportunity.benefits || '',
+                          contactInfo: opportunity.contactInfo || '',
+                          externalLink: opportunity.externalLink || null,
+                          startDate: opportunity.startDate ? new Date(opportunity.startDate) : null,
+                          endDate: opportunity.endDate ? new Date(opportunity.endDate) : null,
+                          createdAt: opportunity.createdAt || new Date(),
+                          updatedAt: opportunity.updatedAt || new Date(),
+                          categoryId: opportunity.category.id,
+                          organizationId: opportunity.organization.id,
+                          status: opportunity.status as OpportunityStatus
                         }}
                         variant="compact"
                       />

@@ -1,62 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { Search } from "lucide-react";
-import throttle from "lodash/throttle";
+import { Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
-export function OpportunitySearch() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
-  const [isSearching, setIsSearching] = useState(false);
+interface OpportunitySearchProps {
+  onSearch: (query: string) => void;
+}
 
-  // Create a throttled version of the search function
-  const throttledSearch = useCallback(
-    throttle((query: string) => {
-      setIsSearching(true);
-      const params = new URLSearchParams(searchParams.toString());
-      
-      if (query) {
-        params.set("q", query);
-      } else {
-        params.delete("q");
-      }
-      
-      router.push(`${pathname}?${params.toString()}`);
-      setTimeout(() => setIsSearching(false), 200); // Visual feedback for search activity
-    }, 200, { leading: true, trailing: true }), // Execute on first call and last call within the window
-    [pathname, searchParams]
-  );
-
-  // Cleanup the throttled function on unmount
-  useEffect(() => {
-    return () => {
-      throttledSearch.cancel();
-    };
-  }, [throttledSearch]);
-
-  // Handle search input change
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-    throttledSearch(query);
-  };
-
+export function OpportunitySearch({ onSearch }: OpportunitySearchProps) {
   return (
-    <div className="relative w-full md:w-80">
-      <input
-        type="text"
-        value={searchQuery}
-        onChange={handleSearchChange}
+    <div className="relative">
+      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+      <Input
+        type="search"
         placeholder="Search opportunities..."
-        className="input w-full pl-10 pr-4 py-2"
-        aria-label="Search opportunities"
+        className="pl-9"
+        onChange={(e) => onSearch(e.target.value)}
       />
-      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-        <Search className={`h-5 w-5 ${isSearching ? "text-blue-500" : "text-gray-400"}`} />
-      </div>
     </div>
   );
 } 

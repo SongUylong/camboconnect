@@ -1,50 +1,67 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { ChevronDown } from "lucide-react";
+import { Category } from '@/types';
 
-type CategoryType = {
-  id: string;
-  name: string;
-};
+interface FilterProps {
+  categories: Category[];
+  onFilterChange: (type: string, value: string) => void;
+  selectedCategory?: string;
+  selectedStatus?: string;
+  onReset?: () => void;
+}
 
-type FilterProps = {
-  categories: CategoryType[];
-};
-
-export function OpportunityFilter({ categories }: FilterProps) {
-  const router = useRouter();
-  const pathname = usePathname();
+export function OpportunityFilter({ 
+  categories, 
+  onFilterChange,
+  selectedCategory = "",
+  selectedStatus = "",
+  onReset
+}: FilterProps) {
   const searchParams = useSearchParams();
+  const [sort, setSort] = useState<string>("latest");
   
-  const [status, setStatus] = useState<string>(searchParams.get("status") || "");
-  const [category, setCategory] = useState<string>(searchParams.get("category") || "");
-  const [sort, setSort] = useState<string>(searchParams.get("sort") || "latest");
+  // Handle status change
+  const handleStatusChange = (value: string) => {
+    onFilterChange("status", value);
+  };
 
+  // Handle category change
+  const handleCategoryChange = (value: string) => {
+    onFilterChange("category", value);
+  };
+
+  // Handle sort change
+  const handleSortChange = (value: string) => {
+    setSort(value);
+    onFilterChange("sort", value);
+  };
+
+  // Handle reset
+  const handleReset = () => {
+    // Reset local state
+    setSort("latest");
+    
+    // Call parent reset handler if provided
+    if (onReset) {
+      onReset();
+    } else {
+      // Fallback to individual resets
+      handleStatusChange("");
+      handleCategoryChange("");
+      handleSortChange("latest");
+    }
+  };
+
+  // Initialize sort value from URL on first render
   useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    
-    if (status) {
-      params.set("status", status);
-    } else {
-      params.delete("status");
+    const sortParam = searchParams.get("sort");
+    if (sortParam) {
+      setSort(sortParam);
     }
-    
-    if (category) {
-      params.set("category", category);
-    } else {
-      params.delete("category");
-    }
-    
-    if (sort && sort !== "latest") {
-      params.set("sort", sort);
-    } else {
-      params.delete("sort");
-    }
-    
-    router.push(`${pathname}?${params.toString()}`);
-  }, [status, category, sort, router, pathname, searchParams]);
+  }, []);
 
   return (
     <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
@@ -59,8 +76,8 @@ export function OpportunityFilter({ categories }: FilterProps) {
           <div className="relative">
             <select
               id="status"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              value={selectedStatus}
+              onChange={(e) => handleStatusChange(e.target.value)}
               className="input appearance-none pr-10 w-full"
             >
               <option value="">All Statuses</option>
@@ -81,8 +98,8 @@ export function OpportunityFilter({ categories }: FilterProps) {
           <div className="relative">
             <select
               id="category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              value={selectedCategory}
+              onChange={(e) => handleCategoryChange(e.target.value)}
               className="input appearance-none pr-10 w-full"
             >
               <option value="">All Categories</option>
@@ -105,7 +122,7 @@ export function OpportunityFilter({ categories }: FilterProps) {
             <select
               id="sort"
               value={sort}
-              onChange={(e) => setSort(e.target.value)}
+              onChange={(e) => handleSortChange(e.target.value)}
               className="input appearance-none pr-10 w-full"
             >
               <option value="latest">Latest</option>
@@ -118,11 +135,7 @@ export function OpportunityFilter({ categories }: FilterProps) {
         
         {/* Reset Button */}
         <button
-          onClick={() => {
-            setStatus("");
-            setCategory("");
-            setSort("latest");
-          }}
+          onClick={handleReset}
           className="btn btn-outline w-full mt-2"
         >
           Reset Filters

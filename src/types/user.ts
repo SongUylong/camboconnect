@@ -1,6 +1,6 @@
-import { User, Organization, Opportunity } from "@prisma/client";
+import { User as PrismaUser, Organization, Opportunity } from "@prisma/client";
 
-export type UserWithRelations = User & {
+export type UserWithRelations = PrismaUser & {
   organizations?: Organization[];
   appliedOpportunities?: Opportunity[];
   savedOpportunities?: Opportunity[];
@@ -63,4 +63,31 @@ export interface UserFilters {
   experience?: string;
   education?: string;
   search?: string;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  profileImage?: string | null;
+  bio?: string | null;
+  education?: string | null;
+  skills?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  isAdmin: boolean;
+  twoFactorEnabled: boolean;
+  twoFactorMethod?: TwoFactorMethod | null;
+  privacyLevel: PrivacyLevel;
+}
+
+export enum TwoFactorMethod {
+  EMAIL = "EMAIL"
+}
+
+export enum PrivacyLevel {
+  PUBLIC = "PUBLIC",
+  ONLY_ME = "ONLY_ME",
+  FRIENDS_ONLY = "FRIENDS_ONLY"
 }

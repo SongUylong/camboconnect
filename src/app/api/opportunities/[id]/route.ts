@@ -2,76 +2,80 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/prisma';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { PrivacyLevel } from '@prisma/client';
+import { z } from 'zod';
 
-interface ParamsType {
-  params: {
-    id: string;
-  };
-}
+// Validation schema for updates
+const updateOpportunitySchema = z.object({
+  title: z.string().min(1).optional(),
+  description: z.string().min(1).optional(),
+  shortDescription: z.string().min(1).optional(),
+  eligibility: z.string().min(1).optional(),
+  applicationProcess: z.string().min(1).optional(),
+  benefits: z.string().min(1).optional(),
+  contactInfo: z.string().min(1).optional(),
+  deadline: z.string().datetime().optional(),
+  categoryId: z.string().optional(),
+  status: z.enum(['OPENING_SOON', 'ACTIVE', 'CLOSING_SOON', 'CLOSED']).optional(),
+  externalLink: z.string().url().optional(),
+  startDate: z.string().datetime().optional(),
+  endDate: z.string().datetime().optional(),
+  isPopular: z.boolean().optional(),
+});
 
-export async function GET(req: Request, { params }: ParamsType) {
+export async function GET(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = params;
-    
-    // Increment view count
-    await db.opportunity.update({
-      where: { id },
-      data: { visitCount: { increment: 1 } },
-    });
-    
-    // Get current user for bookmark status
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
-    
-    // Fetch the opportunity with all related data
+
     const opportunity = await db.opportunity.findUnique({
-      where: { id },
+      where: { id: params.id },
       include: {
-        organization: true,
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            logo: true,
+          },
+        },
         category: true,
         bookmarks: userId ? {
           where: {
             userId,
           },
         } : false,
-        participations: {
-          where: {
-            privacyLevel: PrivacyLevel.PUBLIC,
-          },
+        applications: {
+          where: userId ? {
+            userId,
+          } : undefined,
           include: {
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                profileImage: true,
-                privacyLevel: true,
-              },
-            },
-          },
-          orderBy: {
-            year: 'desc',
+            status: true,
           },
         },
       },
     });
-    
+
     if (!opportunity) {
       return NextResponse.json(
         { error: 'Opportunity not found' },
         { status: 404 }
       );
     }
-    
-    // Add isBookmarked flag
+
+    // Transform response to include isBookmarked flag
     const { bookmarks, ...rest } = opportunity;
     const transformedOpportunity = {
       ...rest,
       isBookmarked: userId ? bookmarks.length > 0 : false,
     };
-    
-    return NextResponse.json(transformedOpportunity);
+
+    return NextResponse.json(transformedOpportunity, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=59',
+      },
+    });
   } catch (error) {
     console.error('Error fetching opportunity:', error);
     return NextResponse.json(
@@ -81,10 +85,11 @@ export async function GET(req: Request, { params }: ParamsType) {
   }
 }
 
-// Only admin users can update opportunities
-export async function PUT(req: Request, { params }: ParamsType) {
+export async function PATCH(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = params;
     const session = await getServerSession(authOptions);
     
     // Check authentication and admin status
@@ -94,33 +99,43 @@ export async function PUT(req: Request, { params }: ParamsType) {
         { status: 401 }
       );
     }
-    
+
     const body = await req.json();
     
-    // Update opportunity
+    // Validate request body
+    const validatedData = updateOpportunitySchema.parse(body);
+    
+    // Convert date strings to Date objects
+    const updateData = {
+      ...validatedData,
+      ...(validatedData.deadline && { deadline: new Date(validatedData.deadline) }),
+      ...(validatedData.startDate && { startDate: new Date(validatedData.startDate) }),
+      ...(validatedData.endDate && { endDate: new Date(validatedData.endDate) }),
+    };
+
     const opportunity = await db.opportunity.update({
-      where: { id },
-      data: {
-        title: body.title,
-        description: body.description,
-        shortDescription: body.shortDescription,
-        eligibility: body.eligibility,
-        applicationProcess: body.applicationProcess,
-        benefits: body.benefits,
-        contactInfo: body.contactInfo,
-        externalLink: body.externalLink,
-        deadline: body.deadline ? new Date(body.deadline) : undefined,
-        startDate: body.startDate ? new Date(body.startDate) : undefined,
-        endDate: body.endDate ? new Date(body.endDate) : undefined,
-        status: body.status,
-        categoryId: body.categoryId,
-        organizationId: body.organizationId,
-        isPopular: body.isPopular,
+      where: { id: params.id },
+      data: updateData,
+      include: {
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            logo: true,
+          },
+        },
+        category: true,
       },
     });
-    
+
     return NextResponse.json(opportunity);
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Validation error', details: error.errors },
+        { status: 400 }
+      );
+    }
     console.error('Error updating opportunity:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -129,10 +144,11 @@ export async function PUT(req: Request, { params }: ParamsType) {
   }
 }
 
-// Only admin users can delete opportunities
-export async function DELETE(req: Request, { params }: ParamsType) {
+export async function DELETE(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = params;
     const session = await getServerSession(authOptions);
     
     // Check authentication and admin status
@@ -142,28 +158,12 @@ export async function DELETE(req: Request, { params }: ParamsType) {
         { status: 401 }
       );
     }
-    
-    // Check if opportunity has any bookmarks
-    const bookmarksCount = await db.bookmark.count({
-      where: { opportunityId: id },
+
+    await db.opportunity.delete({
+      where: { id: params.id },
     });
 
-    if (bookmarksCount > 0) {
-      return NextResponse.json(
-        { error: 'Cannot delete opportunity that has been bookmarked by users' },
-        { status: 409 }
-      );
-    }
-    
-    // Delete opportunity
-    await db.opportunity.delete({
-      where: { id },
-    });
-    
-    return NextResponse.json(
-      { message: 'Opportunity deleted successfully' },
-      { status: 200 }
-    );
+    return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error('Error deleting opportunity:', error);
     return NextResponse.json(

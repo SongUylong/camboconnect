@@ -10,27 +10,11 @@ import Link from "next/link";
 import { MainLayout } from "@/components/layout/main-layout";
 import { useBookmarkStore } from "@/store/bookmarkStore";
 import { OpportunityCard } from "@/components/opportunities/opportunity-card";
+import { Opportunity, OpportunityStatus } from "@/types";
 
-interface BookmarkedOpportunity {
-  id: string;
+// Extended version of Opportunity with bookmark-specific fields
+interface BookmarkedOpportunity extends Opportunity {
   bookmarkId: string;
-  title: string;
-  shortDescription: string;
-  deadline: Date;
-  status: "OPENING_SOON" | "ACTIVE" | "CLOSING_SOON" | "CLOSED";
-  visitCount: number;
-  isPopular: boolean;
-  isNew: boolean;
-  organization: {
-    id: string;
-    name: string;
-    logo?: string | null;
-  };
-  category: {
-    id: string;
-    name: string;
-  };
-  isBookmarked: boolean;
   bookmarkedAt: Date;
 }
 
@@ -188,7 +172,10 @@ export default function BookmarksPage() {
             </div>
           ) : (
             filteredBookmarks.map((bookmark) => (
-              <OpportunityCard key={bookmark.id} opportunity={bookmark} />
+              <OpportunityCard 
+                key={bookmark.id} 
+                opportunity={bookmark as any} 
+              />
             ))
           )}
         </div>

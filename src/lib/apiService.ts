@@ -1,12 +1,11 @@
 import apiClient from './api-client';
-import type { Opportunity, Organization, Category } from '@/types';
+import type { Opportunity, Organization, Category, OpportunityResponse } from '@/types';
+import axios from 'axios';
 
 export const apiService = {
   // Opportunity related API calls
-  getOpportunities: async (params: URLSearchParams) => {
-    const { data } = await apiClient.get<{ opportunities: Opportunity[]; totalCount: number }>(
-      `/api/opportunities?${params.toString()}`
-    );
+  getOpportunities: async (params: URLSearchParams): Promise<OpportunityResponse> => {
+    const { data } = await axios.get<OpportunityResponse>(`/api/opportunities?${params.toString()}`);
     return data;
   },
 

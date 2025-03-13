@@ -3,81 +3,75 @@ import { db } from '@/lib/prisma';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 
-interface ParamsType {
-  params: {
-    id: string;
-  };
-}
-
-export async function POST(req: Request, { params }: ParamsType) {
+export async function POST(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = params;
     const session = await getServerSession(authOptions);
     
-    // Check authentication
-    if (!session || !session.user.id) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
-    
-    const userId = session.user.id;
-    const body = await req.json();
-    const { bookmarked } = body;
-    
+
     // Check if opportunity exists
     const opportunity = await db.opportunity.findUnique({
-      where: { id },
+      where: { id: params.id },
     });
-    
+
     if (!opportunity) {
       return NextResponse.json(
         { error: 'Opportunity not found' },
         { status: 404 }
       );
     }
-    
-    // Check if bookmark exists
-    const existingBookmark = await db.bookmark.findFirst({
-      where: {
-        userId,
-        opportunityId: id,
+
+    // Create bookmark
+    const bookmark = await db.bookmark.create({
+      data: {
+        userId: session.user.id,
+        opportunityId: params.id,
       },
     });
-    
-    if (bookmarked) {
-      // Create bookmark if it doesn't exist
-      if (!existingBookmark) {
-        await db.bookmark.create({
-          data: {
-            userId,
-            opportunityId: id,
-          },
-        });
-      }
-      
-      return NextResponse.json({
-        bookmarked: true,
-        message: 'Opportunity bookmarked successfully',
-      });
-    } else {
-      // Remove bookmark if it exists
-      if (existingBookmark) {
-        await db.bookmark.delete({
-          where: {
-            id: existingBookmark.id,
-          },
-        });
-      }
-      
-      return NextResponse.json({
-        bookmarked: false,
-        message: 'Opportunity removed from bookmarks',
-      });
-    }
+
+    return NextResponse.json(bookmark, { status: 201 });
   } catch (error) {
-    console.error('Error updating bookmark:', error);
+    console.error('Error creating bookmark:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Delete bookmark
+    await db.bookmark.deleteMany({
+      where: {
+        userId: session.user.id,
+        opportunityId: params.id,
+      },
+    });
+
+    return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    console.error('Error deleting bookmark:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

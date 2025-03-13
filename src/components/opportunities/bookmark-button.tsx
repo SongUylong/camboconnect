@@ -1,84 +1,83 @@
 "use client";
 
-import { Bookmark } from "lucide-react";
+import { Bookmark, Loader2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import { useBookmarkStore } from "@/store/bookmarkStore";
+import { useState } from "react";
 
 interface BookmarkButtonProps {
   opportunityId: string;
+  isBookmarked: boolean;
+  onBookmark: () => Promise<void>;
+  onUnbookmark: () => Promise<void>;
 }
 
-export function BookmarkButton({ opportunityId }: BookmarkButtonProps) {
+export function BookmarkButton({
+  opportunityId,
+  isBookmarked,
+  onBookmark,
+  onUnbookmark,
+}: BookmarkButtonProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const { isBookmarked, addBookmark, removeBookmark } = useBookmarkStore();
+  const [error, setError] = useState<string | null>(null);
 
-  const handleBookmarkClick = async () => {
+  const handleClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     if (!session) {
       router.push("/login");
       return;
     }
 
-    setIsLoading(true);
-
     try {
-      const newBookmarkState = !isBookmarked(opportunityId);
+      setIsLoading(true);
+      setError(null);
       
-      // Send API request to toggle bookmark
-      const response = await fetch(`/api/opportunities/${opportunityId}/bookmark`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookmarked: newBookmarkState }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update bookmark');
-      }
-
-      // Update global state
-      if (newBookmarkState) {
-        addBookmark(opportunityId);
+      if (isBookmarked) {
+        await onUnbookmark();
       } else {
-        removeBookmark(opportunityId);
+        await onBookmark();
       }
-      
-      // Force router refresh to update server state
-      router.refresh();
-    } catch (error) {
-      console.error("Failed to update bookmark:", error);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update bookmark');
+      // Clear error after 3 seconds
+      setTimeout(() => setError(null), 3000);
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (isLoading) {
-    return (
-      <button
-        className="btn btn-outline opacity-75"
-        disabled
-      >
-        <span className="animate-pulse">Loading...</span>
-      </button>
-    );
-  }
-
-  const bookmarked = isBookmarked(opportunityId);
-
   return (
-    <button
-      onClick={handleBookmarkClick}
-      className={`btn ${
-        bookmarked ? "bg-blue-50 text-blue-600 border-blue-600 p-2" : "btn-outline"
-      }`}
-      aria-label={bookmarked ? "Remove bookmark" : "Add bookmark"}
-    >
-      <Bookmark
-        className={`h-5 w-5 mr-2 ${bookmarked ? "fill-blue-600" : ""}`}
-      />
-      {bookmarked ? "Bookmarked" : "Bookmark"}
-    </button>
+    <div className="relative">
+      <button
+        onClick={handleClick}
+        disabled={isLoading}
+        className={`relative inline-flex items-center justify-center p-2 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+          isBookmarked
+            ? 'text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100'
+            : 'text-gray-400 hover:text-gray-500 bg-gray-50 hover:bg-gray-100'
+        }`}
+        title={isBookmarked ? "Remove from bookmarks" : "Add to bookmarks"}
+      >
+        {isLoading ? (
+          <Loader2 className="h-5 w-5 animate-spin" />
+        ) : (
+          <Bookmark
+            className={`h-5 w-5 ${isBookmarked ? "fill-current" : ""}`}
+          />
+        )}
+      </button>
+      
+      {/* Error tooltip */}
+      {error && (
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-red-500 text-white text-sm rounded shadow-lg whitespace-nowrap">
+          {error}
+          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-red-500"></div>
+        </div>
+      )}
+    </div>
   );
 }
