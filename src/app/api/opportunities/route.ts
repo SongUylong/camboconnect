@@ -13,6 +13,10 @@ export async function GET(req: Request) {
     const query = searchParams.get('q');
     const sort = searchParams.get('sort') || 'latest';
     
+    // Pagination params
+    const page = parseInt(searchParams.get('page') || "1");
+    const pageSize = 12; // Show 12 opportunities per page (4 rows of 3 in desktop view)
+    
     // Build query conditions
     const where: any = {};
     
@@ -59,7 +63,7 @@ export async function GET(req: Request) {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
     
-    // Fetch opportunities
+    // Fetch opportunities with pagination
     const opportunities = await db.opportunity.findMany({
       where,
       orderBy,
@@ -78,7 +82,16 @@ export async function GET(req: Request) {
           },
         } : false,
       },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     });
+    
+    // Get total count for pagination
+    const totalCount = await db.opportunity.count({
+      where,
+    });
+    
+    const totalPages = Math.ceil(totalCount / pageSize);
     
     // Add isBookmarked flag
     const transformedOpportunities = opportunities.map(opportunity => {
@@ -89,7 +102,12 @@ export async function GET(req: Request) {
       };
     });
     
-    return NextResponse.json(transformedOpportunities);
+    return NextResponse.json({
+      opportunities: transformedOpportunities,
+      totalCount,
+      totalPages,
+      currentPage: page,
+    });
   } catch (error) {
     console.error('Error fetching opportunities:', error);
     return NextResponse.json(

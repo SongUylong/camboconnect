@@ -1,18 +1,17 @@
 import { MainLayout } from "@/components/layout/main-layout";
-import { OpportunityCard } from "@/components/opportunities/opportunity-card";
 import { OpportunityFilter } from "@/components/opportunities/opportunity-filter";
 import { OpportunitySearch } from "@/components/opportunities/opportunity-search";
+import { OpportunitiesClient } from "@/components/opportunities/opportunities-client";
 import { db } from "@/lib/prisma";
-import { Search } from "lucide-react";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { revalidatePath } from "next/cache";
 
 interface SearchParams {
   status?: string;
   category?: string;
   sort?: string;
   q?: string;
+  page?: string;
 }
 
 // Set export const dynamic to force dynamic rendering
@@ -34,6 +33,10 @@ export default async function OpportunitiesPage({
       name: "asc",
     },
   });
+
+  // Parse pagination params
+  const page = parseInt(searchParams.page || "1");
+  const pageSize = 12; // 12 items per page (4 rows of 3 in desktop view)
 
   // Build query conditions based on search params
   const whereClause: any = {};
@@ -72,7 +75,7 @@ export default async function OpportunitiesPage({
     orderBy = { visitCount: "desc" };
   }
 
-  // Fetch opportunities with applied filters
+  // Fetch opportunities with applied filters and pagination
   const opportunities = await db.opportunity.findMany({
     where: whereClause,
     orderBy,
@@ -96,7 +99,16 @@ export default async function OpportunitiesPage({
         },
       } : false,
     },
+    skip: (page - 1) * pageSize,
+    take: pageSize,
   });
+
+  // Get total count for pagination
+  const totalCount = await db.opportunity.count({
+    where: whereClause,
+  });
+
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   // Transform opportunities to include bookmark status
   const transformedOpportunities = opportunities.map(opportunity => {
@@ -118,7 +130,6 @@ export default async function OpportunitiesPage({
             </p>
           </div>
 
-          {/* Replace the search form with OpportunitySearch component */}
           <div className="mt-4 md:mt-0 w-full md:w-auto">
             <OpportunitySearch />
           </div>
@@ -130,22 +141,13 @@ export default async function OpportunitiesPage({
             <OpportunityFilter categories={categories} />
           </div>
 
-          {/* Opportunities Grid */}
+          {/* Opportunities Grid with Pagination */}
           <div className="col-span-1 lg:col-span-3">
-            {transformedOpportunities.length === 0 ? (
-              <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                <h3 className="text-lg font-medium text-gray-900">No opportunities found</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Try adjusting your search or filter criteria
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {transformedOpportunities.map((opportunity) => (
-                  <OpportunityCard key={opportunity.id} opportunity={opportunity} />
-                ))}
-              </div>
-            )}
+            <OpportunitiesClient 
+              initialOpportunities={transformedOpportunities}
+              initialTotalPages={totalPages}
+              initialCurrentPage={page}
+            />
           </div>
         </div>
       </div>
