@@ -55,6 +55,7 @@ export const authOptions: NextAuthOptions = {
   adapter: CustomAdapter(db as PrismaClient),
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   pages: {
     signIn: "/login",
@@ -68,7 +69,7 @@ export const authOptions: NextAuthOptions = {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: process.env.NODE_ENV === 'production'
+        secure: false // Changed from process.env.NODE_ENV === 'production' to false for IP address
       }
     },
     callbackUrl: {
@@ -76,7 +77,7 @@ export const authOptions: NextAuthOptions = {
       options: {
         sameSite: 'lax',
         path: '/',
-        secure: process.env.NODE_ENV === 'production'
+        secure: false // Changed from process.env.NODE_ENV === 'production' to false for IP address
       }
     },
     csrfToken: {
@@ -85,7 +86,7 @@ export const authOptions: NextAuthOptions = {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: process.env.NODE_ENV === 'production'
+        secure: false // Changed from process.env.NODE_ENV === 'production' to false for IP address
       }
     }
   },

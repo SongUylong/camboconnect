@@ -3,7 +3,10 @@ import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
 export async function middleware(request: NextRequest) {
-  const token = await getToken({ req: request });
+  const token = await getToken({ 
+    req: request,
+    secureCookie: false // Set to false for IP address
+  });
   
   // Paths that require authentication
   const protectedPaths = [

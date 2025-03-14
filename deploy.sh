@@ -31,7 +31,10 @@ docker-compose up -d
 echo "Checking if the application is running..."
 sleep 10
 if curl -s http://localhost:3000/api/health | grep -q "status.*ok"; then
-  echo "Deployment successful! Application is running at http://158.178.228.121"
+  echo "Deployment successful! Application is running at http://158.178.228.121:3000"
+  echo ""
+  echo "IMPORTANT: Make sure to update your OAuth provider settings as described in update-oauth.md"
+  echo "This is required for authentication to work with your IP address."
 else
   echo "Deployment failed! Application is not running."
   docker-compose logs app-prod
