@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { Bell, Menu, User, X, Bookmark, Users } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import NotificationCenter from "./notification-center";
 
 interface NavigationItem {
@@ -17,7 +18,9 @@ interface NavigationItem {
 export function Header() {
   const { data: session } = useSession();
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const baseNavigation: NavigationItem[] = [
     { name: "Opportunities", href: "/opportunities" },
@@ -43,6 +46,33 @@ export function Header() {
 
   const isActive = (path: string) => {
     return pathname === path;
+  };
+
+  const handleSignOut = async () => {
+    try {
+      setIsSigningOut(true);
+      
+      // Add a timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Sign out timed out")), 5000)
+      );
+      
+      // Race between the signOut call and the timeout
+      await Promise.race([
+        signOut({ 
+          callbackUrl: '/',
+          redirect: false 
+        }),
+        timeoutPromise
+      ]);
+      
+      // Force a hard refresh to clear any cached state
+      window.location.href = '/';
+    } catch (error) {
+      console.error("Sign out error:", error);
+      toast.error("Failed to sign out. Please try again.");
+      setIsSigningOut(false);
+    }
   };
 
   return (
@@ -119,10 +149,11 @@ export function Header() {
 
                 <div className="ml-3">
                   <button
-                    onClick={() => signOut()}
-                    className="btn btn-outline"
+                    onClick={handleSignOut}
+                    disabled={isSigningOut}
+                    className={`btn btn-outline ${isSigningOut ? 'opacity-70 cursor-not-allowed' : ''}`}
                   >
-                    Sign out
+                    {isSigningOut ? 'Signing out...' : 'Sign out'}
                   </button>
                 </div>
               </>
@@ -231,10 +262,11 @@ export function Header() {
                   </Link>
                 ))}
                 <button
-                  onClick={() => signOut()}
-                  className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                  onClick={handleSignOut}
+                  disabled={isSigningOut}
+                  className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800 disabled:opacity-70"
                 >
-                  Sign out
+                  {isSigningOut ? 'Signing out...' : 'Sign out'}
                 </button>
               </div>
             </div>
