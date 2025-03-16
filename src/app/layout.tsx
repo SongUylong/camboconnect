@@ -6,6 +6,7 @@ import { ApplicationProvider } from "@/contexts/application-context";
 import { Toaster } from "sonner";
 import { UnconfirmedApplicationsCheck } from "@/components/global/UnconfirmedApplicationsCheck";
 import { ApplicationStateInitializer } from "@/components/global/ApplicationStateInitializer";
+import { BookmarkStateInitializer } from "@/components/global/BookmarkStateInitializer";
 import { QueryProvider } from "@/providers/query-provider";
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,6 +27,7 @@ export default function RootLayout({
           <AuthProvider>
             <ApplicationProvider>
               <ApplicationStateInitializer />
+              <BookmarkStateInitializer />
               {children}
             </ApplicationProvider>
           </AuthProvider>

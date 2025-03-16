@@ -45,7 +45,7 @@ export default function BookmarksPage() {
     message: string;
     type: "success" | "error" | null;
   }>({ message: "", type: null });
-  const { removeBookmark, setInitialBookmarks } = useBookmarkStore();
+  const { removeBookmark } = useBookmarkStore();
 
   useEffect(() => {
     // Redirect if not logged in
@@ -73,8 +73,8 @@ export default function BookmarksPage() {
         
         setBookmarks(transformedData);
         
-        // Initialize the global bookmark store with current bookmarks
-        setInitialBookmarks(transformedData.map((bookmark: BookmarkedOpportunity) => bookmark.id));
+        // We no longer need to initialize the bookmark store here
+        // as it's now handled by the global BookmarkStateInitializer
         
         setIsLoading(false);
       } catch (error) {
@@ -86,7 +86,7 @@ export default function BookmarksPage() {
     if (session) {
       fetchBookmarks();
     }
-  }, [session, router, setInitialBookmarks]);
+  }, [session, router]);
 
   // Clear notification after 3 seconds
   useEffect(() => {
