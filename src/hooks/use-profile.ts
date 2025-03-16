@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getUserProfile, updateUserProfile, updateParticipationPrivacy, toggleOrganizationFollow } from '@/api/profile';
+import { getUserProfile, updateUserProfile, updateParticipationPrivacy, toggleOrganizationFollow, getBookmarkedOpportunities } from '@/api/profile';
 import { UserProfile } from '@/types/user';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -90,5 +90,18 @@ export function useToggleOrganizationFollow() {
     onError: () => {
       toast.error('Failed to update follow status');
     },
+  });
+}
+
+/**
+ * Hook for fetching bookmarked opportunities with React Query
+ * @returns Query result with bookmarked opportunities data, loading state, and error
+ */
+export function useBookmarks() {
+  return useQuery({
+    queryKey: ['bookmarks'],
+    queryFn: getBookmarkedOpportunities,
+    staleTime: 60 * 1000, // 1 minute
+    refetchOnWindowFocus: false,
   });
 } 

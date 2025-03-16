@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Search, Bookmark, AlertCircle } from "lucide-react";
@@ -8,8 +8,8 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MainLayout } from "@/components/layout/main-layout";
-import { useBookmarkStore } from "@/store/bookmarkStore";
 import { OpportunityCard } from "@/components/opportunities/opportunity-card";
+import { useBookmarks } from "@/hooks/use-profile";
 
 interface BookmarkedOpportunity {
   id: string;
@@ -35,82 +35,52 @@ interface BookmarkedOpportunity {
 }
 
 export default function BookmarksPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
-  const [bookmarks, setBookmarks] = useState<BookmarkedOpportunity[]>([]);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error" | null;
   }>({ message: "", type: null });
-  const { removeBookmark } = useBookmarkStore();
 
-  useEffect(() => {
-    // Redirect if not logged in
-    if (!session && !isLoading) {
-      router.push("/login");
-      return;
-    }
+  // Use React Query to fetch bookmarks
+  const { data: bookmarks, isLoading, error } = useBookmarks();
 
-    // Fetch bookmarks from API
-    const fetchBookmarks = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch("/api/profile/bookmarks");
-        if (!response.ok) {
-          throw new Error("Failed to fetch bookmarks");
-        }
-        const data = await response.json();
-        
-        // Transform dates to Date objects
-        const transformedData = data.map((bookmark: BookmarkedOpportunity) => ({
-          ...bookmark,
-          deadline: new Date(bookmark.deadline),
-          bookmarkedAt: new Date(bookmark.bookmarkedAt)
-        }));
-        
-        setBookmarks(transformedData);
-        
-        // We no longer need to initialize the bookmark store here
-        // as it's now handled by the global BookmarkStateInitializer
-        
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Failed to fetch bookmarks:", error);
-        setIsLoading(false);
-      }
-    };
-
-    if (session) {
-      fetchBookmarks();
-    }
-  }, [session, router]);
+  // Redirect if not logged in
+  if (status === "unauthenticated") {
+    router.push("/login");
+    return null;
+  }
 
   // Clear notification after 3 seconds
-  useEffect(() => {
-    if (notification.type) {
-      const timer = setTimeout(() => {
-        setNotification({ message: "", type: null });
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [notification]);
+  if (notification.type) {
+    setTimeout(() => {
+      setNotification({ message: "", type: null });
+    }, 3000);
+  }
 
-  const filteredBookmarks = bookmarks.filter((bookmark) => {
-    const matchesSearch = bookmark.title
-      .toLowerCase()
-      .includes(search.toLowerCase()) ||
-      bookmark.organization.name
+  // Filter bookmarks based on search and filter
+  const filteredBookmarks = useMemo(() => {
+    if (!bookmarks) return [];
+    
+    return bookmarks.filter((bookmark: BookmarkedOpportunity) => {
+      const matchesSearch = bookmark.title
         .toLowerCase()
-        .includes(search.toLowerCase());
-    const matchesFilter = filter === "all" || bookmark.category.name.toLowerCase() === filter.toLowerCase();
-    return matchesSearch && matchesFilter;
-  });
+        .includes(search.toLowerCase()) ||
+        bookmark.organization.name
+          .toLowerCase()
+          .includes(search.toLowerCase());
+      const matchesFilter = filter === "all" || bookmark.category.name.toLowerCase() === filter.toLowerCase();
+      return matchesSearch && matchesFilter;
+    });
+  }, [bookmarks, filter, search]);
 
   // Get unique categories for filter
-  const uniqueCategories = Array.from(new Set(bookmarks.map(b => b.category.name)));
+  const uniqueCategories = useMemo(() => {
+    if (!bookmarks) return [] as string[];
+    return Array.from(new Set(bookmarks.map((b: BookmarkedOpportunity) => b.category.name))) as string[];
+  }, [bookmarks]);
 
   return (
     <MainLayout>
@@ -134,7 +104,7 @@ export default function BookmarksPage() {
               className="w-40"
             >
               <option value="all">All Categories</option>
-              {uniqueCategories.map(category => (
+              {uniqueCategories.map((category: string) => (
                 <option key={category} value={category.toLowerCase()}>
                   {category}
                 </option>
@@ -169,6 +139,20 @@ export default function BookmarksPage() {
               <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
               <p className="mt-2 text-gray-500">Loading bookmarks...</p>
             </div>
+          ) : error ? (
+            <div className="col-span-full text-center py-8 bg-white rounded-lg border border-gray-200 p-6">
+              <AlertCircle className="h-12 w-12 text-red-500 mx-auto" />
+              <h3 className="mt-2 text-lg font-medium text-gray-900">Failed to load bookmarks</h3>
+              <p className="mt-1 text-gray-500">
+                Please try refreshing the page
+              </p>
+              <button 
+                onClick={() => window.location.reload()}
+                className="btn btn-primary mt-4"
+              >
+                Refresh Page
+              </button>
+            </div>
           ) : filteredBookmarks.length === 0 ? (
             <div className="col-span-full text-center py-8 bg-white rounded-lg border border-gray-200 p-6">
               <Bookmark className="h-12 w-12 text-gray-300 mx-auto" />
@@ -187,7 +171,7 @@ export default function BookmarksPage() {
               )}
             </div>
           ) : (
-            filteredBookmarks.map((bookmark) => (
+            filteredBookmarks.map((bookmark: BookmarkedOpportunity) => (
               <OpportunityCard key={bookmark.id} opportunity={bookmark} />
             ))
           )}

@@ -70,4 +70,23 @@ export const toggleOrganizationFollow = async (
     console.error('Error toggling organization follow:', error);
     throw error;
   }
+};
+
+/**
+ * Fetches the user's bookmarked opportunities
+ * @returns Promise with bookmarked opportunities data
+ */
+export const getBookmarkedOpportunities = async () => {
+  try {
+    const { data } = await api.get('/api/profile/bookmarks');
+    // Transform dates to Date objects
+    return data.map((bookmark: any) => ({
+      ...bookmark,
+      deadline: new Date(bookmark.deadline),
+      bookmarkedAt: new Date(bookmark.bookmarkedAt)
+    }));
+  } catch (error) {
+    console.error('Error fetching bookmarked opportunities:', error);
+    throw error;
+  }
 }; 
