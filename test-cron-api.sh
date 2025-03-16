@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Use the development key directly
-API_SECRET="fZ9q4xIDOc/2UiIVrRDVOCYUa+p3266rzZ0puM/7ZQY="
+API_SECRET=fZ9q4xIDOc/2UiIVrRDVOCYUa+p3266rzZ0puM/7ZQY=
 
 # Your API endpoint URL (adjust for your development environment)
 API_URL="http://localhost:3000/api/cron/update-opportunities"
