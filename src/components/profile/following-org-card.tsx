@@ -5,6 +5,7 @@ import { Building, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
+import Image from "next/image";
 
 type FollowingOrgCardProps = {
   organization: {
@@ -50,12 +51,13 @@ export function FollowingOrgCard({ organization }: FollowingOrgCardProps) {
         <h3 className="text-sm font-medium text-gray-900 mb-2">{organization.name}</h3>
         <div className="h-12 w-12 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
           {organization.logo ? (
-            <img
+            <Image
               src={organization.logo}
               alt={organization.name}
               className="h-full w-full object-cover"
               referrerPolicy="no-referrer"
-              crossOrigin="anonymous"
+              width={48}
+              height={48}
             />
           ) : (
             <Building className="h-6 w-6 text-gray-400" />

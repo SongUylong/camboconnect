@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Building, Globe, Users } from "lucide-react";
 import { FollowButton } from "@/components/community/follow-button";
+import Image from "next/image";
 
 type OrganizationCardProps = {
   organization: {
@@ -29,12 +30,13 @@ export function OrganizationCard({ organization }: OrganizationCardProps) {
         <div className="flex items-center">
           <div className="h-12 w-12 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
             {organization.logo ? (
-              <img
+              <Image
                 src={organization.logo}
                 alt={organization.name}
                 className="h-full w-full object-cover"
                 referrerPolicy="no-referrer"
-                crossOrigin="anonymous"
+                width={48}
+                height={48}
               />
             ) : (
               <Building className="h-6 w-6 text-gray-400" />

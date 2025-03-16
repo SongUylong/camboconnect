@@ -3,13 +3,14 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { Award, Bookmark, Briefcase, Calendar, Edit, Eye, GraduationCap, Link as LinkIcon, Settings, User, Users, Building } from "lucide-react";
+import { Award, Bookmark, Briefcase, Calendar, Edit, Eye, GraduationCap, Link as LinkIcon, Settings, User, Users, Building, Mail, Phone, MapPin, Link2, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import dynamic from "next/dynamic";
 import { Organization, Follow, Education, Experience, Skill, SocialLink, Application, Participation, Bookmark as BookmarkType, Opportunity } from "@prisma/client";
 import { FollowingOrgCard } from "@/components/profile/following-org-card";
 import { ParticipationPrivacyToggle } from "@/components/profile/participation-privacy-toggle";
+import Image from "next/image";
 
 // Import the WelcomeModal component with dynamic import
 const ProfileClientWrapper = dynamic(() => import("@/components/profile/profile-client-wrapper"), { ssr: false });
@@ -195,20 +196,22 @@ export default async function ProfilePage() {
                 <div className="h-20 w-20 rounded-full bg-white border-4 border-white flex items-center justify-center overflow-hidden relative top-12">
                   {user.profileImage ? (
                     user.profileImage.includes('googleusercontent.com') ? (
-                      <img 
+                      <Image 
                         src={user.profileImage} 
                         alt={`${user.firstName} ${user.lastName}`} 
                         className="h-full w-full object-cover"
                         referrerPolicy="no-referrer"
-                        crossOrigin="anonymous"
+                        width={80}
+                        height={80}
                       />
                     ) : (
-                      <img 
+                      <Image 
                         src={user.profileImage} 
                         alt={`${user.firstName} ${user.lastName}`} 
                         className="h-full w-full object-cover"
                         referrerPolicy="no-referrer"
-                        crossOrigin="anonymous"
+                        width={80}
+                        height={80}
                       />
                     )
                   ) : (

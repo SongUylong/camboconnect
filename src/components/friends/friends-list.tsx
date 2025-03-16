@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, UserX } from "lucide-react";
+import Image from "next/image";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -119,12 +120,13 @@ export function FriendsList({ searchQuery }: FriendsListProps) {
             <div className="flex items-center space-x-4">
               <div className="h-16 w-16 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
                 {friend.profileImage ? (
-                  <img
+                  <Image
                     src={friend.profileImage}
                     alt={`${friend.firstName}'s profile`}
                     className="h-16 w-16 rounded-full object-cover"
                     referrerPolicy="no-referrer"
-                    crossOrigin="anonymous"
+                    width={64}
+                    height={64}
                   />
                 ) : (
                   <User className="h-8 w-8 text-gray-500" />

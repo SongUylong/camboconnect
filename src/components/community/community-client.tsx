@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Grid, List, Search, Calendar, Building, ChevronDown, ChevronUp, Filter, X } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { OrganizationCard } from "@/components/community/organization-card";
 import { FollowButton } from "@/components/community/follow-button";
 import { CommunitySearch } from "@/components/community/community-search";
@@ -336,12 +337,13 @@ export function CommunityClient({
                   <div className="flex items-center">
                     <div className="h-10 w-10 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
                       {organization.logo ? (
-                        <img
+                        <Image
                           src={organization.logo}
                           alt={organization.name}
                           className="h-full w-full object-cover"
                           referrerPolicy="no-referrer"
-                          crossOrigin="anonymous"
+                          width={40}
+                          height={40}
                         />
                       ) : (
                         <div className="h-6 w-6 text-gray-400">🏢</div>
@@ -366,12 +368,13 @@ export function CommunityClient({
               <div className="flex flex-col md:flex-row items-start md:items-center">
                 <div className="h-16 w-16 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
                   {selectedOrganization.logo ? (
-                    <img
+                    <Image
                       src={selectedOrganization.logo}
                       alt={selectedOrganization.name}
                       className="h-full w-full object-cover"
                       referrerPolicy="no-referrer"
-                      crossOrigin="anonymous"
+                      width={64}
+                      height={64}
                     />
                   ) : (
                     <div className="h-8 w-8 text-gray-400">🏢</div>

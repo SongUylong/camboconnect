@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -359,9 +360,11 @@ export default function AdminOpportunityDetailPage() {
               <div className="flex items-center gap-3">
                 {opportunity.organization.logo && (
                   <div className="w-10 h-10 rounded-lg overflow-hidden bg-background flex items-center justify-center">
-                    <img 
+                    <Image 
                       src={opportunity.organization.logo} 
                       alt={opportunity.organization.name} 
+                      width={40}
+                      height={40}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -430,9 +433,11 @@ export default function AdminOpportunityDetailPage() {
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-full overflow-hidden bg-muted flex items-center justify-center">
                       {applicant.image ? (
-                        <img 
+                        <Image 
                           src={applicant.image} 
                           alt={applicant.name} 
+                          width={48}
+                          height={48}
                           className="w-full h-full object-cover"
                         />
                       ) : (

@@ -6,6 +6,7 @@ import { User, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
+import Image from "next/image";
 
 interface FriendRequest {
   id: string;
@@ -129,12 +130,13 @@ export function FriendRequestsList({ searchQuery }: FriendRequestsListProps) {
           <div className="flex items-center space-x-4">
             <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center">
               {request.sender.profileImage ? (
-                <img
+                <Image
                   src={request.sender.profileImage}
                   alt={`${request.sender.firstName}'s profile`}
                   className="h-12 w-12 rounded-full object-cover"
                   referrerPolicy="no-referrer"
-                  crossOrigin="anonymous"
+                  width={48}
+                  height={48}
                 />
               ) : (
                 <User className="h-6 w-6 text-gray-500" />

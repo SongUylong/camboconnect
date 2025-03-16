@@ -9,6 +9,13 @@ const nextConfig = {
     domains: [
       'avatars.githubusercontent.com',
       'lh3.googleusercontent.com',
+      'paragoniu.edu.kh',
+      'api.dicebear.com',
+      'googleusercontent.com',
+      'cambodiatechassociation.org',
+      'example.com',
+      'images.unsplash.com',
+      'picsum.photos',
     ],
     // Add unoptimized option for Docker
     unoptimized: process.env.NODE_ENV === 'production',

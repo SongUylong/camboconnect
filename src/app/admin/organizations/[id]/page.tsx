@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -284,10 +285,12 @@ export default function AdminOrganizationDetailPage() {
           <div className="flex items-start gap-4">
             {organization.logo && (
               <div className="w-20 h-20 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
-                <img 
+                <Image 
                   src={organization.logo} 
                   alt={organization.name} 
                   className="w-full h-full object-cover"
+                  width={80}
+                  height={80}
                 />
               </div>
             )}
@@ -423,10 +426,12 @@ export default function AdminOrganizationDetailPage() {
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full overflow-hidden bg-muted flex items-center justify-center">
                       {member.image ? (
-                        <img 
+                        <Image 
                           src={member.image} 
                           alt={member.name} 
                           className="w-full h-full object-cover"
+                          width={48}
+                          height={48}
                         />
                       ) : (
                         <span className="text-lg font-semibold">{member.name[0]}</span>

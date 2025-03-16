@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowLeft, Building, Calendar, Filter, Globe, Users, X, ChevronDown, Search } from "lucide-react";
 import { FollowButton } from "@/components/community/follow-button";
 import { OpportunityCard } from "@/components/opportunities/opportunity-card";
@@ -176,12 +178,13 @@ export function CommunityDetailClient({
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
             <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-lg bg-white shadow-sm flex items-center justify-center overflow-hidden border border-gray-200">
               {organization.logo ? (
-                <img
+                <Image
                   src={organization.logo}
                   alt={organization.name}
                   className="h-full w-full object-cover"
                   referrerPolicy="no-referrer"
-                  crossOrigin="anonymous"
+                  width={96}
+                  height={96}
                 />
               ) : (
                 <Building className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400" />
