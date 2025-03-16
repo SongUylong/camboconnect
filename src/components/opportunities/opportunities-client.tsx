@@ -45,6 +45,36 @@ export function OpportunitiesClient({
     page: searchParams.get('page') ? parseInt(searchParams.get('page')!) : initialCurrentPage,
   };
   
+  // State to track if we're using cached data
+  const [usingCachedData, setUsingCachedData] = useState(false);
+  
+  // Check for cached data on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        // Create cache key from params
+        const params = new URLSearchParams();
+        if (queryParams.category) params.append('category', queryParams.category);
+        if (queryParams.status) params.append('status', queryParams.status);
+        if (queryParams.sort) params.append('sort', queryParams.sort);
+        if (queryParams.q) params.append('q', queryParams.q);
+        if (queryParams.page) params.append('page', queryParams.page.toString());
+        
+        const cacheKey = params.toString() || 'default';
+        const cacheItem = sessionStorage.getItem(`opportunities_${cacheKey}`);
+        
+        if (cacheItem) {
+          const parsed = JSON.parse(cacheItem);
+          if (Date.now() - parsed.timestamp < 30 * 1000) {
+            setUsingCachedData(true);
+          }
+        }
+      } catch (error) {
+        // Silently fail if storage is not available
+      }
+    }
+  }, [queryParams.category, queryParams.status, queryParams.sort, queryParams.q, queryParams.page]);
+  
   // Use React Query to fetch opportunities
   const { 
     data, 
@@ -59,19 +89,9 @@ export function OpportunitiesClient({
   const totalPages = data?.totalPages || initialTotalPages;
   const currentPage = data?.currentPage || initialCurrentPage;
   
-  // Only show loading state when we don't have any data yet
-  // This prevents the loading state from showing when we already have initial data
-  const showLoading = isLoading && !initialOpportunities.length;
-  
-  // Log for debugging
-  console.log({
-    isLoading,
-    isFetching,
-    dataExists: !!data,
-    initialDataExists: !!initialOpportunities.length,
-    showLoading,
-    error: isError ? error : null
-  });
+  // Only show loading state when we don't have any data yet and we're not using cached data
+  // This prevents the loading state from showing when we already have initial data or cached data
+  const showLoading = isLoading && !initialOpportunities.length && !usingCachedData;
 
   /**
    * Error state - shows an error message if the API request fails
@@ -126,7 +146,7 @@ export function OpportunitiesClient({
     <>
       {/* Grid of opportunity cards - responsive layout with different columns based on screen size */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {opportunities.map((opportunity) => (
+        {opportunities.map((opportunity: Opportunity) => (
           <OpportunityCard 
             key={opportunity.id} 
             opportunity={{

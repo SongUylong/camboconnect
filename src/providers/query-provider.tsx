@@ -1,35 +1,44 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode, useState } from 'react';
+import { ReactNode } from 'react';
+
+interface QueryProviderProps {
+  children: ReactNode;
+}
 
 /**
- * React Query Provider Component
- * 
- * Initializes and provides the React Query client to the application.
- * Uses staleTime of 1 minute by default for query caching.
+ * Creates a QueryClient with optimized settings for performance
+ * - Increased staleTime to reduce unnecessary refetches
+ * - Limited retry attempts for failed queries
+ * - Increased cache time to keep data available longer
  */
-export function ReactQueryProvider({ children }: { children: ReactNode }) {
-  // Create a new QueryClient instance for each session
-  // This prevents sharing cache between users
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 60 * 1000, // 1 minute
-            refetchOnWindowFocus: false,
-            retry: 1, // Only retry failed queries once
-          },
-        },
-      })
-  );
+const createQueryClient = () => {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 60 * 1000, // 1 minute
+        retry: 1, // Only retry failed queries once
+        refetchOnWindowFocus: false, // Don't refetch when window regains focus
+        gcTime: 5 * 60 * 1000, // Keep unused data in cache for 5 minutes
+      },
+    },
+  });
+};
 
+// Create a singleton QueryClient instance
+const queryClient = createQueryClient();
+
+/**
+ * Provider component that makes React Query available throughout the application
+ * Uses a singleton QueryClient to maintain consistent cache across component remounts
+ */
+export function QueryProvider({ children }: QueryProviderProps) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      {/* We would add React Query DevTools here in development mode */}
-      {/* But we'll skip it for now to keep things simple */}
+      {/* Add React Query DevTools in development mode if needed */}
+      {/* {process.env.NODE_ENV === 'development' && <ReactQueryDevtools />} */}
     </QueryClientProvider>
   );
 } 

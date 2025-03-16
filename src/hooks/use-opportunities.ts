@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getOpportunities, toggleBookmark, incrementViewCount, OpportunitySearchParams } from '@/api/opportunities';
+import { getOpportunities, toggleBookmark, incrementViewCount, OpportunitySearchParams, clearOpportunitiesCache } from '@/api/opportunities';
 import { useRouter } from 'next/navigation';
 
 /**
@@ -18,9 +18,42 @@ export function useOpportunities(params: OpportunitySearchParams) {
     // when we already have server-rendered data
     refetchOnMount: false,
     // Add a stale time to prevent unnecessary refetches
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 60 * 1000, // 60 seconds
+    // Disable refetching on window focus
+    refetchOnWindowFocus: false,
     // Add retry on error
     retry: 1,
+    // Keep data in cache longer
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    // Use our cached data if available
+    initialData: () => {
+      // Only run in browser
+      if (typeof window === 'undefined') return undefined;
+      
+      try {
+        // Create cache key from params
+        const searchParams = new URLSearchParams();
+        if (params.category) searchParams.append('category', params.category);
+        if (params.status) searchParams.append('status', params.status);
+        if (params.sort) searchParams.append('sort', params.sort);
+        if (params.q) searchParams.append('q', params.q);
+        if (params.page) searchParams.append('page', params.page.toString());
+        
+        const cacheKey = searchParams.toString() || 'default';
+        const cacheItem = sessionStorage.getItem(`opportunities_${cacheKey}`);
+        
+        if (cacheItem) {
+          const parsed = JSON.parse(cacheItem);
+          if (Date.now() - parsed.timestamp < 30 * 1000) {
+            return parsed.data;
+          }
+        }
+      } catch (error) {
+        // Silently fail if storage is not available
+      }
+      
+      return undefined;
+    }
   });
 }
 
@@ -69,6 +102,9 @@ export function useBookmarkMutation() {
     
     // After success or error, invalidate related queries
     onSettled: () => {
+      // Clear our custom cache
+      clearOpportunitiesCache();
+      // Invalidate React Query cache
       queryClient.invalidateQueries({ queryKey: ['opportunities'] });
       queryClient.invalidateQueries({ queryKey: ['bookmarks'] });
       router.refresh(); // Refresh the page to update server state

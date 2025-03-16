@@ -46,7 +46,62 @@ export interface OpportunitiesResponse {
 }
 
 /**
+ * Interface for cached response
+ */
+interface CachedResponse {
+  data: OpportunitiesResponse;
+  timestamp: number;
+}
+
+// Cache TTL (Time To Live)
+const CACHE_TTL = 30 * 1000; // 30 seconds
+
+/**
+ * Get a cached response from sessionStorage
+ */
+const getCachedResponse = (cacheKey: string): CachedResponse | null => {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const cacheItem = sessionStorage.getItem(`opportunities_${cacheKey}`);
+    if (!cacheItem) return null;
+    
+    const parsed = JSON.parse(cacheItem) as CachedResponse;
+    
+    // Check if cache is still valid
+    if (Date.now() - parsed.timestamp < CACHE_TTL) {
+      return parsed;
+    }
+    
+    // Cache expired, remove it
+    sessionStorage.removeItem(`opportunities_${cacheKey}`);
+    return null;
+  } catch (error) {
+    return null;
+  }
+};
+
+/**
+ * Save a response to sessionStorage cache
+ */
+const setCachedResponse = (cacheKey: string, data: OpportunitiesResponse): void => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const cacheItem: CachedResponse = {
+      data,
+      timestamp: Date.now()
+    };
+    
+    sessionStorage.setItem(`opportunities_${cacheKey}`, JSON.stringify(cacheItem));
+  } catch (error) {
+    // Silently fail if storage is not available
+  }
+};
+
+/**
  * Fetches opportunities with filtering, sorting, and pagination
+ * Uses sessionStorage to cache responses
  * 
  * @param params - Search parameters for filtering and pagination
  * @returns Promise with opportunities data and pagination info
@@ -62,21 +117,56 @@ export const getOpportunities = async (params: OpportunitySearchParams): Promise
     if (params.q) searchParams.append('q', params.q);
     if (params.page) searchParams.append('page', params.page.toString());
     
-    // Add a timestamp to prevent caching issues
-    searchParams.append('_t', Date.now().toString());
+    // Create a cache key from the search parameters
+    const cacheKey = searchParams.toString() || 'default';
     
+    // Check if we have a valid cached response
+    const cachedResponse = getCachedResponse(cacheKey);
+    
+    if (cachedResponse) {
+      return cachedResponse.data;
+    }
+    
+    // Make the API request
     const { data } = await api.get<OpportunitiesResponse>(`/api/opportunities?${searchParams.toString()}`);
     
     // Validate the response data
     if (!data || !Array.isArray(data.opportunities)) {
-      console.error('Invalid response format:', data);
       throw new Error('Invalid response format from API');
     }
+    
+    // Cache the response
+    setCachedResponse(cacheKey, data);
     
     return data;
   } catch (error) {
     console.error('Error fetching opportunities:', error);
     throw error;
+  }
+};
+
+/**
+ * Clears the opportunities cache
+ * Call this when you know the data has changed (e.g., after creating a new opportunity)
+ */
+export const clearOpportunitiesCache = () => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    // Get all keys from sessionStorage
+    const keysToRemove: string[] = [];
+    
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && key.startsWith('opportunities_')) {
+        keysToRemove.push(key);
+      }
+    }
+    
+    // Remove all opportunities cache items
+    keysToRemove.forEach(key => sessionStorage.removeItem(key));
+  } catch (error) {
+    // Silently fail if storage is not available
   }
 };
 
@@ -90,6 +180,10 @@ export const getOpportunities = async (params: OpportunitySearchParams): Promise
 export const toggleBookmark = async (id: string, bookmarked: boolean): Promise<{ bookmarked: boolean; message: string }> => {
   try {
     const { data } = await api.post(`/api/opportunities/${id}/bookmark`, { bookmarked });
+    
+    // Clear cache after bookmark change
+    clearOpportunitiesCache();
+    
     return data;
   } catch (error) {
     console.error('Error toggling bookmark:', error);
@@ -111,4 +205,11 @@ export const incrementViewCount = async (id: string): Promise<{ message: string 
     console.error('Error incrementing view count:', error);
     throw error;
   }
-}; 
+};
+
+// Add TypeScript declaration for global cache
+declare global {
+  interface Window {
+    __opportunitiesCache?: Map<string, {data: OpportunitiesResponse, timestamp: number}>;
+  }
+} 
