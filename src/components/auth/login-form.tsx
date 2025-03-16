@@ -40,16 +40,20 @@ export function LoginForm() {
 
       const twoFactorData = await twoFactorResponse.json();
 
-      // If 2FA is required, redirect to the 2FA verification page
+      // If 2FA is required, verify credentials without logging in
       if (twoFactorData.success && twoFactorData.twoFactorRequired) {
-        // Verify credentials first before redirecting to 2FA page
-        const credentialsCheck = await signIn("credentials", {
-          email,
-          password,
-          redirect: false,
+        // Verify credentials without logging in
+        const credentialsResponse = await fetch("/api/auth/verify-credentials", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
         });
 
-        if (!credentialsCheck?.ok) {
+        const credentialsData = await credentialsResponse.json();
+
+        if (!credentialsResponse.ok || !credentialsData.success) {
           setErrorMessage("Invalid email or password");
           setIsLoading(false);
           return;
