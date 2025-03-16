@@ -3,13 +3,13 @@ import { db } from '@/lib/db';
 import { OpportunityStatus } from '@prisma/client';
 
 // Secret key for authentication
-const API_SECRET_KEY = process.env.CRON_API_SECRET ;
+const API_SECRET_KEY = process.env.CRON_API_SECRET;
 
 export async function POST(req: Request) {
   try {
-    // Verify the request has proper authentication
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.split(' ')[1] !== API_SECRET_KEY) {
+    // Verify the request has proper authentication - simplified to just check the authorization header
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || authHeader !== API_SECRET_KEY) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
