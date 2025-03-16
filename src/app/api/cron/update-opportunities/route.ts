@@ -19,10 +19,6 @@ export async function POST(req: Request) {
     const authHeader = req.headers.get('authorization');
     console.log('Authorization header:', authHeader);
     
-    // Debug: Log lowercase version too in case of case sensitivity issues
-    const authHeaderLower = req.headers.get('authorization');
-    console.log('authorization header (lowercase):', authHeaderLower);
-    
     // Debug: Log comparison result
     console.log('Auth comparison result:', authHeader === API_SECRET_KEY);
     

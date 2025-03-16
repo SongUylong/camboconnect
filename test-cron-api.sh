@@ -12,7 +12,7 @@ echo "Using API Secret: $API_SECRET"
 
 # Make the API call
 curl -X POST "$API_URL" \
-  -H "Authorization: Bearer $API_SECRET" \
+  -H "authorization: $API_SECRET" \
   -H "Content-Type: application/json" \
   -v 
 
