@@ -7,12 +7,32 @@ const API_SECRET_KEY = process.env.CRON_API_SECRET;
 
 export async function POST(req: Request) {
   try {
-    // Verify the request has proper authentication - simplified to just check the authorization header
+    // Debug: Log all headers
+    console.log('Request headers:');
+    const headerEntries = Array.from(req.headers.entries());
+    console.log(JSON.stringify(headerEntries, null, 2));
+    
+    // Debug: Log API key from environment
+    console.log('API_SECRET_KEY:', API_SECRET_KEY);
+    
+    // Debug: Log authorization header specifically
     const authHeader = req.headers.get('authorization');
+    console.log('Authorization header:', authHeader);
+    
+    // Debug: Log lowercase version too in case of case sensitivity issues
+    const authHeaderLower = req.headers.get('authorization');
+    console.log('authorization header (lowercase):', authHeaderLower);
+    
+    // Debug: Log comparison result
+    console.log('Auth comparison result:', authHeader === API_SECRET_KEY);
+    
     if (!authHeader || authHeader !== API_SECRET_KEY) {
+      console.log('Authentication failed. Returning 401.');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    console.log('Authentication successful. Proceeding with updates.');
+    
     // Get current date for comparison
     const now = new Date();
     
