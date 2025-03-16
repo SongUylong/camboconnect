@@ -3,12 +3,17 @@
 import { Bookmark, Eye, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useBookmarkStore } from "@/store/bookmarkStore";
 import { useApplicationStore } from "@/store/applicationStore";
+import { useBookmarkMutation } from "@/hooks/use-opportunities";
 
+/**
+ * Props for the OpportunityCard component
+ * Defines the structure of an opportunity and optional display variant
+ */
 type OpportunityCardProps = {
   opportunity: {
     id: string;
@@ -30,15 +35,35 @@ type OpportunityCardProps = {
     };
     isBookmarked?: boolean;
   };
-  variant?: "default" | "compact";
+  variant?: "default" | "compact"; // Controls the display style of the card
 };
 
+/**
+ * OpportunityCard - Client Component
+ * 
+ * Responsible for:
+ * 1. Displaying an individual opportunity in a card format
+ * 2. Handling bookmark toggling functionality
+ * 3. Tracking visit counts when users view the opportunity
+ * 4. Displaying status badges and deadline information
+ * 5. Supporting different display variants (default/compact)
+ * 
+ * This component is used in various places throughout the application
+ * to display opportunities in a consistent format.
+ */
 export function OpportunityCard({ opportunity, variant = "default" }: OpportunityCardProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const { isBookmarked, addBookmark, removeBookmark } = useBookmarkStore();
   const { isApplied, appliedOpportunities } = useApplicationStore();
+  
+  // Use the bookmark mutation from React Query
+  const bookmarkMutation = useBookmarkMutation();
 
+  /**
+   * Function to revalidate related pages when data changes
+   * Ensures that all pages displaying this opportunity show the latest data
+   */
   const revalidatePaths = async () => {
     try {
       // Revalidate all related paths
@@ -64,7 +89,10 @@ export function OpportunityCard({ opportunity, variant = "default" }: Opportunit
     }
   };
 
-  // Status badge style based on status
+  /**
+   * Helper function to determine the CSS class for status badges
+   * Returns different colors based on the opportunity status
+   */
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case "OPENING_SOON":
@@ -80,7 +108,9 @@ export function OpportunityCard({ opportunity, variant = "default" }: Opportunit
     }
   };
 
-  // Status text based on status
+  /**
+   * Helper function to convert status codes to human-readable text
+   */
   const getStatusText = (status: string) => {
     switch (status) {
       case "OPENING_SOON":
@@ -96,6 +126,10 @@ export function OpportunityCard({ opportunity, variant = "default" }: Opportunit
     }
   };
 
+  /**
+   * Handler for bookmark button clicks
+   * Toggles the bookmark status and updates the server using React Query
+   */
   const handleBookmarkClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -108,26 +142,18 @@ export function OpportunityCard({ opportunity, variant = "default" }: Opportunit
     try {
       const newBookmarkState = !isBookmarked(opportunity.id);
       
-      // API call to update bookmark status
-      const response = await fetch(`/api/opportunities/${opportunity.id}/bookmark`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookmarked: newBookmarkState }),
+      // Use React Query mutation to update bookmark status
+      bookmarkMutation.mutate({ 
+        id: opportunity.id, 
+        bookmarked: newBookmarkState 
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to update bookmark');
-      }
-
-      // Update global state
+      
+      // Update global state (this will be handled by the mutation's onMutate)
       if (newBookmarkState) {
         addBookmark(opportunity.id);
       } else {
         removeBookmark(opportunity.id);
       }
-      
-      // Force router refresh to update server state
-      router.refresh();
     } catch (error) {
       console.error("Failed to update bookmark:", error);
     }

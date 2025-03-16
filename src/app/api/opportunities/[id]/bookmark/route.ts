@@ -3,18 +3,41 @@ import { db } from '@/lib/prisma';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 
+/**
+ * Interface for route parameters
+ * Contains the opportunity ID from the URL path
+ */
 interface ParamsType {
   params: {
     id: string;
   };
 }
 
+/**
+ * POST /api/opportunities/[id]/bookmark
+ * 
+ * Toggles the bookmark status of an opportunity for the current user.
+ * Creates a bookmark if bookmarked=true, removes it if bookmarked=false.
+ * 
+ * URL Parameters:
+ * - id: Opportunity ID
+ * 
+ * Request Body:
+ * - bookmarked: Boolean indicating whether to bookmark (true) or unbookmark (false)
+ * 
+ * Returns:
+ * - bookmarked: Current bookmark status
+ * - message: Success message
+ * 
+ * Authentication:
+ * - Requires user to be logged in
+ */
 export async function POST(req: Request, { params }: ParamsType) {
   try {
     const { id } = params;
     const session = await getServerSession(authOptions);
     
-    // Check authentication
+    // Check authentication - only logged in users can bookmark
     if (!session || !session.user.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -26,7 +49,7 @@ export async function POST(req: Request, { params }: ParamsType) {
     const body = await req.json();
     const { bookmarked } = body;
     
-    // Check if opportunity exists
+    // Verify that the opportunity exists
     const opportunity = await db.opportunity.findUnique({
       where: { id },
     });
@@ -38,7 +61,7 @@ export async function POST(req: Request, { params }: ParamsType) {
       );
     }
     
-    // Check if bookmark exists
+    // Check if the user has already bookmarked this opportunity
     const existingBookmark = await db.bookmark.findFirst({
       where: {
         userId,
@@ -47,7 +70,7 @@ export async function POST(req: Request, { params }: ParamsType) {
     });
     
     if (bookmarked) {
-      // Create bookmark if it doesn't exist
+      // Add bookmark if it doesn't already exist
       if (!existingBookmark) {
         await db.bookmark.create({
           data: {

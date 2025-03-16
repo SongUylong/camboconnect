@@ -6,6 +6,7 @@ import { ApplicationProvider } from "@/contexts/application-context";
 import { Toaster } from "sonner";
 import { UnconfirmedApplicationsCheck } from "@/components/global/UnconfirmedApplicationsCheck";
 import { ApplicationStateInitializer } from "@/components/global/ApplicationStateInitializer";
+import { ReactQueryProvider } from "@/providers/query-provider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -21,12 +22,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthProvider>
-          <ApplicationProvider>
-            <ApplicationStateInitializer />
-            {children}
-          </ApplicationProvider>
-        </AuthProvider>
+        <ReactQueryProvider>
+          <AuthProvider>
+            <ApplicationProvider>
+              <ApplicationStateInitializer />
+              {children}
+            </ApplicationProvider>
+          </AuthProvider>
+        </ReactQueryProvider>
         <Toaster position="top-right" richColors />
       </body>
     </html>

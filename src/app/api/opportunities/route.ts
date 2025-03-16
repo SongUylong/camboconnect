@@ -3,6 +3,24 @@ import { db } from '@/lib/prisma';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 
+/**
+ * GET /api/opportunities
+ * 
+ * Retrieves a paginated list of opportunities with filtering and sorting options.
+ * 
+ * Query Parameters:
+ * - category: Filter by category ID
+ * - status: Filter by opportunity status (ACTIVE, OPENING_SOON, CLOSING_SOON, CLOSED)
+ * - q: Search query for text search in title, description, and shortDescription
+ * - sort: Sort order (latest, deadline, popular)
+ * - page: Page number for pagination
+ * 
+ * Returns:
+ * - opportunities: Array of opportunity objects with related data
+ * - totalCount: Total number of opportunities matching the filters
+ * - totalPages: Total number of pages
+ * - currentPage: Current page number
+ */
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -20,14 +38,18 @@ export async function GET(req: Request) {
     // Build query conditions
     const where: any = {};
     
+    // Add category filter if provided
     if (category) {
       where.categoryId = category;
     }
     
+    // Add status filter if provided
     if (status) {
       where.status = status;
     }
     
+    // Add text search if query parameter is provided
+    // Searches in title, description, and shortDescription fields
     if (query) {
       where.OR = [
         {
@@ -51,19 +73,19 @@ export async function GET(req: Request) {
       ];
     }
     
-    // Determine sort order
-    let orderBy: any = { createdAt: 'desc' };
+    // Determine sort order based on the sort parameter
+    let orderBy: any = { createdAt: 'desc' }; // Default: newest first
     if (sort === 'deadline') {
-      orderBy = { deadline: 'asc' };
+      orderBy = { deadline: 'asc' }; // Sort by closest deadline first
     } else if (sort === 'popular') {
-      orderBy = { visitCount: 'desc' };
+      orderBy = { visitCount: 'desc' }; // Sort by most visited first
     }
     
     // Get current user for bookmark status
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
     
-    // Fetch opportunities with pagination
+    // Fetch opportunities with pagination, including related data
     const opportunities = await db.opportunity.findMany({
       where,
       orderBy,
@@ -76,6 +98,7 @@ export async function GET(req: Request) {
           },
         },
         category: true,
+        // Only fetch bookmarks if user is logged in
         bookmarks: userId ? {
           where: {
             userId,
@@ -86,14 +109,16 @@ export async function GET(req: Request) {
       take: pageSize,
     });
     
-    // Get total count for pagination
+    // Get total count for pagination calculation
     const totalCount = await db.opportunity.count({
       where,
     });
     
+    // Calculate total number of pages
     const totalPages = Math.ceil(totalCount / pageSize);
     
-    // Add isBookmarked flag
+    // Transform opportunities to include bookmark status
+    // This simplifies the data structure for the client
     const transformedOpportunities = opportunities.map(opportunity => {
       const { bookmarks, ...rest } = opportunity;
       return {
@@ -102,6 +127,7 @@ export async function GET(req: Request) {
       };
     });
     
+    // Return the opportunities with pagination metadata
     return NextResponse.json({
       opportunities: transformedOpportunities,
       totalCount,
@@ -117,7 +143,32 @@ export async function GET(req: Request) {
   }
 }
 
-// Only admin users can create new opportunities
+/**
+ * POST /api/opportunities
+ * 
+ * Creates a new opportunity.
+ * Restricted to admin users only.
+ * 
+ * Request Body:
+ * - title: Opportunity title
+ * - description: Full description
+ * - shortDescription: Brief summary
+ * - eligibility: Eligibility requirements
+ * - applicationProcess: How to apply
+ * - benefits: Benefits offered
+ * - contactInfo: Contact information
+ * - externalLink: Optional external application link
+ * - deadline: Application deadline date
+ * - startDate: Optional start date
+ * - endDate: Optional end date
+ * - status: Current status (ACTIVE, OPENING_SOON, etc.)
+ * - categoryId: Category ID
+ * - organizationId: Organization ID
+ * - isPopular: Whether to mark as popular (optional)
+ * 
+ * Returns:
+ * - The created opportunity object
+ */
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -148,7 +199,7 @@ export async function POST(req: Request) {
       }
     }
     
-    // Create opportunity
+    // Create opportunity with the provided data
     const opportunity = await db.opportunity.create({
       data: {
         title: body.title,
@@ -166,10 +217,11 @@ export async function POST(req: Request) {
         categoryId: body.categoryId,
         organizationId: body.organizationId,
         isPopular: body.isPopular || false,
-        isNew: true,
+        isNew: true, // Mark all new opportunities as "new"
       },
     });
     
+    // Return the created opportunity with 201 Created status
     return NextResponse.json(opportunity, { status: 201 });
   } catch (error) {
     console.error('Error creating opportunity:', error);
