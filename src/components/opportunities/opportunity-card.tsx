@@ -143,24 +143,20 @@ export function OpportunityCard({ opportunity, variant = "default" }: Opportunit
       const newBookmarkState = !isBookmarked(opportunity.id);
       
       // Use React Query mutation to update bookmark status
+      // The mutation will handle all state updates (both React Query cache and Zustand store)
       bookmarkMutation.mutate({ 
         id: opportunity.id, 
         bookmarked: newBookmarkState 
       });
       
-      // Update global state (this will be handled by the mutation's onMutate)
-      if (newBookmarkState) {
-        addBookmark(opportunity.id);
-      } else {
-        removeBookmark(opportunity.id);
-      }
+      // No need to manually update the Zustand store here
+      // It's handled by the mutation's onMutate function
     } catch (error) {
-      console.error("Failed to update bookmark:", error);
+      // Error handling is now done in the mutation
     }
   };
 
   const hasApplied = isApplied(opportunity.id);
-  console.log(`Opportunity ${opportunity.id} applied status:`, hasApplied);
 
   if (variant === "compact") {
     return (

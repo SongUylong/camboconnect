@@ -185,9 +185,24 @@ export const toggleBookmark = async (id: string, bookmarked: boolean): Promise<{
     clearOpportunitiesCache();
     
     return data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error toggling bookmark:', error);
-    throw error;
+    
+    // Enhance error message based on error type
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      if (error.response.status === 401) {
+        throw new Error('You must be logged in to bookmark opportunities');
+      } else if (error.response.status === 404) {
+        throw new Error('Opportunity not found');
+      } else if (error.response.data && error.response.data.error) {
+        throw new Error(error.response.data.error);
+      }
+    }
+    
+    // Generic error
+    throw new Error('Failed to update bookmark. Please try again later.');
   }
 };
 

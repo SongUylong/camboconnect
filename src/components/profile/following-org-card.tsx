@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 import Image from "next/image";
+import { useToggleOrganizationFollow } from "@/hooks/use-profile";
 
 type FollowingOrgCardProps = {
   organization: {
@@ -17,29 +18,21 @@ type FollowingOrgCardProps = {
 
 export function FollowingOrgCard({ organization }: FollowingOrgCardProps) {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  
+  // Use React Query mutation
+  const { mutate: toggleFollow, isPending: isLoading } = useToggleOrganizationFollow();
 
   const handleUnfollow = async () => {
-    setIsLoading(true);
-
-    try {
-      const response = await fetch(`/api/organizations/${organization.id}/follow`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ following: false }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to unfollow organization');
+    // Use React Query mutation to unfollow organization
+    toggleFollow(
+      { organizationId: organization.id, following: false },
+      {
+        onSuccess: () => {
+          setShowConfirmation(false);
+        }
       }
-
-      router.refresh();
-    } catch (error) {
-      console.error("Failed to unfollow organization:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    );
   };
 
   return (

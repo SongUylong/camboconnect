@@ -3,8 +3,8 @@
 import { Bookmark } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
 import { useBookmarkStore } from "@/store/bookmarkStore";
+import { useBookmarkMutation } from "@/hooks/use-opportunities";
 
 interface BookmarkButtonProps {
   opportunityId: string;
@@ -13,8 +13,8 @@ interface BookmarkButtonProps {
 export function BookmarkButton({ opportunityId }: BookmarkButtonProps) {
   const { data: session } = useSession();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const { isBookmarked, addBookmark, removeBookmark } = useBookmarkStore();
+  const { isBookmarked, isPendingBookmark } = useBookmarkStore();
+  const bookmarkMutation = useBookmarkMutation();
 
   const handleBookmarkClick = async () => {
     if (!session) {
@@ -22,37 +22,19 @@ export function BookmarkButton({ opportunityId }: BookmarkButtonProps) {
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      const newBookmarkState = !isBookmarked(opportunityId);
-      
-      // Send API request to toggle bookmark
-      const response = await fetch(`/api/opportunities/${opportunityId}/bookmark`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookmarked: newBookmarkState }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update bookmark');
-      }
-
-      // Update global state
-      if (newBookmarkState) {
-        addBookmark(opportunityId);
-      } else {
-        removeBookmark(opportunityId);
-      }
-      
-      // Force router refresh to update server state
-      router.refresh();
-    } catch (error) {
-      console.error("Failed to update bookmark:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    const newBookmarkState = !isBookmarked(opportunityId);
+    
+    // Use React Query mutation to update bookmark status
+    // The mutation will handle all state updates and loading states
+    bookmarkMutation.mutate({ 
+      id: opportunityId, 
+      bookmarked: newBookmarkState 
+    });
   };
+
+  // Check if this bookmark operation is pending
+  const isLoading = isPendingBookmark(opportunityId);
+  const bookmarked = isBookmarked(opportunityId);
 
   if (isLoading) {
     return (
@@ -64,8 +46,6 @@ export function BookmarkButton({ opportunityId }: BookmarkButtonProps) {
       </button>
     );
   }
-
-  const bookmarked = isBookmarked(opportunityId);
 
   return (
     <button

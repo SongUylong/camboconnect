@@ -32,7 +32,19 @@ export default function RootLayout({
             </ApplicationProvider>
           </AuthProvider>
         </QueryProvider>
-        <Toaster position="top-right" richColors />
+        <Toaster 
+          position="bottom-right" 
+          richColors 
+          expand={true}
+          closeButton={true}
+          toastOptions={{
+            style: { 
+              maxWidth: '500px',
+              marginBottom: '1rem'
+            },
+            duration: 4000
+          }}
+        />
       </body>
     </html>
   );

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Eye, EyeOff, Users } from "lucide-react";
 import { toast } from "sonner";
+import { useUpdateParticipationPrivacy } from "@/hooks/use-profile";
 
 type PrivacyLevel = "PUBLIC" | "FRIENDS_ONLY" | "ONLY_ME";
 
@@ -16,27 +17,20 @@ export function ParticipationPrivacyToggle({
   initialPrivacyLevel,
 }: ParticipationPrivacyToggleProps) {
   const [privacyLevel, setPrivacyLevel] = useState<PrivacyLevel>(initialPrivacyLevel);
-  const [isLoading, setIsLoading] = useState(false);
+  
+  // Use React Query mutation
+  const { mutate: updatePrivacy, isPending: isLoading } = useUpdateParticipationPrivacy();
 
   const handlePrivacyChange = async (newLevel: PrivacyLevel) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/participations/${participationId}/privacy`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ privacyLevel: newLevel }),
-      });
-
-      if (!response.ok) throw new Error("Failed to update privacy level");
-
-      setPrivacyLevel(newLevel);
-      toast.success("Privacy level updated");
-    } catch (error) {
-      console.error("Error updating privacy level:", error);
-      toast.error("Failed to update privacy level");
-    } finally {
-      setIsLoading(false);
-    }
+    // Use React Query mutation to update privacy level
+    updatePrivacy(
+      { participationId, privacyLevel: newLevel },
+      {
+        onSuccess: () => {
+          setPrivacyLevel(newLevel);
+        }
+      }
+    );
   };
 
   const getPrivacyIcon = (level: PrivacyLevel) => {

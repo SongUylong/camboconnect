@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getOpportunities, toggleBookmark, incrementViewCount, OpportunitySearchParams, clearOpportunitiesCache } from '@/api/opportunities';
 import { useRouter } from 'next/navigation';
+import { useBookmarkStore } from '@/store/bookmarkStore';
+import { toast } from 'sonner';
 
 /**
  * Hook for fetching opportunities with React Query
@@ -59,12 +61,14 @@ export function useOpportunities(params: OpportunitySearchParams) {
 
 /**
  * Hook for toggling bookmark status with React Query
+ * Integrates with Zustand store for global state management
  * 
  * @returns Mutation function and state for toggling bookmarks
  */
 export function useBookmarkMutation() {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const bookmarkStore = useBookmarkStore();
   
   return useMutation({
     mutationFn: ({ id, bookmarked }: { id: string; bookmarked: boolean }) => 
@@ -72,13 +76,23 @@ export function useBookmarkMutation() {
     
     // Optimistically update the UI
     onMutate: async ({ id, bookmarked }) => {
+      // Add to pending bookmarks to show loading state
+      bookmarkStore.addPendingBookmark(id);
+      
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['opportunities'] });
       
       // Snapshot the previous value
       const previousOpportunities = queryClient.getQueryData(['opportunities']);
       
-      // Optimistically update to the new value
+      // Update Zustand store (optimistically)
+      if (bookmarked) {
+        bookmarkStore.addBookmark(id);
+      } else {
+        bookmarkStore.removeBookmark(id);
+      }
+      
+      // Optimistically update React Query cache
       queryClient.setQueriesData({ queryKey: ['opportunities'] }, (old: any) => {
         if (!old) return old;
         
@@ -95,19 +109,52 @@ export function useBookmarkMutation() {
     
     // If the mutation fails, roll back to the previous value
     onError: (err, variables, context) => {
+      const { id, bookmarked } = variables;
+      
+      // Remove from pending bookmarks
+      bookmarkStore.removePendingBookmark(id);
+      
+      // Revert the Zustand store update
+      if (bookmarked) {
+        bookmarkStore.removeBookmark(id);
+      } else {
+        bookmarkStore.addBookmark(id);
+      }
+      
+      // Revert React Query cache
       if (context?.previousOpportunities) {
         queryClient.setQueryData(['opportunities'], context.previousOpportunities);
       }
+      
+      // Show error toast
+      toast.error('Failed to update bookmark. Please try again.');
+      console.error('Error toggling bookmark:', err);
     },
     
-    // After success or error, invalidate related queries
-    onSettled: () => {
+    // After success, update state and invalidate queries
+    onSuccess: (data, variables) => {
+      const { id } = variables;
+      
+      // Show success toast
+      toast.success(data.message);
+    },
+    
+    // After success or error, clean up
+    onSettled: (data, error, variables) => {
+      const { id } = variables;
+      
+      // Remove from pending bookmarks
+      bookmarkStore.removePendingBookmark(id);
+      
       // Clear our custom cache
       clearOpportunitiesCache();
+      
       // Invalidate React Query cache
       queryClient.invalidateQueries({ queryKey: ['opportunities'] });
       queryClient.invalidateQueries({ queryKey: ['bookmarks'] });
-      router.refresh(); // Refresh the page to update server state
+      
+      // Refresh the page to update server state
+      router.refresh();
     },
   });
 }

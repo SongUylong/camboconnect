@@ -7,28 +7,18 @@ import { toast } from "sonner";
 import { UserProfile } from "@/types/user";
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 
 export default function EditProfilePage() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  
+  // Use React Query hooks
+  const { data, isLoading, error } = useProfile();
+  const { mutate: updateProfile, isPending: submitting } = useUpdateProfile();
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch("/api/profile");
-      
-      if (!response.ok) {
-        throw new Error("Failed to fetch profile");
-      }
-      
-      const data = await response.json();
-      
+    if (data && !profile) {
       // Map the API response to the UserProfile format
       const profileData: UserProfile = {
         bio: data.bio || "",
@@ -61,82 +51,51 @@ export default function EditProfilePage() {
       };
       
       setProfile(profileData);
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-      toast.error("Failed to load profile data");
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [data, profile]);
+
+  // Show error if profile fetch fails
+  useEffect(() => {
+    if (error) {
+      toast.error("Failed to load profile data");
+    }
+  }, [error]);
 
   const handleSubmit = async (data: UserProfile) => {
-    try {
-      setSubmitting(true);
-      
-      // Send the complete data to the API
-      const response = await fetch("/api/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-      
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to update profile");
-      }
-      
-      toast.success("Profile updated successfully");
-      router.push("/profile");
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to update profile");
-    } finally {
-      setSubmitting(false);
-    }
+    // Use React Query mutation to update profile
+    updateProfile(data);
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-[80vh]">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
-    <div className="flex justify-center w-full py-8 px-4">
-      <div className="w-full max-w-3xl">
-        <div className="flex items-center gap-4 mb-8">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/profile")}
-            className="h-10 w-10 rounded-full hover:bg-gray-100"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            <span className="sr-only">Back to profile</span>
-          </Button>
-          <h1 className="text-3xl font-bold text-gray-800">Edit Profile</h1>
-        </div>
+    <div className="container mx-auto py-8 px-4 max-w-4xl">
+      <div className="mb-6">
+        <Button
+          variant="ghost"
+          onClick={() => router.back()}
+          className="flex items-center text-gray-600 hover:text-gray-900"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Profile
+        </Button>
+      </div>
+      
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit Profile</h1>
         
-        {profile ? (
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
+            <span className="ml-2 text-gray-600">Loading profile data...</span>
+          </div>
+        ) : profile ? (
           <ProfileForm 
             profile={profile} 
             onSubmit={handleSubmit} 
-            isSubmitting={submitting} 
+            isSubmitting={submitting}
           />
         ) : (
-          <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
-            <p className="text-gray-600 mb-4">Failed to load profile data. Please try again later.</p>
-            <Button 
-              onClick={fetchProfile}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              Retry
-            </Button>
+          <div className="text-center py-8 text-gray-500">
+            Failed to load profile data. Please try again.
           </div>
         )}
       </div>
