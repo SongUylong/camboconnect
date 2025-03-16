@@ -4,15 +4,18 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { WelcomeModal } from "./welcome-modal";
 import { useSession } from "next-auth/react";
+import { useFriendStore } from "@/store/use-friend-store";
 
 interface ProfileClientWrapperProps {
   isNewUser: boolean;
+  friendIds?: string[];
 }
 
-export default function ProfileClientWrapper({ isNewUser }: ProfileClientWrapperProps) {
+export default function ProfileClientWrapper({ isNewUser, friendIds = [] }: ProfileClientWrapperProps) {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const router = useRouter();
   const { status } = useSession();
+  const { setInitialState } = useFriendStore();
   
   // Run this effect only once on component mount
   useEffect(() => {
@@ -48,6 +51,13 @@ export default function ProfileClientWrapper({ isNewUser }: ProfileClientWrapper
       }
     }
   }, [isNewUser, status, router]); // Only depend on these values
+  
+  // Initialize the friend store with the user's friends
+  useEffect(() => {
+    if (friendIds && friendIds.length > 0) {
+      setInitialState(friendIds, []);
+    }
+  }, [friendIds, setInitialState]);
   
   return showWelcomeModal ? <WelcomeModal /> : null;
 } 

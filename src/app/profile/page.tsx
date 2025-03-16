@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { Award, Bookmark, Briefcase, Calendar, Edit, Eye, GraduationCap, Link as LinkIcon, Settings, User, Users, Building, Mail, Phone, MapPin, Link2, Plus, Trash2 } from "lucide-react";
+import { Award, Bookmark, Briefcase, Calendar, Edit, Eye, GraduationCap, Link as LinkIcon, Settings, User, Users, Building, Mail, Phone, MapPin, Link2, Plus, Trash2, Share2 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import dynamic from "next/dynamic";
@@ -11,12 +11,16 @@ import { Organization, Follow, Education, Experience, Skill, SocialLink, Applica
 import { FollowingOrgCard } from "@/components/profile/following-org-card";
 import { ParticipationPrivacyToggle } from "@/components/profile/participation-privacy-toggle";
 import Image from "next/image";
+import { FriendCount } from "@/components/profile/friend-count";
 
 // Import the WelcomeModal component with dynamic import
 const ProfileClientWrapper = dynamic(() => import("@/components/profile/profile-client-wrapper"), { ssr: false });
 
 // Import the SettingsPopover component with dynamic import to avoid SSR issues
 const SettingsPopover = dynamic(() => import("./settings-popover"), { ssr: false });
+
+// Import the ShareProfileButton component
+const ShareProfileButton = dynamic(() => import("@/components/profile/share-profile-button"), { ssr: false });
 
 type ExtendedOrganization = Organization & {
   _count: {
@@ -182,10 +186,29 @@ export default async function ProfilePage() {
                    (!user.educationEntries || user.educationEntries.length === 0) && 
                    (!user.experienceEntries || user.experienceEntries.length === 0);
 
+  // Get all friend IDs for the user
+  const friendships = await db.friendship.findMany({
+    where: {
+      OR: [
+        { userId: session.user.id },
+        { friendId: session.user.id }
+      ]
+    },
+    select: {
+      userId: true,
+      friendId: true
+    }
+  });
+
+  // Extract friend IDs from friendships
+  const friendIds = friendships.map(friendship => 
+    friendship.userId === session.user.id ? friendship.friendId : friendship.userId
+  );
+
   return (
     <MainLayout>
-      {/* Add the client wrapper component that will show the welcome modal for new users */}
-      <ProfileClientWrapper isNewUser={isNewUser} />
+      {/* Add the client wrapper component that will initialize the friend store */}
+      <ProfileClientWrapper isNewUser={isNewUser} friendIds={friendIds} />
       
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row gap-8">
@@ -236,17 +259,15 @@ export default async function ProfilePage() {
                       <span className="font-medium text-gray-900">{user._count.applications}</span>
                       <span className="text-gray-500">Applications</span>
                     </div>
-                    <div className="flex flex-col items-center">
-                      <span className="font-medium text-gray-900">{user._count.friendsOf}</span>
-                      <span className="text-gray-500">Friends</span>
-                    </div>
+                    <FriendCount initialCount={user._count.friendsOf} />
                   </div>
                   
-                  <div className="mt-6">
+                  <div className="mt-6 flex justify-center gap-2">
                     <Link href="/profile/edit" className="btn btn-outline">
                       <Edit className="h-4 w-4 mr-2" />
                       Edit Profile
                     </Link>
+                    <ShareProfileButton userId={user.id} />
                   </div>
                 </div>
                 

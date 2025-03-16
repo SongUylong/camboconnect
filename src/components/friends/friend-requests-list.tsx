@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import Image from "next/image";
+import { useFriendStore } from "@/store/use-friend-store";
 
 interface FriendRequest {
   id: string;
@@ -28,6 +29,7 @@ interface FriendRequestsListProps {
 export function FriendRequestsList({ searchQuery }: FriendRequestsListProps) {
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const { addFriend } = useFriendStore();
 
   useEffect(() => {
     fetchFriendRequests();
@@ -54,6 +56,14 @@ export function FriendRequestsList({ searchQuery }: FriendRequestsListProps) {
       });
 
       if (!response.ok) throw new Error("Failed to accept friend request");
+
+      // Get the request that was accepted
+      const acceptedRequest = requests.find(request => request.id === requestId);
+      
+      if (acceptedRequest) {
+        // Update the friend store
+        addFriend(acceptedRequest.sender.id);
+      }
 
       // Update local state
       setRequests((prevRequests) =>

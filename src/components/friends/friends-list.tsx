@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useFriendStore } from "@/store/use-friend-store";
 
 interface Friend {
   id: string;
@@ -38,6 +39,7 @@ export function FriendsList({ searchQuery }: FriendsListProps) {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
+  const { removeFriend } = useFriendStore();
 
   useEffect(() => {
     fetchFriends();
@@ -67,6 +69,8 @@ export function FriendsList({ searchQuery }: FriendsListProps) {
 
       // Update local state
       setFriends((prevFriends) => prevFriends.filter((friend) => friend.id !== friendId));
+      // Update friend store
+      removeFriend(friendId);
       toast.success("Friend removed successfully");
     } catch (error) {
       console.error("Error removing friend:", error);

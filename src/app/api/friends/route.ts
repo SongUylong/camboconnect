@@ -184,6 +184,16 @@ export async function DELETE(req: NextRequest) {
       }
     });
     
+    // Also delete any existing friend requests between the two users
+    await db.friendRequest.deleteMany({
+      where: {
+        OR: [
+          { senderId: userId, receiverId: friendId },
+          { senderId: friendId, receiverId: userId }
+        ]
+      }
+    });
+    
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error removing friend:", error);

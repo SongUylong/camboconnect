@@ -10,6 +10,28 @@ interface ParamsType {
   };
 }
 
+// Helper function to check if a user can view content based on privacy level
+async function canViewContent(viewerId: string, ownerId: string, privacyLevel: PrivacyLevel) {
+  // Owner can always view their own content
+  if (viewerId === ownerId) return true;
+  
+  // For FRIENDS_ONLY, check if they are friends
+  if (privacyLevel === PrivacyLevel.FRIENDS_ONLY) {
+    const friendship = await db.friendship.findFirst({
+      where: {
+        OR: [
+          { userId: viewerId, friendId: ownerId },
+          { userId: ownerId, friendId: viewerId }
+        ]
+      }
+    });
+    return !!friendship;
+  }
+  
+  // For PUBLIC, anyone can view
+  return privacyLevel === PrivacyLevel.PUBLIC;
+}
+
 export async function GET(req: NextRequest, { params }: ParamsType) {
   try {
     const session = await getServerSession(authOptions);
@@ -73,6 +95,13 @@ export async function GET(req: NextRequest, { params }: ParamsType) {
             url: true,
           },
         },
+        _count: {
+          select: {
+            participations: true,
+            applications: true,
+            friendsOf: true,
+          }
+        }
       }
     });
     
@@ -102,34 +131,48 @@ export async function GET(req: NextRequest, { params }: ParamsType) {
       }
     });
 
-    // Determine what information to share based on privacy settings and relationship
+    // Check privacy settings for each section
+    const canViewEducation = await canViewContent(userId, id, user.educationPrivacy);
+    const canViewExperience = await canViewContent(userId, id, user.experiencePrivacy);
+    const canViewSkills = await canViewContent(userId, id, user.skillsPrivacy);
+    const canViewSocialLinks = await canViewContent(userId, id, user.contactUrlPrivacy);
+
+    // Determine if user can view private info (for email and bio)
     const isSelf = userId === id;
     const isFriend = !!friendship;
-    const canViewPrivateInfo = isSelf || isFriend;
 
     // Filter information based on privacy settings
     const filteredProfile = {
       id: user.id,
       firstName: user.firstName,
       lastName: user.lastName,
-      email: canViewPrivateInfo || user.privacyLevel === PrivacyLevel.PUBLIC ? user.email : null,
+      email: user.email, // Email is always public
       profileImage: user.profileImage,
-      bio: canViewPrivateInfo || user.privacyLevel === PrivacyLevel.PUBLIC ? user.bio : null,
+      bio: user.bio, // Bio is always public
       privacyLevel: user.privacyLevel,
       isFriend,
       hasPendingRequest: !!pendingRequest,
-      education: canViewPrivateInfo || user.educationPrivacy === PrivacyLevel.PUBLIC 
-        ? user.educationEntries 
-        : [],
-      experience: canViewPrivateInfo || user.experiencePrivacy === PrivacyLevel.PUBLIC 
-        ? user.experienceEntries 
-        : [],
-      skills: canViewPrivateInfo || user.skillsPrivacy === PrivacyLevel.PUBLIC 
-        ? user.skillEntries 
-        : [],
-      socialLinks: canViewPrivateInfo || user.contactUrlPrivacy === PrivacyLevel.PUBLIC 
-        ? user.socialLinks 
-        : [],
+      education: canViewEducation ? user.educationEntries : [],
+      experience: canViewExperience ? user.experienceEntries : [],
+      skills: canViewSkills ? user.skillEntries : [],
+      socialLinks: canViewSocialLinks ? user.socialLinks : [],
+      // Add counts that are always public
+      counts: {
+        participations: user._count.participations,
+        applications: user._count.applications,
+        friends: user._count.friendsOf
+      },
+      // Add privacy information to help the UI distinguish between empty data and private data
+      privacySettings: {
+        educationPrivacy: user.educationPrivacy,
+        experiencePrivacy: user.experiencePrivacy,
+        skillsPrivacy: user.skillsPrivacy,
+        contactUrlPrivacy: user.contactUrlPrivacy,
+        canViewEducation,
+        canViewExperience,
+        canViewSkills,
+        canViewSocialLinks
+      }
     };
     
     return NextResponse.json(filteredProfile);
