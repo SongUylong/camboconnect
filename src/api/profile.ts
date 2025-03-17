@@ -1,4 +1,5 @@
 import api from '@/lib/axios';
+import { SocialLinks } from '@/types/user';
 
 /**
  * Interface for user profile data
@@ -29,7 +30,7 @@ export interface UserProfile {
     description: string;
   }>;
   skills?: string[];
-  links?: Record<string, string>;
+  links?: SocialLinks;
 }
 
 /**

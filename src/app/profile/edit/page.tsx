@@ -9,23 +9,65 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 
+// Type for the API response
+interface ProfileApiResponse {
+  id?: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  profileImage?: string | null;
+  bio?: string | null;
+  isSetup?: boolean;
+  skillEntries?: Array<{ id: string; name: string }>;
+  educationEntries?: Array<{
+    id: string;
+    school: string;
+    degree: string;
+    field: string;
+    startDate: string | Date;
+    endDate?: string | Date | null;
+  }>;
+  experienceEntries?: Array<{
+    id: string;
+    title: string;
+    company: string;
+    location: string;
+    startDate: string | Date;
+    endDate?: string | Date | null;
+    description: string;
+  }>;
+  socialLinks?: Array<{
+    id: string;
+    platform: string;
+    url: string;
+  }>;
+}
+
 export default function EditProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   
   // Use React Query hooks
-  const { data, isLoading, error } = useProfile();
+  const { data, isLoading, error } = useProfile<ProfileApiResponse>();
   const { mutate: updateProfile, isPending: submitting } = useUpdateProfile();
 
   useEffect(() => {
     if (data && !profile) {
+      console.log('Raw API response:', data);
       // Map the API response to the UserProfile format
       const profileData: UserProfile = {
         bio: data.bio || "",
         // Map skill entries to array of strings
-        skills: data.skillEntries?.map((skill: any) => skill.name) || [],
+        skills: data.skillEntries?.map((skill: { name: string }) => skill.name) || [],
         // Map education entries to Education array
-        education: data.educationEntries?.map((edu: any) => ({
+        education: data.educationEntries?.map((edu: {
+          id: string;
+          school: string;
+          degree: string;
+          field: string;
+          startDate: string | Date;
+          endDate?: string | Date | null;
+        }) => ({
           id: edu.id,
           school: edu.school,
           degree: edu.degree,
@@ -34,7 +76,15 @@ export default function EditProfilePage() {
           endDate: edu.endDate
         })) || [],
         // Map experience entries to Experience array
-        experience: data.experienceEntries?.map((exp: any) => ({
+        experience: data.experienceEntries?.map((exp: {
+          id: string;
+          title: string;
+          company: string;
+          location: string;
+          startDate: string | Date;
+          endDate?: string | Date | null;
+          description: string;
+        }) => ({
           id: exp.id,
           title: exp.title,
           company: exp.company,
@@ -44,11 +94,12 @@ export default function EditProfilePage() {
           description: exp.description || ""
         })) || [],
         // Map social links to SocialLinks object
-        links: data.socialLinks?.reduce((acc: any, link: any) => {
+        links: data.socialLinks?.reduce((acc: Record<string, string>, link: { platform: string; url: string }) => {
           acc[link.platform.toLowerCase()] = link.url;
           return acc;
         }, {}) || {}
       };
+      console.log('Mapped profile data:', profileData);
       
       setProfile(profileData);
     }

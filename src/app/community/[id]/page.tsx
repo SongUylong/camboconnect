@@ -71,10 +71,24 @@ export default async function OrganizationPage({
         },
       },
     },
+    include: {
+      _count: {
+        select: {
+          opportunities: true
+        }
+      }
+    },
     orderBy: {
       name: "asc",
     },
   });
+
+  // Transform categories to include the count property
+  const categoriesWithCount = organizationCategories.map(category => ({
+    id: category.id,
+    name: category.name,
+    count: category._count.opportunities
+  }));
 
   // Transform the organization data for the client component
   const organizationData = {
@@ -121,7 +135,7 @@ export default async function OrganizationPage({
       <CommunityDetailClient
         organization={organizationData}
         initialOpportunities={opportunitiesWithDefaults}
-        initialCategories={organizationCategories}
+        initialCategories={categoriesWithCount}
         initialCategoryFilter={searchParams.category || ""}
         initialStatusFilter={searchParams.status || ""}
       />

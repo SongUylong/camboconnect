@@ -7,10 +7,10 @@ import { useRouter } from 'next/navigation';
  * Hook for fetching user profile data with React Query
  * @returns Query result with profile data, loading state, and error
  */
-export function useProfile() {
-  return useQuery({
+export function useProfile<T = UserProfile>() {
+  return useQuery<T>({
     queryKey: ['profile'],
-    queryFn: getUserProfile,
+    queryFn: getUserProfile as () => Promise<T>,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
   });
