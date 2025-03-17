@@ -31,6 +31,8 @@ export function useUpdateProfile() {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       toast.success('Profile updated successfully');
       router.push('/profile');
+      // Refresh the page to update server state
+      router.refresh();
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to update profile');
@@ -44,6 +46,7 @@ export function useUpdateProfile() {
  */
 export function useUpdateSetupStatus() {
   const queryClient = useQueryClient();
+  const router = useRouter();
   
   return useMutation({
     mutationFn: (isSetup: boolean) => {
@@ -53,6 +56,8 @@ export function useUpdateSetupStatus() {
     onSuccess: (data) => {
       console.log("Setup status updated successfully:", data);
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+      // Refresh the page to update server state
+      router.refresh();
     },
     onError: (error: any) => {
       console.error('Failed to update setup status:', error);
@@ -66,6 +71,7 @@ export function useUpdateSetupStatus() {
  */
 export function useUpdateParticipationPrivacy() {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   return useMutation({
     mutationFn: ({ 
@@ -79,6 +85,8 @@ export function useUpdateParticipationPrivacy() {
       // Invalidate profile data to trigger a refetch
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       toast.success('Privacy level updated');
+      // Refresh the page to update server state
+      router.refresh();
     },
     onError: () => {
       toast.error('Failed to update privacy level');
