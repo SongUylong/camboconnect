@@ -10,7 +10,7 @@ interface FollowButtonProps {
 }
 
 export function FollowButton({ organizationId }: FollowButtonProps) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [isFollowing, setIsFollowing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,13 +30,17 @@ export function FollowButton({ organizationId }: FollowButtonProps) {
           setIsLoading(false);
         });
     } else {
+      // Not logged in, so not following
+      setIsFollowing(false);
       setIsLoading(false);
     }
   }, [session, organizationId]);
 
   const handleFollowClick = async () => {
     if (!session) {
-      router.push("/login");
+      // Redirect to login with callback URL to return to this page
+      const callbackUrl = `/community/${organizationId}`;
+      router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       return;
     }
 
@@ -65,7 +69,7 @@ export function FollowButton({ organizationId }: FollowButtonProps) {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && status !== 'unauthenticated') {
     return (
       <button
         className="btn btn-outline opacity-75"

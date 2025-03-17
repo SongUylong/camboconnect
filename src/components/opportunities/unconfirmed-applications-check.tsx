@@ -13,7 +13,7 @@ import { Application } from "@/api/applications";
 import { toast } from "sonner";
 
 export function UnconfirmedApplicationsCheck() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const { 
     showConfirmationModal, 
@@ -43,6 +43,11 @@ export function UnconfirmedApplicationsCheck() {
 
   // Check for unconfirmed applications when session is available
   useEffect(() => {
+    // Don't do anything for unauthenticated users
+    if (status === "unauthenticated" || !session?.user) {
+      return;
+    }
+    
     if (session?.user && !showConfirmationModal && !hasChecked) {
       // Only refetch on initial load or when explicitly needed
       refetch().then(() => {
@@ -54,7 +59,7 @@ export function UnconfirmedApplicationsCheck() {
         setIsInitialLoad(false);
       });
     }
-  }, [session, showConfirmationModal, refetch, hasChecked, forceRefresh]);
+  }, [session, status, showConfirmationModal, refetch, hasChecked, forceRefresh]);
   
   // Set unconfirmed applications when data is fetched
   useEffect(() => {
@@ -148,6 +153,11 @@ export function UnconfirmedApplicationsCheck() {
     setCurrentApplicationIndex(0);
     setForceRefresh(prev => prev + 1);
   };
+
+  // Don't render anything for unauthenticated users
+  if (status === "unauthenticated" || !session) {
+    return null;
+  }
 
   if (!showConfirmationModal || !currentOpportunity) {
     return null;

@@ -14,14 +14,19 @@ import { useSession } from 'next-auth/react';
 
 /**
  * Hook for fetching all applications with React Query
+ * @param options - Optional configuration options
  * @returns Query result with applications data, loading state, and error
  */
-export function useApplications() {
+export function useApplications(options?: { enabled?: boolean }) {
+  const { data: session } = useSession();
+  const enabled = options?.enabled !== undefined ? options.enabled : !!session?.user;
+  
   return useQuery({
     queryKey: ['applications'],
     queryFn: getApplications,
     staleTime: 60 * 1000, // 1 minute
     refetchOnWindowFocus: false,
+    enabled: enabled,
   });
 }
 
@@ -31,7 +36,7 @@ export function useApplications() {
  * @returns Query result with unconfirmed applications
  */
 export function useUnconfirmedApplications() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   
   return useQuery({
     queryKey: ['unconfirmedApplications'],

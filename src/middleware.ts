@@ -16,7 +16,7 @@ export async function middleware(request: NextRequest) {
     '/settings',
     '/admin',
     '/friends',
-    '/community',
+    // '/community', - Removed to allow public access
   ];
   
   const isProtectedPath = protectedPaths.some(path => 
@@ -40,6 +40,6 @@ export const config = {
     '/settings',
     '/admin/:path*',
     '/friends/:path*',
-    '/community/:path*',
+    // '/community/:path*', - Removed to allow public access
   ],
 }; 

@@ -8,6 +8,7 @@ import { useApplicationStore } from "@/store/applicationStore";
 import { toast } from "sonner";
 import { useApplication } from "@/contexts/application-context";
 import { useApplicationStatus, useUpdateApplicationStatus } from "@/hooks/use-applications";
+import { LogIn } from "lucide-react";
 
 interface ApplicationStatusFormProps {
   opportunityId: string;
@@ -70,7 +71,9 @@ export default function ApplicationStatusForm({
   
   const handleExternalApplication = async () => {
     if (!session) {
-      router.push("/login");
+      // Redirect to login with callback URL to return to this opportunity
+      const callbackUrl = `/opportunities/${opportunityId}`;
+      router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       return;
     }
     
@@ -119,11 +122,16 @@ export default function ApplicationStatusForm({
   
   if (!session) {
     return (
-      <div className="bg-gray-50 p-4 rounded-md">
-        <p className="text-gray-700 mb-4">
-          You need to log in to apply for this opportunity.
+      <div className="bg-gray-50 p-6 rounded-md border border-gray-200">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Ready to apply?</h3>
+        <p className="text-gray-600 mb-4">
+          You need to log in to apply for this opportunity. Logging in allows you to track your applications and get updates.
         </p>
-        <Link href="/login" className="btn btn-primary">
+        <Link 
+          href={`/login?callbackUrl=${encodeURIComponent(`/opportunities/${opportunityId}`)}`} 
+          className="btn btn-primary w-full flex items-center justify-center"
+        >
+          <LogIn className="h-5 w-5 mr-2" />
           Log in to Apply
         </Link>
       </div>
@@ -133,7 +141,10 @@ export default function ApplicationStatusForm({
   const hasApplied = appliedOpportunities.includes(opportunityId);
 
   return (
-    <div className="bg-white p-4 rounded-md border border-gray-200">
+    <div className="bg-white p-6 rounded-md border border-gray-200">
+      <h3 className="text-lg font-medium text-gray-900 mb-2">
+        {hasApplied ? "Application Status" : "Ready to apply?"}
+      </h3>
       <p className="text-gray-600 mb-4">
         {externalLink 
           ? hasApplied 
@@ -143,7 +154,7 @@ export default function ApplicationStatusForm({
       </p>
       <button
         onClick={handleExternalApplication}
-        className={`btn ${hasApplied ? 'btn-success' : 'btn-primary'}`}
+        className={`btn w-full ${hasApplied ? 'btn-success' : 'btn-primary'}`}
         disabled={isSubmitting || !externalLink || hasApplied}
       >
         {isSubmitting ? "Redirecting..." : hasApplied ? "Applied" : "Apply on External Site"}

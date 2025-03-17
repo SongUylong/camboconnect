@@ -3,6 +3,7 @@ import { getOpportunities, toggleBookmark, incrementViewCount, OpportunitySearch
 import { useRouter } from 'next/navigation';
 import { useBookmarkStore } from '@/store/bookmarkStore';
 import { toast } from 'sonner';
+import { useSession } from 'next-auth/react';
 
 /**
  * Hook for fetching opportunities with React Query
@@ -69,13 +70,25 @@ export function useBookmarkMutation() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const bookmarkStore = useBookmarkStore();
+  const { data: session } = useSession();
   
   return useMutation({
-    mutationFn: ({ id, bookmarked }: { id: string; bookmarked: boolean }) => 
-      toggleBookmark(id, bookmarked),
+    mutationFn: ({ id, bookmarked }: { id: string; bookmarked: boolean }) => {
+      // Check if user is authenticated before making the API call
+      if (!session?.user) {
+        // Return a rejected promise to trigger the onError handler
+        return Promise.reject(new Error('Authentication required'));
+      }
+      return toggleBookmark(id, bookmarked);
+    },
     
     // Optimistically update the UI
     onMutate: async ({ id, bookmarked }) => {
+      // If not authenticated, don't proceed with optimistic update
+      if (!session?.user) {
+        return { previousOpportunities: null };
+      }
+      
       // Add to pending bookmarks to show loading state
       bookmarkStore.addPendingBookmark(id);
       
@@ -111,6 +124,14 @@ export function useBookmarkMutation() {
     onError: (err, variables, context) => {
       const { id, bookmarked } = variables;
       
+      // Handle authentication error
+      if (err.message === 'Authentication required') {
+        // Redirect to login with callback URL
+        const callbackUrl = `/opportunities/${id}`;
+        router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+        return;
+      }
+      
       // Remove from pending bookmarks
       bookmarkStore.removePendingBookmark(id);
       
@@ -141,6 +162,11 @@ export function useBookmarkMutation() {
     
     // After success or error, clean up
     onSettled: (data, error, variables) => {
+      // If authentication error, don't proceed with cleanup
+      if (error && error.message === 'Authentication required') {
+        return;
+      }
+      
       const { id } = variables;
       
       // Remove from pending bookmarks

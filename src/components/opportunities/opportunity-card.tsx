@@ -135,7 +135,9 @@ export function OpportunityCard({ opportunity, variant = "default" }: Opportunit
     e.stopPropagation();
 
     if (!session) {
-      router.push("/login");
+      // Redirect to login with callback URL to return to this opportunity
+      const callbackUrl = `/opportunities/${opportunity.id}`;
+      router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       return;
     }
 

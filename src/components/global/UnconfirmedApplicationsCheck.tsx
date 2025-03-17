@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useApplication } from "@/contexts/application-context";
@@ -15,7 +15,7 @@ import {
 } from "@/hooks/use-applications";
 
 export function UnconfirmedApplicationsCheck() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const { 
     showConfirmationModal, 
@@ -24,29 +24,43 @@ export function UnconfirmedApplicationsCheck() {
     setCurrentOpportunity 
   } = useApplication();
   const { setApplied } = useApplicationStore();
+  const [hasChecked, setHasChecked] = useState(false);
   
   // Use React Query to fetch unconfirmed applications
   const { 
-    data: unconfirmedApplications,
+    data: unconfirmedData,
     isLoading,
-    error
+    error,
+    refetch
   } = useUnconfirmedApplications();
   
   // Use React Query mutations
   const { mutate: updateStatus } = useUpdateApplicationStatus();
   const { mutate: createParticipation } = useCreateParticipation();
   
+  // Only fetch unconfirmed applications when the user is authenticated
   useEffect(() => {
-    if (!session?.user?.id || showConfirmationModal || !unconfirmedApplications?.length) return;
+    if (status === "authenticated" && session?.user?.id && !hasChecked && !showConfirmationModal) {
+      refetch().then(() => {
+        setHasChecked(true);
+      }).catch(error => {
+        console.error("Failed to fetch unconfirmed applications:", error);
+        setHasChecked(true);
+      });
+    }
+  }, [status, session, hasChecked, showConfirmationModal, refetch]);
+  
+  useEffect(() => {
+    if (!session?.user?.id || showConfirmationModal || !unconfirmedData?.applications?.length) return;
     
     // If there are any unconfirmed applications, show the modal for the first one
-    const firstApp = unconfirmedApplications[0];
+    const firstApp = unconfirmedData.applications[0];
     setCurrentOpportunity({
-      id: firstApp.opportunityId,
+      id: firstApp.opportunity.id,
       title: firstApp.opportunity.title
     });
     setShowConfirmationModal(true);
-  }, [session?.user?.id, showConfirmationModal, unconfirmedApplications, setShowConfirmationModal, setCurrentOpportunity]);
+  }, [session?.user?.id, showConfirmationModal, unconfirmedData, setShowConfirmationModal, setCurrentOpportunity]);
   
   const handleConfirmation = async (hasCompleted: boolean) => {
     if (!currentOpportunity) return;
@@ -54,17 +68,21 @@ export function UnconfirmedApplicationsCheck() {
     // Update application status using React Query mutation
     updateStatus({
       opportunityId: currentOpportunity.id,
-      statusId: hasCompleted ? "applied" : "not_applied",
-      isApplied: hasCompleted,
-      isConfirm: true
+      status: {
+        statusId: hasCompleted ? "applied" : "not_applied",
+        isApplied: hasCompleted,
+        isConfirm: true
+      }
     });
     
     if (hasCompleted) {
       // Create participation record using React Query mutation
       createParticipation({
         opportunityId: currentOpportunity.id,
-        year: new Date().getFullYear(),
-        privacyLevel: "PUBLIC"
+        participation: {
+          year: new Date().getFullYear(),
+          privacyLevel: "PUBLIC"
+        }
       });
       
       // Update the application store
@@ -76,8 +94,14 @@ export function UnconfirmedApplicationsCheck() {
     
     setShowConfirmationModal(false);
     setCurrentOpportunity(null);
+    setHasChecked(false);
     router.refresh();
   };
+  
+  // Don't render anything for unauthenticated users
+  if (status === "unauthenticated" || !session) {
+    return null;
+  }
   
   if (!showConfirmationModal || !currentOpportunity) {
     return null;

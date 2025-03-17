@@ -12,8 +12,10 @@ export function ApplicationStateInitializer() {
   const { setApplied, resetState } = useApplicationStore();
   const pathname = usePathname();
   
-  // Use React Query to fetch applications
-  const { data: applications, error, isLoading } = useApplications();
+  // Use React Query to fetch applications only when authenticated
+  const { data: applications, error, isLoading } = useApplications({
+    enabled: status === "authenticated" && !!session?.user
+  });
   
   useEffect(() => {
     // Only proceed if we have a valid session and data
@@ -30,12 +32,12 @@ export function ApplicationStateInitializer() {
     });
   }, [applications, session?.user, status, setApplied, resetState, pathname]);
   
-  // Show error toast if fetch failed
+  // Show error toast if fetch failed - only when authenticated
   useEffect(() => {
-    if (error) {
+    if (error && status === "authenticated") {
       toast.error('Failed to load your applications. Please refresh the page.');
     }
-  }, [error]);
+  }, [error, status]);
   
   return null;
 } 

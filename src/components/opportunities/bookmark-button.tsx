@@ -18,7 +18,9 @@ export function BookmarkButton({ opportunityId }: BookmarkButtonProps) {
 
   const handleBookmarkClick = async () => {
     if (!session) {
-      router.push("/login");
+      // Redirect to login with callback URL to return to this opportunity
+      const callbackUrl = `/opportunities/${opportunityId}`;
+      router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       return;
     }
 

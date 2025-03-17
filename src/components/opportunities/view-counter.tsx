@@ -9,7 +9,7 @@ interface ViewCounterProps {
 }
 
 export function ViewCounter({ opportunityId }: ViewCounterProps) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [timeSpent, setTimeSpent] = useState(0);
   const [incremented, setIncremented] = useState(false);
   const incrementAttempted = useRef(false);
@@ -37,6 +37,11 @@ export function ViewCounter({ opportunityId }: ViewCounterProps) {
   // Start timer only if user is logged in and view hasn't been incremented
   useEffect(() => {
     // Only start timer if user is logged in and we've checked view status
+    if (status === 'unauthenticated') {
+      // Don't track views for unauthenticated users
+      return;
+    }
+    
     if (session?.user?.id && viewCheckSuccess && !incremented && !timerRef.current) {
       // If already viewed, mark as incremented
       if (viewStatus?.hasViewed) {
@@ -56,7 +61,7 @@ export function ViewCounter({ opportunityId }: ViewCounterProps) {
         timerRef.current = null;
       }
     };
-  }, [session, viewCheckSuccess, viewStatus, incremented]);
+  }, [session, status, viewCheckSuccess, viewStatus, incremented]);
 
   // Increment view count after 30 seconds if not already incremented
   useEffect(() => {
