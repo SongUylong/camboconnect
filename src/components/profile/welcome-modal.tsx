@@ -62,9 +62,14 @@ export function WelcomeModal() {
 
   // Handle skip for now button click
   const handleSkipForNow = useCallback(() => {
+    
+    setVisible(false);
+   
+  }, [updateSetupStatus, profileData?.isSetup]);
+
+  const handleCloseButton = useCallback(() => {
     console.log("Skipping setup and updating isSetup to true");
     
-    // First close the modal to ensure UI responsiveness
     setVisible(false);
     
     // Then update isSetup in the background
@@ -187,7 +192,7 @@ export function WelcomeModal() {
             <div className="h-24 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
             
             <button 
-              onClick={handleSkipForNow}
+              onClick={handleCloseButton}
               className="absolute top-4 right-4 text-white hover:bg-white/20 rounded-full p-1"
               aria-label="Close"
             >
