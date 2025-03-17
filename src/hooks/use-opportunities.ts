@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getOpportunities, toggleBookmark, incrementViewCount, OpportunitySearchParams, clearOpportunitiesCache } from '@/api/opportunities';
+import { getOpportunities, toggleBookmark, incrementViewCount, OpportunitySearchParams, clearOpportunitiesCache, checkViewStatus } from '@/api/opportunities';
 import { useRouter } from 'next/navigation';
 import { useBookmarkStore } from '@/store/bookmarkStore';
 import { toast } from 'sonner';
@@ -165,7 +165,40 @@ export function useBookmarkMutation() {
  * @returns Mutation function for incrementing view count
  */
 export function useIncrementViewCount() {
+  const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: (id: string) => incrementViewCount(id),
+    onSuccess: (_, id) => {
+      // Invalidate the view status query to ensure it's updated
+      queryClient.invalidateQueries({ queryKey: ['opportunityView', id] });
+    },
+    // Limit retries to prevent excessive API calls
+    retry: 1,
+    // Add a delay between retries
+    retryDelay: 3000,
+  });
+}
+
+/**
+ * Hook for checking if user has viewed an opportunity
+ * 
+ * @param opportunityId - ID of the opportunity to check
+ * @returns Query result with view status
+ */
+export function useCheckViewStatus(opportunityId: string) {
+  return useQuery({
+    queryKey: ['opportunityView', opportunityId],
+    queryFn: () => checkViewStatus(opportunityId),
+    // Only run if we have an opportunity ID and user is authenticated
+    enabled: !!opportunityId,
+    // Don't refetch on window focus
+    refetchOnWindowFocus: false,
+    // Cache for 30 minutes since view status doesn't change often
+    staleTime: 30 * 60 * 1000,
+    // Retry failed requests
+    retry: 1,
+    // Don't refetch on mount
+    refetchOnMount: false,
   });
 } 

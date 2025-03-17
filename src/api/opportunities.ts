@@ -212,12 +212,28 @@ export const toggleBookmark = async (id: string, bookmarked: boolean): Promise<{
  * @param id - Opportunity ID
  * @returns Promise with success message
  */
-export const incrementViewCount = async (id: string): Promise<{ message: string }> => {
+export const incrementViewCount = async (id: string): Promise<{ message: string; viewed: boolean }> => {
   try {
     const { data } = await api.post(`/api/opportunities/${id}/increment-view`);
     return data;
   } catch (error) {
     console.error('Error incrementing view count:', error);
+    throw error;
+  }
+};
+
+/**
+ * Checks if the current user has already viewed an opportunity
+ * 
+ * @param id - Opportunity ID
+ * @returns Promise with view status
+ */
+export const checkViewStatus = async (id: string): Promise<{ hasViewed: boolean }> => {
+  try {
+    const { data } = await api.get(`/api/opportunities/${id}/check-view`);
+    return data;
+  } catch (error) {
+    console.error('Error checking view status:', error);
     throw error;
   }
 };

@@ -1,6 +1,19 @@
 import api from '@/lib/axios';
 
 /**
+ * Interface for application data
+ */
+export interface Application {
+  id: string;
+  status: string;
+  isApplied: boolean;
+  opportunity: {
+    id: string;
+    title: string;
+  };
+}
+
+/**
  * Fetches all applications for the current user
  * @returns Promise with applications data
  */
@@ -16,12 +29,13 @@ export const getApplications = async () => {
 
 /**
  * Fetches unconfirmed applications for the current user
- * @returns Promise with unconfirmed applications data
+ * 
+ * @returns Promise with unconfirmed applications
  */
-export const getUnconfirmedApplications = async () => {
+export const getUnconfirmedApplications = async (): Promise<{ applications: Application[] }> => {
   try {
     const { data } = await api.get('/api/applications/unconfirmed');
-    return data.applications;
+    return data;
   } catch (error) {
     console.error('Error fetching unconfirmed applications:', error);
     throw error;
@@ -44,25 +58,18 @@ export const getApplicationStatus = async (opportunityId: string) => {
 };
 
 /**
- * Updates application status for a specific opportunity
- * @param opportunityId - The ID of the opportunity
- * @param statusId - The status ID
- * @param isApplied - Whether the user has applied
- * @param isConfirm - Whether the application is confirmed
- * @returns Promise with updated application data
+ * Updates application status
+ * 
+ * @param opportunityId - Opportunity ID
+ * @param status - Application status data
+ * @returns Promise with updated application
  */
 export const updateApplicationStatus = async (
-  opportunityId: string,
-  statusId: string,
-  isApplied: boolean,
-  isConfirm: boolean
-) => {
+  opportunityId: string, 
+  status: { statusId: string; isApplied: boolean; isConfirm: boolean }
+): Promise<any> => {
   try {
-    const { data } = await api.post(`/api/opportunities/${opportunityId}/apply`, {
-      statusId,
-      isApplied,
-      isConfirm
-    });
+    const { data } = await api.post(`/api/opportunities/${opportunityId}/apply`, status);
     return data;
   } catch (error) {
     console.error('Error updating application status:', error);
@@ -71,25 +78,21 @@ export const updateApplicationStatus = async (
 };
 
 /**
- * Creates a participation record for a specific opportunity
- * @param opportunityId - The ID of the opportunity
- * @param year - The year of participation
- * @param privacyLevel - The privacy level of the participation
- * @returns Promise with created participation data
+ * Creates a participation record for an opportunity
+ * 
+ * @param opportunityId - Opportunity ID
+ * @param participation - Participation data
+ * @returns Promise with created participation
  */
 export const createParticipation = async (
   opportunityId: string,
-  year: number,
-  privacyLevel: string
-) => {
+  participation: { year: number; privacyLevel: string }
+): Promise<any> => {
   try {
-    const { data } = await api.post(`/api/opportunities/${opportunityId}/participation`, {
-      year,
-      privacyLevel
-    });
+    const { data } = await api.post(`/api/opportunities/${opportunityId}/participation`, participation);
     return data;
   } catch (error) {
-    console.error('Error creating participation:', error);
+    console.error('Error creating participation record:', error);
     throw error;
   }
 }; 
