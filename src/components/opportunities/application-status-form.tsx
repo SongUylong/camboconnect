@@ -23,37 +23,43 @@ export default function ApplicationStatusForm({
   const { data: session } = useSession();
   const router = useRouter();
   const { appliedOpportunities, setApplied, addUnconfirmedApplication } = useApplicationStore();
-  const { setShowConfirmationModal, setCurrentOpportunity } = useApplication();
+  const { setShowConfirmationModal, setCurrentOpportunity, resetModalState } = useApplication();
   
   // Use React Query to fetch application status
   const { 
     data: status, 
     isLoading: isStatusLoading,
-    error: statusError
+    error: statusError,
+    refetch: refetchStatus
   } = useApplicationStatus(opportunityId);
   
   // Use React Query mutation for updating application status
   const { 
-    mutate: updateStatus, 
+    mutateAsync: updateStatusAsync,
     isPending: isSubmitting,
     error: updateError
   } = useUpdateApplicationStatus();
   
   // Check initial application status
   useEffect(() => {
-    if (!session?.user?.id || !status) return;
+    if (!session?.user?.id) return;
     
-    // If application exists and is confirmed as applied, update store
-    if (status.isApplied && status.isConfirm) {
-      setApplied(opportunityId);
-    }
-    
-    // Show confirmation modal if application exists but is not confirmed
-    if (status && status.isConfirm === false) {
-      setCurrentOpportunity({ id: opportunityId, title });
-      setShowConfirmationModal(true);
-    }
-  }, [opportunityId, session?.user?.id, status, setApplied, setShowConfirmationModal, setCurrentOpportunity, title]);
+    // Refetch status to ensure we have the latest data
+    refetchStatus().then(() => {
+      if (!status) return;
+      
+      // If application exists and is confirmed as applied, update store
+      if (status.isApplied && status.isConfirm) {
+        setApplied(opportunityId);
+      }
+      
+      // Show confirmation modal if application exists but is not confirmed
+      if (status && status.isConfirm === false) {
+        setCurrentOpportunity({ id: opportunityId, title });
+        setShowConfirmationModal(true);
+      }
+    });
+  }, [opportunityId, session?.user?.id, status, setApplied, setShowConfirmationModal, setCurrentOpportunity, title, refetchStatus]);
   
   // Show error toast if fetch failed
   useEffect(() => {
@@ -73,13 +79,22 @@ export default function ApplicationStatusForm({
     }
     
     try {
+      console.log("Creating unconfirmed application for:", opportunityId);
+      
+      // Reset any existing modal state
+      resetModalState();
+      
       // Create application with initial state using React Query mutation
-      updateStatus({
+      const result = await updateStatusAsync({
         opportunityId,
-        statusId: "pending_confirmation",
-        isApplied: false,
-        isConfirm: false
+        status: {
+          statusId: "pending_confirmation",
+          isApplied: false,
+          isConfirm: false
+        }
       });
+      
+      console.log("Application created:", result);
       
       // Add to unconfirmed applications in store
       addUnconfirmedApplication(opportunityId, title);
@@ -93,8 +108,12 @@ export default function ApplicationStatusForm({
       
       // Show info message to user
       toast.info('Please confirm your application status after completing the external application.');
+      
+      // Refresh the status
+      refetchStatus();
     } catch (error) {
       console.error("Failed to submit application status:", error);
+      toast.error("Failed to create application. Please try again.");
     }
   };
   
@@ -129,6 +148,16 @@ export default function ApplicationStatusForm({
       >
         {isSubmitting ? "Redirecting..." : hasApplied ? "Applied" : "Apply on External Site"}
       </button>
+      {isSubmitting && (
+        <p className="text-blue-500 mt-2">
+          Preparing your application...
+        </p>
+      )}
+      {updateError && (
+        <p className="text-red-500 mt-2">
+          Error: Failed to create application
+        </p>
+      )}
     </div>
   );
 }
