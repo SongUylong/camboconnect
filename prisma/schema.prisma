@@ -362,6 +362,7 @@ enum FriendRequestStatus {
   PENDING
   ACCEPTED
   DECLINED
+  CANCELED
 }
 
 enum NotificationType {

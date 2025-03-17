@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import OrganizationForm from "@/components/admin/organization-form";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { db } from "@/lib/db";
+import { db } from "@/lib/prisma";
 
 export default async function EditOrganizationPage({ params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);

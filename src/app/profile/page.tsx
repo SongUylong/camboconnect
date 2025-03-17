@@ -2,7 +2,7 @@ import { MainLayout } from "@/components/layout/main-layout";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
+import { db } from "@/lib/prisma";
 import { Award, Bookmark, Briefcase, Calendar, Edit, Eye, GraduationCap, Link as LinkIcon, Settings, User, Users, Building, Mail, Phone, MapPin, Link2, Plus, Trash2, Share2 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";

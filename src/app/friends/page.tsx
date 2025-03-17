@@ -8,6 +8,7 @@ import { MainLayout } from "@/components/layout/main-layout";
 import { Input } from "@/components/ui/input";
 import { FriendsList } from "@/components/friends/friends-list";
 import { FriendRequestsList } from "@/components/friends/friend-requests-list";
+import { FriendSentList } from "@/components/friends/friend-sent-list";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function FriendsPage() {
@@ -56,6 +57,7 @@ export default function FriendsPage() {
             <TabsList className="mb-8">
               <TabsTrigger value="friends">My Friends</TabsTrigger>
               <TabsTrigger value="requests">Friend Requests</TabsTrigger>
+              <TabsTrigger value="sent">Friend Sent</TabsTrigger>
             </TabsList>
 
             <TabsContent value="friends">
@@ -64,6 +66,10 @@ export default function FriendsPage() {
 
             <TabsContent value="requests">
               <FriendRequestsList searchQuery={searchQuery} />
+            </TabsContent>
+            
+            <TabsContent value="sent">
+              <FriendSentList searchQuery={searchQuery} />
             </TabsContent>
           </Tabs>
         </div>

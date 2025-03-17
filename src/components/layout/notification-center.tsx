@@ -1,7 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, X, CheckCircle } from "lucide-react";
+import { 
+  Bell, 
+  X, 
+  CheckCircle, 
+  Users, 
+  Building, 
+  Star, 
+  Clock, 
+  FileText, 
+  AlertCircle 
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
@@ -110,6 +120,44 @@ export default function NotificationCenter() {
     }
   };
 
+  // Get notification icon based on type
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case "FRIEND_REQUEST":
+        return <Users className="h-5 w-5 text-indigo-500" />;
+      case "ORGANIZATION_UPDATE":
+        return <Building className="h-5 w-5 text-emerald-500" />;
+      case "NEW_OPPORTUNITY":
+        return <Star className="h-5 w-5 text-yellow-500" />;
+      case "DEADLINE_REMINDER":
+        return <Clock className="h-5 w-5 text-orange-500" />;
+      case "APPLICATION_UPDATE":
+        return <FileText className="h-5 w-5 text-blue-500" />;
+      default:
+        return <Bell className="h-5 w-5 text-gray-500" />;
+    }
+  };
+
+  // Get notification background color based on type
+  const getNotificationColor = (type: string, isRead: boolean) => {
+    if (isRead) return "";
+    
+    switch (type) {
+      case "FRIEND_REQUEST":
+        return "bg-indigo-50 border-l-4 border-indigo-400";
+      case "ORGANIZATION_UPDATE":
+        return "bg-emerald-50 border-l-4 border-emerald-400";
+      case "NEW_OPPORTUNITY":
+        return "bg-yellow-50 border-l-4 border-yellow-400";
+      case "DEADLINE_REMINDER":
+        return "bg-orange-50 border-l-4 border-orange-400";
+      case "APPLICATION_UPDATE":
+        return "bg-blue-50 border-l-4 border-blue-400";
+      default:
+        return "bg-gray-50 border-l-4 border-gray-400";
+    }
+  };
+
   // Handle notification click
   const handleNotificationClick = async (notification: Notification) => {
     // Mark as read
@@ -117,23 +165,51 @@ export default function NotificationCenter() {
       await markAsRead(notification.id);
     }
     
-    // Navigate based on notification type
-    if (notification.relatedEntityId) {
-      switch (notification.type) {
-        case "NEW_OPPORTUNITY":
-        case "DEADLINE_REMINDER":
-        case "APPLICATION_UPDATE":
+    // Navigate based on notification type and content
+    if (notification.type === "FRIEND_REQUEST") {
+      router.push(`/friends`);
+    } else if (notification.type === "ORGANIZATION_UPDATE") {
+      if (notification.relatedEntityId) {
+        router.push(`/community/${notification.relatedEntityId}`);
+      } else {
+        router.push(`/community`);
+      }
+    } else if (notification.type === "NEW_OPPORTUNITY" || notification.type === "DEADLINE_REMINDER") {
+      if (notification.relatedEntityId) {
+        router.push(`/opportunities/${notification.relatedEntityId}`);
+      } else {
+        router.push(`/opportunities`);
+      }
+    } else if (notification.type === "APPLICATION_UPDATE") {
+      // Check if the message contains "confirm" text
+      if (notification.message.toLowerCase().includes("confirm")) {
+        // Need to confirm application status
+        if (notification.relatedEntityId) {
+          router.push(`/opportunities/${notification.relatedEntityId}?confirm=true`);
+        } else {
+          router.push(`/profile/applications`);
+        }
+      } else if (notification.message.toLowerCase().includes("completed")) {
+        // Completed application
+        if (notification.relatedEntityId) {
           router.push(`/opportunities/${notification.relatedEntityId}`);
-          break;
-        case "ORGANIZATION_UPDATE":
-          router.push(`/community/${notification.relatedEntityId}`);
-          break;
-        case "FRIEND_REQUEST":
-          router.push(`/profile/friends`);
-          break;
-        default:
-          // Default fallback
-          setIsOpen(false);
+        } else {
+          router.push(`/profile/applications`);
+        }
+      } else {
+        // Default application route
+        if (notification.relatedEntityId) {
+          router.push(`/opportunities/${notification.relatedEntityId}`);
+        } else {
+          router.push(`/profile/applications`);
+        }
+      }
+    } else {
+      // Default fallback
+      if (notification.relatedEntityId) {
+        router.push(`/opportunities/${notification.relatedEntityId}`);
+      } else {
+        setIsOpen(false);
       }
     }
     
@@ -210,20 +286,27 @@ export default function NotificationCenter() {
                   key={notification.id}
                   onClick={() => handleNotificationClick(notification)}
                   className={`p-4 hover:bg-gray-50 cursor-pointer ${
-                    !notification.isRead ? "bg-blue-50" : ""
+                    getNotificationColor(notification.type, notification.isRead)
                   }`}
                 >
-                  <div className="flex justify-between">
-                    <p className={`text-sm ${!notification.isRead ? "font-medium" : ""}`}>
-                      {notification.message}
-                    </p>
-                    {!notification.isRead && (
-                      <span className="h-2 w-2 bg-blue-600 rounded-full"></span>
-                    )}
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0 mr-3">
+                      {getNotificationIcon(notification.type)}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-between">
+                        <p className={`text-sm ${!notification.isRead ? "font-medium" : ""}`}>
+                          {notification.message}
+                        </p>
+                        {!notification.isRead && (
+                          <span className="h-2 w-2 bg-blue-600 rounded-full ml-2 mt-1 flex-shrink-0"></span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formatTime(notification.createdAt)}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {formatTime(notification.createdAt)}
-                  </p>
                 </div>
               ))
             )}

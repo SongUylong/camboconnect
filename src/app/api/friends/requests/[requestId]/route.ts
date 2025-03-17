@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { db } from "@/lib/prisma";
 import { FriendRequestStatus } from "@prisma/client";
 
 interface ParamsType {
@@ -25,11 +25,18 @@ export async function POST(req: NextRequest, { params }: ParamsType) {
     const userId = session.user.id;
     const { requestId } = params;
     
-    // Get the friend request
+    // Get the friend request with both sender and receiver details
     const friendRequest = await db.friendRequest.findUnique({
       where: { id: requestId },
       include: {
         sender: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          }
+        },
+        receiver: {
           select: {
             id: true,
             firstName: true,
@@ -63,7 +70,7 @@ export async function POST(req: NextRequest, { params }: ParamsType) {
     }
     
     // Create friendship
-    await db.friendship.create({
+    const friendship = await db.friendship.create({
       data: {
         userId: friendRequest.senderId,
         friendId: friendRequest.receiverId,
@@ -76,13 +83,14 @@ export async function POST(req: NextRequest, { params }: ParamsType) {
       data: { status: FriendRequestStatus.ACCEPTED }
     });
     
-    // Create notification for sender
+    // Create notification for sender with receiver's name
     await db.notification.create({
       data: {
         userId: friendRequest.senderId,
         type: "FRIEND_REQUEST",
-        message: `Your friend request was accepted`,
-        isRead: false
+        message: `${friendRequest.receiver.firstName} ${friendRequest.receiver.lastName} accepted your friend request`,
+        isRead: false,
+        relatedEntityId: friendship.id
       }
     });
     
@@ -96,7 +104,7 @@ export async function POST(req: NextRequest, { params }: ParamsType) {
   }
 }
 
-// DELETE /api/friends/requests/[requestId] - Decline a friend request
+// DELETE /api/friends/requests/[requestId] - Decline a friend request or cancel a sent request
 export async function DELETE(req: NextRequest, { params }: ParamsType) {
   try {
     const session = await getServerSession(authOptions);
@@ -113,7 +121,19 @@ export async function DELETE(req: NextRequest, { params }: ParamsType) {
     
     // Get the friend request
     const friendRequest = await db.friendRequest.findUnique({
-      where: { id: requestId }
+      where: { id: requestId },
+      include: {
+        receiver: {
+          select: {
+            id: true,
+          }
+        },
+        sender: {
+          select: {
+            id: true,
+          }
+        }
+      }
     });
     
     if (!friendRequest) {
@@ -123,25 +143,27 @@ export async function DELETE(req: NextRequest, { params }: ParamsType) {
       );
     }
     
-    // Check if user is the receiver
-    if (friendRequest.receiverId !== userId) {
+    // Check if user is the receiver (declining) or the sender (canceling)
+    const isReceiver = friendRequest.receiverId === userId;
+    const isSender = friendRequest.senderId === userId;
+    
+    if (!isReceiver && !isSender) {
       return NextResponse.json(
-        { error: "Not authorized to decline this request" },
+        { error: "Not authorized to perform this action" },
         { status: 403 }
       );
     }
     
-    // Update friend request status before deleting
-    await db.friendRequest.update({
-      where: { id: requestId },
-      data: { status: FriendRequestStatus.DECLINED }
+    // Delete the friend request (instead of updating status)
+    await db.friendRequest.delete({
+      where: { id: requestId }
     });
     
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error declining friend request:", error);
+    console.error("Error declining/canceling friend request:", error);
     return NextResponse.json(
-      { error: "Failed to decline friend request" },
+      { error: "Failed to decline/cancel friend request" },
       { status: 500 }
     );
   }

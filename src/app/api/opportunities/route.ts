@@ -221,6 +221,37 @@ export async function POST(req: Request) {
       },
     });
     
+    // Get organization details for notification
+    const organization = await db.organization.findUnique({
+      where: { id: body.organizationId },
+      select: { name: true }
+    });
+    
+    if (organization) {
+      // Find all users who follow this organization
+      const followers = await db.follow.findMany({
+        where: { organizationId: body.organizationId },
+        select: { userId: true }
+      });
+      
+      if (followers.length > 0) {
+        // Create notifications for all followers
+        const notificationPromises = followers.map(follower => 
+          db.notification.create({
+            data: {
+              userId: follower.userId,
+              type: 'NEW_OPPORTUNITY',
+              message: `${organization.name} posted a new opportunity: ${body.title}`,
+              relatedEntityId: opportunity.id,
+            }
+          })
+        );
+        
+        await Promise.all(notificationPromises);
+        console.log(`Sent notifications to ${followers.length} followers about new opportunity`);
+      }
+    }
+    
     // Return the created opportunity with 201 Created status
     return NextResponse.json(opportunity, { status: 201 });
   } catch (error) {
