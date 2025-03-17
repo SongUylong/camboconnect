@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getOpportunities, toggleBookmark, incrementViewCount, OpportunitySearchParams, clearOpportunitiesCache, checkViewStatus } from '@/api/opportunities';
+import { getOpportunities, toggleBookmark, incrementViewCount, OpportunitySearchParams, clearOpportunitiesCache, checkViewStatus, getOrganizationOpportunities } from '@/api/opportunities';
 import { useRouter } from 'next/navigation';
 import { useBookmarkStore } from '@/store/bookmarkStore';
 import { toast } from 'sonner';
@@ -226,5 +226,24 @@ export function useCheckViewStatus(opportunityId: string) {
     retry: 1,
     // Don't refetch on mount
     refetchOnMount: false,
+  });
+}
+
+/**
+ * Hook for fetching organization opportunities with React Query
+ * 
+ * @param organizationId - ID of the organization
+ * @param params - Filter parameters
+ * @returns Query result with opportunities data, loading state, and error
+ */
+export function useOrganizationOpportunities(
+  organizationId: string,
+  params?: { category?: string; status?: string }
+) {
+  return useQuery({
+    queryKey: ['organizationOpportunities', organizationId, params],
+    queryFn: () => getOrganizationOpportunities(organizationId, params),
+    staleTime: 60 * 1000, // 60 seconds
+    refetchOnWindowFocus: false,
   });
 } 

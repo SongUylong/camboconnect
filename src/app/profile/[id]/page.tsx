@@ -14,6 +14,7 @@ import { FriendActions } from "@/components/friend-actions";
 import Image from "next/image";
 import { UserParticipationsList } from "@/components/profile/user-participations-list";
 import ShareProfileButton from "@/components/profile/share-profile-button";
+import { useUserProfileById, useUserParticipations } from '@/hooks/use-profile';
 
 interface UserProfile {
   id: string;
@@ -86,55 +87,74 @@ interface ProfilePageProps {
   };
 }
 
+interface Education {
+  id: string;
+  school: string;
+  degree: string;
+  field: string;
+  startDate: string | Date;
+  endDate?: string | Date | null;
+}
+
+interface Experience {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  startDate: string | Date;
+  endDate?: string | Date | null;
+  description: string;
+}
+
+interface Skill {
+  id: string;
+  name: string;
+}
+
+interface SocialLink {
+  id: string;
+  platform: string;
+  url: string;
+}
+
 export default function ProfilePage({ params }: ProfilePageProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [participations, setParticipations] = useState([]);
   
   const { setInitialState } = useFriendStore();
 
-  useEffect(() => {
-    if (status === "authenticated") {
-      fetchProfile();
-      fetchParticipations();
-    }
-  }, [status, params.id]);
+  // Use React Query hooks
+  const { 
+    data: profile, 
+    isLoading: isProfileLoading,
+    error: profileError
+  } = useUserProfileById(params.id);
+  
+  const {
+    data: participations,
+    isLoading: isParticipationsLoading
+  } = useUserParticipations(params.id);
 
+  // Set initial friend state when profile data is available
   useEffect(() => {
     if (profile) {
       setInitialState(
         profile.isFriend ? [profile.id] : [],
         profile.hasPendingRequest ? [profile.id] : []
       );
+      setLoading(false);
     }
   }, [profile, setInitialState]);
 
-  const fetchProfile = async () => {
-    try {
-      const response = await fetch(`/api/users/${params.id}`);
-      if (!response.ok) throw new Error("Failed to fetch profile");
-      const data = await response.json();
-      setProfile(data);
-    } catch (error) {
-      console.error("Error fetching profile:", error);
+  // Show error toast if profile fetch fails
+  useEffect(() => {
+    if (profileError) {
+      console.error("Error fetching profile:", profileError);
       toast.error("Failed to load profile");
-    } finally {
       setLoading(false);
     }
-  };
-
-  const fetchParticipations = async () => {
-    try {
-      const response = await fetch(`/api/users/${params.id}/participations`);
-      if (!response.ok) throw new Error("Failed to fetch participations");
-      const data = await response.json();
-      setParticipations(data.participations);
-    } catch (error) {
-      console.error("Error fetching participations:", error);
-    }
-  };
+  }, [profileError]);
 
   // Helper function to get profile image URL
   const getProfileImageUrl = (profileImage: string | null) => {
@@ -307,7 +327,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               </div>
               {profile.education.length > 0 ? (
                 <div className="space-y-6">
-                  {profile.education.map((edu) => (
+                  {profile.education.map((edu: Education) => (
                     <div key={edu.id} className="flex gap-4 pb-6 border-b last:border-0">
                       <div className="flex-shrink-0">
                         <Book className="h-6 w-6 text-gray-400" />
@@ -367,7 +387,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               </div>
               {profile.experience.length > 0 ? (
                 <div className="space-y-6">
-                  {profile.experience.map((exp) => (
+                  {profile.experience.map((exp: Experience) => (
                     <div key={exp.id} className="flex gap-4 pb-6 border-b last:border-0">
                       <div className="flex-shrink-0">
                         <Briefcase className="h-6 w-6 text-gray-400" />
@@ -428,7 +448,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               </div>
               {profile.skills.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
-                  {profile.skills.map((skill) => (
+                  {profile.skills.map((skill: Skill) => (
                     <span
                       key={skill.id}
                       className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
@@ -489,7 +509,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               )}
             </div>
             <div className="flex gap-4">
-              {profile.socialLinks.map((link) => (
+              {profile.socialLinks.map((link: SocialLink) => (
                 <a
                   key={link.id}
                   href={link.url}

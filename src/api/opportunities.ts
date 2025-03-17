@@ -238,6 +238,36 @@ export const checkViewStatus = async (id: string): Promise<{ hasViewed: boolean 
   }
 };
 
+/**
+ * Fetches opportunities for a specific organization
+ * @param organizationId - ID of the organization
+ * @param params - Optional filter parameters
+ * @returns Promise with organization opportunities
+ */
+export const getOrganizationOpportunities = async (
+  organizationId: string, 
+  params?: { category?: string; status?: string }
+): Promise<Opportunity[]> => {
+  try {
+    // Build query parameters for filters
+    const queryParams = new URLSearchParams();
+    if (params?.status) {
+      queryParams.set("status", params.status);
+    }
+    if (params?.category) {
+      queryParams.set("category", params.category);
+    }
+    
+    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    const { data } = await api.get(`/api/organizations/${organizationId}/opportunities${queryString}`);
+    
+    return data;
+  } catch (error) {
+    console.error('Error fetching organization opportunities:', error);
+    throw error;
+  }
+};
+
 // Add TypeScript declaration for global cache
 declare global {
   interface Window {

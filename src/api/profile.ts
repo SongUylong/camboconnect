@@ -122,4 +122,50 @@ export const getBookmarkedOpportunities = async (): Promise<any> => {
     console.error('Error fetching bookmarked opportunities:', error);
     throw error;
   }
+};
+
+/**
+ * Fetches a user profile by ID
+ * @param userId - ID of the user to fetch
+ * @returns Promise with user profile data
+ */
+export const getUserProfileById = async (userId: string): Promise<any> => {
+  try {
+    const { data } = await api.get(`/api/users/${userId}`);
+    return data;
+  } catch (error) {
+    console.error('Error fetching user profile by ID:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches participations for a user
+ * @param userId - ID of the user
+ * @returns Promise with user participations
+ */
+export const getUserParticipations = async (userId: string): Promise<any> => {
+  try {
+    const { data } = await api.get(`/api/users/${userId}/participations`);
+    return data.participations;
+  } catch (error) {
+    console.error('Error fetching user participations:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches viewed opportunities for the current user
+ * @param limit - Number of items per page
+ * @param page - Current page number
+ * @returns Promise with viewed opportunities data
+ */
+export const getViewedOpportunities = async (limit: number = 10, page: number = 1): Promise<any> => {
+  try {
+    const { data } = await api.get(`/api/profile/viewed-opportunities?limit=${limit}&page=${page}`);
+    return data;
+  } catch (error) {
+    console.error('Error fetching viewed opportunities:', error);
+    throw error;
+  }
 }; 

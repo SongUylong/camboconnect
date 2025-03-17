@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getUserProfile, updateUserProfile, updateParticipationPrivacy, toggleOrganizationFollow, getBookmarkedOpportunities, updateSetupStatus, UserProfile } from '@/api/profile';
+import { getUserProfile, updateUserProfile, updateParticipationPrivacy, toggleOrganizationFollow, getBookmarkedOpportunities, updateSetupStatus, UserProfile, getUserProfileById, getUserParticipations } from '@/api/profile';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
@@ -132,6 +132,34 @@ export function useBookmarks() {
     queryKey: ['bookmarks'],
     queryFn: getBookmarkedOpportunities,
     staleTime: 60 * 1000, // 1 minute
+    refetchOnWindowFocus: false,
+  });
+}
+
+/**
+ * Hook for fetching a user profile by ID with React Query
+ * @param userId - ID of the user to fetch
+ * @returns Query result with profile data, loading state, and error
+ */
+export function useUserProfileById(userId: string) {
+  return useQuery({
+    queryKey: ['userProfile', userId],
+    queryFn: () => getUserProfileById(userId),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+  });
+}
+
+/**
+ * Hook for fetching user participations with React Query
+ * @param userId - ID of the user
+ * @returns Query result with participations data, loading state, and error
+ */
+export function useUserParticipations(userId: string) {
+  return useQuery({
+    queryKey: ['userParticipations', userId],
+    queryFn: () => getUserParticipations(userId),
+    staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
   });
 } 
