@@ -553,6 +553,36 @@ export default async function ProfilePage() {
                 </div>
               )}
             </section>
+            
+            {/* Recently Viewed Opportunities Section */}
+            <section className="mt-8">
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Recently Viewed
+                  </h2>
+                </div>
+                <Link 
+                  href="/profile/history" 
+                  className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+                >
+                  View all
+                  <span className="ml-1">→</span>
+                </Link>
+              </div>
+              
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <p className="text-gray-600 mb-4">
+                  Track your browsing history and revisit opportunities you've viewed.
+                </p>
+                <Link 
+                  href="/profile/history" 
+                  className="btn btn-primary"
+                >
+                  View Browsing History
+                </Link>
+              </div>
+            </section>
           </div>
         </div>
       </div>

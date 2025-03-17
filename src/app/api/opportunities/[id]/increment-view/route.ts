@@ -52,6 +52,23 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       });
     }
     
+    // Get opportunity details for the metadata
+    const opportunity = await db.opportunity.findUnique({
+      where: { id },
+      select: {
+        title: true,
+        organizationId: true,
+        categoryId: true
+      }
+    });
+    
+    if (!opportunity) {
+      return NextResponse.json(
+        { error: 'Opportunity not found' },
+        { status: 404 }
+      );
+    }
+    
     // Create a record of this view in the event log
     await db.eventLog.create({
       data: {
@@ -62,6 +79,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         sessionId: session.user.id, // Using userId as sessionId for simplicity
         metadata: {
           timestamp: new Date().toISOString(),
+          opportunityTitle: opportunity.title,
+          organizationId: opportunity.organizationId,
+          categoryId: opportunity.categoryId
         },
       },
     });

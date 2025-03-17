@@ -13,61 +13,58 @@ export function ViewCounter({ opportunityId }: ViewCounterProps) {
   const [incremented, setIncremented] = useState(false);
 
   useEffect(() => {
-    // Check if this opportunity has already been viewed by this user
-    const checkIfAlreadyViewed = () => {
-      // Get viewed opportunities from localStorage
-      const viewedOpportunities = JSON.parse(localStorage.getItem('viewedOpportunities') || '{}');
-      
-      // If this opportunity is in the viewed list, mark as already incremented
-      if (viewedOpportunities[opportunityId]) {
-        setIncremented(true);
-        return true;
-      }
-      
-      return false;
-    };
-    
-    // If already viewed, don't start the timer
-    if (checkIfAlreadyViewed()) {
-      return;
-    }
-    
+    // Start the timer immediately - we'll check with the server if this view has been counted
     const timer = setInterval(() => {
       setTimeSpent((prev) => prev + 1);
     }, 1000); // Increment time spent every second
 
+    // Check with the server if this view has already been counted
+    const checkIfAlreadyViewed = async () => {
+      if (session?.user?.id) {
+        try {
+          const response = await fetch(`/api/opportunities/${opportunityId}/check-view`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
+          
+          const data = await response.json();
+          
+          if (data.hasViewed) {
+            setIncremented(true);
+          }
+        } catch (error) {
+          console.error('Failed to check view status:', error);
+        }
+      }
+    };
+
+    checkIfAlreadyViewed();
+
     return () => clearInterval(timer); // Cleanup on unmount
-  }, [opportunityId]);
+  }, [opportunityId, session]);
 
   useEffect(() => {
-    if (timeSpent >= 30 && !incremented) { // 30 seconds threshold
+    if (timeSpent >= 30 && !incremented && session?.user?.id) { // 30 seconds threshold
       // Send request to increment view count
       const incrementViewCount = async () => {
-        if (session?.user?.id) {
-          try {
-            const response = await fetch(`/api/opportunities/${opportunityId}/increment-view`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ userId: session.user.id }),
-            });
-            
-            const data = await response.json();
-            
-            // Only mark as viewed if the server actually counted the view
-            if (data.viewed) {
-              // Mark as incremented
-              setIncremented(true);
-              
-              // Save to localStorage to prevent future increments
-              const viewedOpportunities = JSON.parse(localStorage.getItem('viewedOpportunities') || '{}');
-              viewedOpportunities[opportunityId] = true;
-              localStorage.setItem('viewedOpportunities', JSON.stringify(viewedOpportunities));
+        try {
+          const response = await fetch(`/api/opportunities/${opportunityId}/increment-view`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
             }
-          } catch (error) {
-            console.error('Failed to increment view count:', error);
+          });
+          
+          const data = await response.json();
+          
+          // Only mark as incremented if the server actually counted the view
+          if (data.viewed) {
+            setIncremented(true);
           }
+        } catch (error) {
+          console.error('Failed to increment view count:', error);
         }
       };
 
