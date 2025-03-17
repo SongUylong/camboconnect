@@ -9,47 +9,8 @@ import { OrganizationCard } from "@/components/community/organization-card";
 import { FollowButton } from "@/components/community/follow-button";
 import { CommunitySearch } from "@/components/community/community-search";
 import { OpportunityCard } from "@/components/opportunities/opportunity-card";
-
-// Define the organization type
-type Organization = {
-  id: string;
-  name: string;
-  description: string;
-  logo?: string | null;
-  website?: string | null;
-  followerCount: number;
-  opportunityCount: number;
-  history?: string | null;
-  termsOfService?: string | null;
-};
-
-// Define the opportunity type to match OpportunityCard props
-type Opportunity = {
-  id: string;
-  title: string;
-  shortDescription: string;
-  deadline: Date;
-  status: "OPENING_SOON" | "ACTIVE" | "CLOSING_SOON" | "CLOSED";
-  visitCount: number;
-  isPopular: boolean;
-  isNew: boolean;
-  organization: {
-    id: string;
-    name: string;
-    logo?: string | null;
-  };
-  category: {
-    id: string;
-    name: string;
-  };
-  isBookmarked?: boolean;
-};
-
-// Define the category type
-type Category = {
-  id: string;
-  name: string;
-};
+import { useOrganizationOpportunities, useOrganizationCategories } from "@/hooks/use-community";
+import { Organization, Opportunity, Category } from "@/api/community";
 
 interface CommunityClientProps {
   initialOrganizations: Organization[];
@@ -67,15 +28,26 @@ export function CommunityClient({
   const [layout, setLayout] = useState(initialLayout);
   const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
   const [organizations, setOrganizations] = useState<Organization[]>(initialOrganizations || []);
-  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
-  const [isLoadingOpportunities, setIsLoadingOpportunities] = useState(false);
-  const [showAbout, setShowAbout] = useState(false);
   const [opportunityFilter, setOpportunityFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [showAbout, setShowAbout] = useState(false);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
   const filterMenuRef = useRef<HTMLDivElement>(null);
+
+  // Use React Query hooks for fetching data
+  const { 
+    data: opportunities = [],
+    isLoading: isLoadingOpportunities 
+  } = useOrganizationOpportunities(
+    selectedOrganization?.id || null,
+    { status: statusFilter, category: categoryFilter }
+  );
+
+  const { 
+    data: categories = [],
+    isLoading: isLoadingCategories 
+  } = useOrganizationCategories(selectedOrganization?.id || null);
 
   // Handle search results update
   const handleSearchResults = useCallback((results: Organization[]) => {
@@ -95,20 +67,6 @@ export function CommunityClient({
     }
   }, [layout, organizations, selectedOrganization]);
 
-  // Fetch opportunities when selected organization or filters change
-  useEffect(() => {
-    if (selectedOrganization) {
-      fetchOpportunities(selectedOrganization.id);
-    }
-  }, [selectedOrganization, statusFilter, categoryFilter]);
-
-  // Fetch categories when selected organization changes
-  useEffect(() => {
-    if (selectedOrganization) {
-      fetchCategories();
-    }
-  }, [selectedOrganization]);
-
   // Close filter menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -122,62 +80,6 @@ export function CommunityClient({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
-  // Fetch categories for the selected organization
-  const fetchCategories = async () => {
-    if (!selectedOrganization) return;
-    
-    try {
-      // Use the opportunities endpoint with getCategories=true to get only categories for this organization
-      const response = await fetch(`/api/organizations/${selectedOrganization.id}/opportunities?getCategories=true`);
-      if (response.ok) {
-        const data = await response.json();
-        setCategories(data);
-        
-        // Reset category filter if the currently selected category is no longer available
-        if (categoryFilter && !data.some((cat: Category) => cat.id === categoryFilter)) {
-          setCategoryFilter("");
-        }
-      } else {
-        console.error("Failed to fetch categories:", response.statusText);
-        setCategories([]);
-      }
-    } catch (error) {
-      console.error("Failed to fetch categories:", error);
-      setCategories([]);
-    }
-  };
-
-  // Fetch opportunities for the selected organization
-  const fetchOpportunities = async (organizationId: string) => {
-    setIsLoadingOpportunities(true);
-    try {
-      // Build query parameters for filters
-      const queryParams = new URLSearchParams();
-      if (statusFilter) {
-        queryParams.set("status", statusFilter);
-      }
-      if (categoryFilter) {
-        queryParams.set("category", categoryFilter);
-      }
-      
-      const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
-      const response = await fetch(`/api/organizations/${organizationId}/opportunities${queryString}`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        setOpportunities(data);
-      } else {
-        console.error("Failed to fetch opportunities:", response.statusText);
-        setOpportunities([]);
-      }
-    } catch (error) {
-      console.error("Failed to fetch opportunities:", error);
-      setOpportunities([]);
-    } finally {
-      setIsLoadingOpportunities(false);
-    }
-  };
 
   // Handle layout toggle
   const toggleLayout = (newLayout: string) => {
@@ -239,12 +141,12 @@ export function CommunityClient({
 
   // Apply filters
   const applyFilters = () => {
-    // Filters are automatically applied via the useEffect dependency array
+    // Filters are automatically applied via React Query dependencies
     setShowFilterMenu(false);
   };
 
   // Filter opportunities based on search text only
-  // (status and category filtering is now handled by the API)
+  // (status and category filtering is handled by the API via React Query)
   const filteredOpportunities = opportunities.filter(opportunity => {
     const matchesSearch = opportunityFilter === "" || 
       opportunity.title.toLowerCase().includes(opportunityFilter.toLowerCase()) ||

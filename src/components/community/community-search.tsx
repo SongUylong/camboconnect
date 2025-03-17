@@ -4,9 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import throttle from "lodash/throttle";
+import { useOrganizationSearch } from "@/hooks/use-community";
+import { Organization } from "@/api/community";
 
 interface CommunitySearchProps {
-  onSearchResults?: (organizations: any[]) => void;
+  onSearchResults?: (organizations: Organization[]) => void;
 }
 
 export function CommunitySearch({ onSearchResults }: CommunitySearchProps) {
@@ -14,12 +16,17 @@ export function CommunitySearch({ onSearchResults }: CommunitySearchProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
-  const [isSearching, setIsSearching] = useState(false);
-
+  
+  // Use React Query hook with enabled:false initially so we control when it runs
+  const { 
+    data: searchResults, 
+    isLoading: isSearching,
+    refetch
+  } = useOrganizationSearch(searchQuery || undefined);
+  
   // Create a throttled search function
   const throttledSearch = useCallback(
     throttle(async (query: string) => {
-      setIsSearching(true);
       const params = new URLSearchParams(searchParams.toString());
       const currentLayout = params.get("layout") || "grid"; // Preserve current layout
       
@@ -35,22 +42,16 @@ export function CommunitySearch({ onSearchResults }: CommunitySearchProps) {
       // Update URL without refresh
       router.push(`${pathname}?${params.toString()}`, { scroll: false });
 
-      // Fetch results directly
-      try {
-        const response = await fetch(`/api/organizations/search?${params.toString()}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (onSearchResults) {
-            onSearchResults(data);
-          }
+      // Execute the search and pass results to parent
+      refetch().then(result => {
+        if (result.data && onSearchResults) {
+          onSearchResults(result.data);
         }
-      } catch (error) {
+      }).catch(error => {
         console.error("Search failed:", error);
-      }
-
-      setIsSearching(false);
+      });
     }, 200, { leading: true, trailing: true }), // Execute on first and last call within the window
-    [pathname, searchParams, onSearchResults]
+    [pathname, searchParams, onSearchResults, refetch]
   );
 
   // Cleanup the throttled function on unmount

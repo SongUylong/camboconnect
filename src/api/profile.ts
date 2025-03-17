@@ -86,7 +86,7 @@ export const updateSetupStatus = async (isSetup: boolean): Promise<{ user: UserP
  */
 export const updateParticipationPrivacy = async (participationId: string, privacyLevel: string): Promise<any> => {
   try {
-    const { data } = await api.put(`/api/profile/participations/${participationId}/privacy`, { privacyLevel });
+    const { data } = await api.put(`/api/participations/${participationId}/privacy`, { privacyLevel });
     return data;
   } catch (error) {
     console.error('Error updating participation privacy:', error);

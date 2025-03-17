@@ -7,46 +7,8 @@ import Image from "next/image";
 import { ArrowLeft, Building, Calendar, Filter, Globe, Users, X, ChevronDown, Search } from "lucide-react";
 import { FollowButton } from "@/components/community/follow-button";
 import { OpportunityCard } from "@/components/opportunities/opportunity-card";
-
-// Define types
-type Organization = {
-  id: string;
-  name: string;
-  description: string;
-  logo?: string | null;
-  website?: string | null;
-  followerCount: number;
-  opportunityCount: number;
-  history?: string | null;
-  termsOfService?: string | null;
-};
-
-// Updated Opportunity type to match OpportunityCard props
-type Opportunity = {
-  id: string;
-  title: string;
-  shortDescription: string;
-  deadline: Date;
-  status: "OPENING_SOON" | "ACTIVE" | "CLOSING_SOON" | "CLOSED";
-  visitCount: number;
-  isPopular: boolean;
-  isNew: boolean;
-  organization: {
-    id: string;
-    name: string;
-    logo?: string | null;
-  };
-  category: {
-    id: string;
-    name: string;
-  };
-  isBookmarked?: boolean;
-};
-
-type Category = {
-  id: string;
-  name: string;
-};
+import { useOrganizationOpportunities, useOrganizationCategories } from "@/hooks/use-community";
+import { Organization, Opportunity, Category } from "@/api/community";
 
 interface CommunityDetailClientProps {
   organization: Organization;
@@ -64,83 +26,41 @@ export function CommunityDetailClient({
   initialStatusFilter,
 }: CommunityDetailClientProps) {
   // State
-  // Transform initial opportunities to ensure deadline is a Date object
-  const transformedInitialOpportunities = initialOpportunities.map(opp => ({
-    ...opp,
-    deadline: opp.deadline instanceof Date ? opp.deadline : new Date(opp.deadline)
-  }));
-  
-  const [opportunities, setOpportunities] = useState<Opportunity[]>(transformedInitialOpportunities);
-  const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [categoryFilter, setCategoryFilter] = useState(initialCategoryFilter);
   const [statusFilter, setStatusFilter] = useState(initialStatusFilter);
-  const [isLoading, setIsLoading] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilterMenu, setShowFilterMenu] = useState(false);
-  const [activeFilterCount, setActiveFilterCount] = useState(0);
   const filterMenuRef = useRef<HTMLDivElement>(null);
 
-  // Fetch opportunities when filters change
-  useEffect(() => {
-    fetchOpportunities();
-  }, [categoryFilter, statusFilter]);
+  // Use React Query hooks for data fetching
+  const { 
+    data: opportunities = initialOpportunities,
+    isLoading: isLoadingOpportunities 
+  } = useOrganizationOpportunities(
+    organization.id,
+    { status: statusFilter, category: categoryFilter }
+  );
 
-  // Fetch opportunities based on current filters
-  const fetchOpportunities = async () => {
-    setIsLoading(true);
-    try {
-      // Build query parameters for filters
-      const queryParams = new URLSearchParams();
-      if (statusFilter) {
-        queryParams.set("status", statusFilter);
+  const { 
+    data: categories = initialCategories,
+    isLoading: isLoadingCategories 
+  } = useOrganizationCategories(organization.id);
+
+  // Close filter menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (filterMenuRef.current && !filterMenuRef.current.contains(event.target as Node)) {
+        setShowFilterMenu(false);
       }
-      if (categoryFilter) {
-        queryParams.set("category", categoryFilter);
-      }
-      
-      const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
-      const response = await fetch(`/api/organizations/${organization.id}/opportunities${queryString}`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        // Transform API response to match the expected Opportunity type
-        const transformedData = data.map((item: any) => {
-          // Ensure all required properties exist
-          const opportunity = {
-            ...item,
-            deadline: new Date(item.deadline),
-            visitCount: typeof item.visitCount === 'number' ? item.visitCount : 0,
-            isPopular: !!item.isPopular,
-            isNew: !!item.isNew,
-            isBookmarked: !!item.isBookmarked,
-            // Ensure organization data is properly structured
-            organization: {
-              id: item.organization?.id || organization.id,
-              name: item.organization?.name || organization.name,
-              logo: item.organization?.logo || organization.logo
-            },
-            // Ensure category data is properly structured
-            category: {
-              id: item.category?.id || "",
-              name: item.category?.name || "Uncategorized"
-            }
-          };
-          return opportunity;
-        });
-        setOpportunities(transformedData);
-      } else {
-        console.error("Failed to fetch opportunities:", response.statusText);
-        setOpportunities([]);
-      }
-    } catch (error) {
-      console.error("Failed to fetch opportunities:", error);
-      setOpportunities([]);
-    } finally {
-      setIsLoading(false);
     }
-  };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -156,7 +76,29 @@ export function CommunityDetailClient({
   const resetFilters = () => {
     setCategoryFilter("");
     setStatusFilter("");
+    setShowFilterMenu(false);
   };
+
+  // Apply filters
+  const applyFilters = () => {
+    // Filters are automatically applied via React Query dependencies
+    setShowFilterMenu(false);
+  };
+
+  // Filter opportunities based on search text
+  const filteredOpportunities = opportunities.filter(opportunity => {
+    const matchesSearch = searchQuery === "" || 
+      opportunity.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      opportunity.shortDescription.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesSearch;
+  });
+
+  // Count active filters (excluding empty filters)
+  const activeFilterCount = [
+    statusFilter, 
+    categoryFilter
+  ].filter(filter => filter !== "").length;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
@@ -246,169 +188,145 @@ export function CommunityDetailClient({
         </div>
       </div>
 
-      {/* Opportunities Section with improved filtering UI */}
+      {/* Opportunities Section */}
       <div className="mt-8 sm:mt-12">
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <h2 className="text-2xl font-bold text-gray-900">Opportunities</h2>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900">Opportunities</h2>
+          
+          {/* Search and Filter */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-none">
+              <input
+                type="text"
+                placeholder="Search opportunities..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="input w-full sm:w-64 pl-8 py-2"
+              />
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            </div>
             
-            {/* Filter Controls */}
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              {/* Search Input */}
-              <div className="relative flex-1 sm:flex-initial">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search opportunities..."
-                  className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              </div>
-
-              {/* Filter Button */}
-              <div className="relative" ref={filterMenuRef}>
-                <button
-                  onClick={() => setShowFilterMenu(!showFilterMenu)}
-                  className={`inline-flex items-center px-4 py-2 rounded-lg border ${
-                    activeFilterCount > 0 
-                      ? 'bg-blue-50 border-blue-200 text-blue-700' 
-                      : 'bg-white border-gray-200 text-gray-700'
-                  } hover:bg-gray-50 transition-colors duration-200`}
-                >
-                  <Filter className="h-4 w-4 mr-2" />
-                  <span>Filters</span>
-                  {activeFilterCount > 0 && (
-                    <span className="ml-2 px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">
-                      {activeFilterCount}
-                    </span>
-                  )}
-                </button>
-
-                {/* Filter Popup Menu with enhanced styling */}
-                {showFilterMenu && (
-                  <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-lg z-10 border border-gray-200">
-                    <div className="p-4">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-semibold text-gray-900">Filters</h3>
-                        <button 
-                          onClick={() => setShowFilterMenu(false)}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                      
-                      {/* Category Filter */}
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Category
-                        </label>
-                        <select
-                          value={categoryFilter}
-                          onChange={(e) => setCategoryFilter(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        >
-                          <option value="">All Categories</option>
-                          {categories.map((category) => (
-                            <option key={category.id} value={category.id}>
-                              {category.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      
-                      {/* Status Filter */}
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Status
-                        </label>
-                        <select
-                          value={statusFilter}
-                          onChange={(e) => setStatusFilter(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        >
-                          <option value="">All Statuses</option>
-                          <option value="ACTIVE">Active</option>
-                          <option value="OPENING_SOON">Opening Soon</option>
-                          <option value="CLOSING_SOON">Closing Soon</option>
-                          <option value="CLOSED">Closed</option>
-                        </select>
-                      </div>
-                      
-                      {/* Filter Actions */}
-                      <div className="flex justify-between items-center pt-3 border-t border-gray-100">
-                        <button
-                          type="button"
-                          onClick={resetFilters}
-                          className="text-sm text-gray-600 hover:text-gray-900"
-                        >
-                          Reset all
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowFilterMenu(false)}
-                          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                        >
-                          Apply filters
-                        </button>
-                      </div>
+            <div className="relative" ref={filterMenuRef}>
+              <button
+                onClick={() => setShowFilterMenu(!showFilterMenu)}
+                className="btn btn-outline flex items-center gap-1 relative"
+              >
+                <Filter className="h-4 w-4" />
+                <span>Filter</span>
+                {activeFilterCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+              
+              {/* Filter Popup Menu */}
+              {showFilterMenu && (
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                  <div className="p-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="font-medium text-gray-900">Filters</h3>
+                      <button 
+                        onClick={() => setShowFilterMenu(false)}
+                        className="text-gray-400 hover:text-gray-500"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    
+                    {/* Category Filter */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Category
+                      </label>
+                      <select
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        className="input w-full text-sm"
+                      >
+                        <option value="">All Categories</option>
+                        {categories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    {/* Status Filter */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Status
+                      </label>
+                      <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="input w-full text-sm"
+                      >
+                        <option value="">All Statuses</option>
+                        <option value="ACTIVE">Active</option>
+                        <option value="OPENING_SOON">Opening Soon</option>
+                        <option value="CLOSING_SOON">Closing Soon</option>
+                        <option value="CLOSED">Closed</option>
+                      </select>
+                    </div>
+                    
+                    {/* Filter Actions */}
+                    <div className="flex justify-between">
+                      <button
+                        type="button"
+                        onClick={resetFilters}
+                        className="text-sm text-gray-600 hover:text-gray-900"
+                      >
+                        Reset
+                      </button>
+                      <button
+                        type="button"
+                        onClick={applyFilters}
+                        className="btn btn-sm btn-primary"
+                      >
+                        Apply
+                      </button>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Opportunities Grid with loading and empty states */}
-        {isLoading ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-            <div className="animate-pulse space-y-4">
-              <div className="h-4 bg-gray-200 rounded w-1/4 mx-auto"></div>
-              <div className="h-2 bg-gray-200 rounded w-1/2 mx-auto"></div>
-            </div>
+        {/* Loading State */}
+        {isLoadingOpportunities && (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
           </div>
-        ) : opportunities.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-            <div className="max-w-sm mx-auto">
-              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No opportunities found</h3>
-              <p className="text-sm text-gray-500">
-                This organization doesn't have any opportunities matching your filters.
-              </p>
-            </div>
+        )}
+
+        {/* No Results */}
+        {!isLoadingOpportunities && filteredOpportunities.length === 0 && (
+          <div className="bg-gray-50 rounded-lg p-8 text-center">
+            <h3 className="text-lg font-medium text-gray-900">No opportunities found</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Try adjusting your search criteria or filters
+            </p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {opportunities.map((opportunity) => (
-              <OpportunityCard key={opportunity.id} opportunity={opportunity} />
+        )}
+
+        {/* Opportunities Grid */}
+        {!isLoadingOpportunities && filteredOpportunities.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredOpportunities.map((opportunity) => (
+              <OpportunityCard
+                key={opportunity.id}
+                opportunity={{
+                  ...opportunity,
+                  deadline: new Date(opportunity.deadline),
+                }}
+              />
             ))}
           </div>
         )}
       </div>
-      
-      {/* Terms of Service Section with improved styling */}
-      {organization.termsOfService && (
-        <div className="mt-12">
-          <button 
-            onClick={() => setShowTerms(!showTerms)}
-            className="w-full flex items-center justify-between text-left group bg-white rounded-xl border border-gray-200 p-6 hover:border-gray-300 transition-colors duration-200"
-          >
-            <h2 className="text-xl font-semibold text-gray-900">Terms of Service</h2>
-            <span className={`text-blue-600 transform transition-transform duration-200 ${showTerms ? 'rotate-180' : ''}`}>
-              <ChevronDown className="h-5 w-5" />
-            </span>
-          </button>
-          <div className={`mt-4 transition-all duration-200 ease-in-out ${showTerms ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <div className="prose prose-blue max-w-none">
-                <p className="text-gray-600 leading-relaxed">{organization.termsOfService}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 } 

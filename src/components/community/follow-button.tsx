@@ -2,8 +2,8 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
+import { useOrganizationFollowStatus, useToggleOrganizationFollow } from "@/hooks/use-community";
 
 interface FollowButtonProps {
   organizationId: string;
@@ -12,29 +12,20 @@ interface FollowButtonProps {
 export function FollowButton({ organizationId }: FollowButtonProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  
+  // Use React Query hooks
+  const { 
+    data: followStatus,
+    isLoading: isLoadingStatus 
+  } = useOrganizationFollowStatus(session?.user?.id ? organizationId : null);
+  
+  const { 
+    mutate: toggleFollow,
+    isPending: isSubmitting
+  } = useToggleOrganizationFollow();
 
-  useEffect(() => {
-    // Check if organization is followed by this user
-    if (session?.user?.id) {
-      setIsLoading(true);
-      fetch(`/api/organizations/${organizationId}/follow/status`)
-        .then(res => res.json())
-        .then(data => {
-          setIsFollowing(data.following);
-          setIsLoading(false);
-        })
-        .catch(error => {
-          console.error("Failed to fetch follow status:", error);
-          setIsLoading(false);
-        });
-    } else {
-      // Not logged in, so not following
-      setIsFollowing(false);
-      setIsLoading(false);
-    }
-  }, [session, organizationId]);
+  const isFollowing = followStatus?.following || false;
+  const isLoading = isLoadingStatus || isSubmitting;
 
   const handleFollowClick = async () => {
     if (!session) {
@@ -44,29 +35,11 @@ export function FollowButton({ organizationId }: FollowButtonProps) {
       return;
     }
 
-    // Toggle follow state optimistically
-    setIsFollowing(!isFollowing);
-
-    try {
-      const response = await fetch(`/api/organizations/${organizationId}/follow`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ following: !isFollowing }),
-      });
-
-      if (!response.ok) {
-        // Revert on error
-        setIsFollowing(isFollowing);
-        throw new Error('Failed to update follow status');
-      }
-
-      // Refresh the page to update counts and states
-      router.refresh();
-    } catch (error) {
-      // Revert on error
-      setIsFollowing(isFollowing);
-      console.error("Failed to update follow status:", error);
-    }
+    // Toggle follow state using React Query mutation
+    toggleFollow({ 
+      organizationId, 
+      following: !isFollowing 
+    });
   };
 
   if (isLoading && status !== 'unauthenticated') {
