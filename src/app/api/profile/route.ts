@@ -154,9 +154,15 @@ export async function PUT(req: Request) {
       currentPassword,
       newPassword,
       privacyLevel,
+      isSetup,
     } = body;
     
     // Log the extracted fields for debugging
+    console.log("Profile update request:", {
+      userId,
+      isSetup,
+      hasIsSetup: isSetup !== undefined
+    });
     
     
     // Prepare update data for the user model
@@ -167,6 +173,9 @@ export async function PUT(req: Request) {
     if (bio !== undefined) updateData.bio = bio;
     if (profileImage !== undefined) updateData.profileImage = profileImage;
     if (privacyLevel) updateData.privacyLevel = privacyLevel;
+    if (isSetup !== undefined) updateData.isSetup = isSetup;
+    
+    console.log("Update data prepared:", updateData);
     
     // Handle password change if requested
     if (newPassword && currentPassword) {
@@ -202,9 +211,14 @@ export async function PUT(req: Request) {
     try {
       const result = await db.$transaction(async (tx) => {
         // Update the user basic info
+        console.log("Updating user with data:", updateData);
         const updatedUser = await tx.user.update({
           where: { id: userId },
           data: updateData,
+        });
+        console.log("User updated successfully:", {
+          id: updatedUser.id,
+          isSetup: updatedUser.isSetup
         });
         
         // Handle education entries

@@ -36,6 +36,7 @@ function CustomAdapter(prisma: PrismaClient): Adapter {
           email: user.email,
           profileImage: user.image,
           privacyLevel: "ONLY_ME",
+          isSetup: false,
         },
       });
       

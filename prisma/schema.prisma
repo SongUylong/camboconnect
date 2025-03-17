@@ -58,6 +58,7 @@ model User {
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   isAdmin           Boolean             @default(false)
+  isSetup           Boolean             @default(false)
   twoFactorEnabled  Boolean             @default(false)
   twoFactorMethod   TwoFactorMethod?
   privacyLevel      PrivacyLevel        @default(ONLY_ME)

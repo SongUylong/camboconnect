@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getUserProfile, updateUserProfile, updateParticipationPrivacy, toggleOrganizationFollow, getBookmarkedOpportunities } from '@/api/profile';
-import { UserProfile } from '@/types/user';
+import { getUserProfile, updateUserProfile, updateParticipationPrivacy, toggleOrganizationFollow, getBookmarkedOpportunities, updateSetupStatus, UserProfile } from '@/api/profile';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
@@ -35,6 +34,28 @@ export function useUpdateProfile() {
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to update profile');
+    },
+  });
+}
+
+/**
+ * Hook for updating user setup status with React Query
+ * @returns Mutation function for updating setup status
+ */
+export function useUpdateSetupStatus() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (isSetup: boolean) => {
+      console.log("Calling updateSetupStatus with:", isSetup);
+      return updateSetupStatus(isSetup);
+    },
+    onSuccess: (data) => {
+      console.log("Setup status updated successfully:", data);
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+    onError: (error: any) => {
+      console.error('Failed to update setup status:', error);
     },
   });
 }
@@ -84,6 +105,7 @@ export function useToggleOrganizationFollow() {
     onSuccess: () => {
       // Invalidate profile data to trigger a refetch
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['organizations'] });
       // Refresh the page to update server state
       router.refresh();
     },

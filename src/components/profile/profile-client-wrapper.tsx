@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { WelcomeModal } from "./welcome-modal";
 import { useSession } from "next-auth/react";
 import { useFriendStore } from "@/store/use-friend-store";
+import { useProfile } from "@/hooks/use-profile";
 
 interface ProfileClientWrapperProps {
   isNewUser: boolean;
@@ -13,16 +14,31 @@ interface ProfileClientWrapperProps {
 
 export default function ProfileClientWrapper({ isNewUser, friendIds = [] }: ProfileClientWrapperProps) {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const modalInitializedRef = useRef(false);
   const router = useRouter();
   const { status } = useSession();
   const { setInitialState } = useFriendStore();
+  const { data: profile, isLoading: profileLoading } = useProfile();
   
-  // Run this effect only once on component mount
+  // Initialize the friend store with the user's friends
   useEffect(() => {
-    // Don't do anything until authentication is complete
-    if (status === "loading") {
+    if (friendIds && friendIds.length > 0) {
+      setInitialState(friendIds, []);
+    }
+  }, [friendIds, setInitialState]);
+  
+  // Check if we should show the welcome modal
+  useEffect(() => {
+    // Don't do anything until authentication is complete and profile is loaded
+    if (status === "loading" || profileLoading || modalInitializedRef.current) {
       return;
     }
+    
+    console.log("ProfileClientWrapper: Checking if welcome modal should be shown", {
+      status,
+      isNewUser,
+      isSetup: profile?.isSetup
+    });
     
     // Check if this is a new user and if they've just registered
     const isFromRegistration = window.location.search.includes('from=register');
@@ -34,30 +50,35 @@ export default function ProfileClientWrapper({ isNewUser, friendIds = [] }: Prof
       return;
     }
     
-    // Check if we've already shown the welcome modal in this session
-    const hasShownModal = localStorage.getItem('welcomeModalShown') === 'true';
-    
     // Only show the modal if:
     // 1. User is authenticated AND
-    // 2. Either they are a new user OR they're coming from registration AND
-    // 3. We haven't shown the modal already
-    if (status === "authenticated" && (isNewUser || isFromRegistration) && !hasShownModal) {
-      setShowWelcomeModal(true);
+    // 2. isSetup is explicitly false OR (isSetup is undefined AND (isNewUser OR isFromRegistration))
+    if (status === "authenticated" && profile) {
+      const shouldShowModal = profile.isSetup === false || 
+                             (profile.isSetup === undefined && (isNewUser || isFromRegistration));
+      
+      if (shouldShowModal) {
+        console.log("ProfileClientWrapper: Showing welcome modal");
+        setShowWelcomeModal(true);
+      } else {
+        console.log("ProfileClientWrapper: Not showing welcome modal");
+      }
       
       // Remove the query parameter without refreshing the page if it exists
       if (isFromRegistration) {
         const newUrl = window.location.pathname;
         window.history.replaceState({}, document.title, newUrl);
       }
+      
+      // Mark as initialized
+      modalInitializedRef.current = true;
     }
-  }, [isNewUser, status, router]); // Only depend on these values
+  }, [isNewUser, status, router, profile, profileLoading]);
   
-  // Initialize the friend store with the user's friends
-  useEffect(() => {
-    if (friendIds && friendIds.length > 0) {
-      setInitialState(friendIds, []);
-    }
-  }, [friendIds, setInitialState]);
+  // Render the welcome modal if needed
+  if (!showWelcomeModal) {
+    return null;
+  }
   
-  return showWelcomeModal ? <WelcomeModal /> : null;
+  return <WelcomeModal />;
 } 

@@ -40,6 +40,7 @@ export async function POST(req: Request) {
         email,
         password: hashedPassword,
         privacyLevel,
+        isSetup: false,
       },
     });
 

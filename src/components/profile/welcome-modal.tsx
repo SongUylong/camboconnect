@@ -1,22 +1,35 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CheckCircle, UserCircle, ArrowRight, ArrowLeft, Check } from "lucide-react";
+import { CheckCircle, UserCircle, ArrowRight, ArrowLeft, Check, X } from "lucide-react";
 import { ProfileSetupForm } from "@/components/forms/profile-setup-form";
-import { UserProfile } from "@/types/user";
+import { UserProfile as FormUserProfile } from "@/types/user";
+import { UserProfile as ApiUserProfile } from "@/api/profile";
 import { toast } from "sonner";
+import { useProfile, useUpdateProfile, useUpdateSetupStatus } from "@/hooks/use-profile";
 
 export function WelcomeModal() {
   // Basic state
-  const [open, setOpen] = useState(true);
+  const [visible, setVisible] = useState(true);
   const [showSetupForm, setShowSetupForm] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<FormUserProfile | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [formRef, setFormRef] = useState<{ submitForm: () => void } | null>(null);
+  
+  // Use React Query hooks
+  const { data: profileData, isLoading: profileLoading } = useProfile();
+  const updateProfile = useUpdateProfile();
+  const updateSetupStatus = useUpdateSetupStatus();
+  
+  // Check if we should render the modal based on isSetup
+  useEffect(() => {
+    if (profileData?.isSetup === true) {
+      console.log("WelcomeModal: isSetup is true, not rendering modal");
+      setVisible(false);
+    }
+  }, [profileData]);
   
   // Define the steps for the setup process
   const steps = [
@@ -28,85 +41,82 @@ export function WelcomeModal() {
 
   // Handle closing the modal
   const handleClose = useCallback(() => {
-    // Set localStorage flag to prevent showing the modal again
-    localStorage.setItem('welcomeModalShown', 'true');
-    setOpen(false);
-  }, []);
-
-  // Fetch profile data
-  const fetchProfile = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch("/api/profile");
-      
-      if (!response.ok) {
-        throw new Error("Failed to fetch profile");
-      }
-      
-      const data = await response.json();
-      
-      // Map the API response to the UserProfile format
-      const profileData: UserProfile = {
-        bio: data.bio || "",
-        skills: data.skillEntries?.map((skill: any) => skill.name) || [],
-        education: data.educationEntries?.map((edu: any) => ({
-          id: edu.id,
-          school: edu.school,
-          degree: edu.degree,
-          field: edu.field,
-          startDate: edu.startDate,
-          endDate: edu.endDate
-        })) || [],
-        experience: data.experienceEntries?.map((exp: any) => ({
-          id: exp.id,
-          title: exp.title,
-          company: exp.company,
-          location: exp.location,
-          startDate: exp.startDate,
-          endDate: exp.endDate,
-          description: exp.description || ""
-        })) || [],
-        links: data.socialLinks?.reduce((acc: any, link: any) => {
-          acc[link.platform.toLowerCase()] = link.url;
-          return acc;
-        }, {}) || {}
-      };
-      
-      setProfile(profileData);
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-      toast.error("Failed to load profile data");
-    } finally {
-      setIsLoading(false);
+    console.log("Closing modal and updating isSetup to true");
+    
+    // First close the modal to ensure UI responsiveness
+    setVisible(false);
+    
+    // Then update isSetup in the background
+    if (profileData?.isSetup !== true) {
+      updateSetupStatus.mutate(true, {
+        onSuccess: (data) => {
+          console.log("Successfully updated isSetup:", data);
+        },
+        onError: (error) => {
+          console.error("Failed to update isSetup:", error);
+          toast.error("Failed to update profile setup status. The welcome modal may appear again.");
+        }
+      });
     }
-  }, []);
-
-  // Handle setup now button click
-  const handleSetupNow = useCallback(() => {
-    setShowSetupForm(true);
-    fetchProfile();
-  }, [fetchProfile]);
+  }, [updateSetupStatus, profileData?.isSetup]);
 
   // Handle skip for now button click
   const handleSkipForNow = useCallback(() => {
-    // Clear the flag from localStorage to prevent showing the modal again
-    localStorage.removeItem('welcomeModalShown');
+    console.log("Skipping setup and updating isSetup to true");
     
-    // Close the modal
-    setOpen(false);
-  }, []);
+    // First close the modal to ensure UI responsiveness
+    setVisible(false);
+    
+    // Then update isSetup in the background
+    if (profileData?.isSetup !== true) {
+      updateSetupStatus.mutate(true, {
+        onSuccess: (data) => {
+          console.log("Successfully updated isSetup:", data);
+        },
+        onError: (error) => {
+          console.error("Failed to update isSetup:", error);
+          toast.error("Failed to update profile setup status. The welcome modal may appear again.");
+        }
+      });
+    }
+  }, [updateSetupStatus, profileData?.isSetup]);
+
+  // Handle setup now button click
+  const handleSetupNow = useCallback(() => {
+    if (!profileData) {
+      toast.error("Profile data is not available. Please try again later.");
+      return;
+    }
+    
+    // Create a new form profile object
+    const formProfile: FormUserProfile = {
+      bio: profileData.bio || "",
+      skills: profileData.skills || [],
+      education: profileData.education || [],
+      experience: profileData.experience || [],
+      links: profileData.links || {}
+    };
+    
+    // Set the profile first
+    setProfile(formProfile);
+    
+    // Then show the setup form in a separate state update
+    setTimeout(() => {
+      setShowSetupForm(true);
+    }, 0);
+  }, [profileData]);
 
   // Handle form submission
-  const handleSubmit = useCallback(async (data: UserProfile) => {
+  const handleSubmit = useCallback(async (data: FormUserProfile) => {
     try {
       setSubmitting(true);
       
       // Ensure we have at least some data
       const hasData = 
-        data.bio?.trim() || 
-        data.skills?.length > 0 || 
-        data.education?.length > 0 || 
-        data.experience?.length > 0 || 
+        (data.bio?.trim() || "") !== "" || 
+        (data.skills && data.skills.length > 0) || 
+        (data.education && data.education.length > 0) || 
+        (data.experience && data.experience.length > 0) || 
         Object.values(data.links || {}).some(link => link && link.trim() !== '');
       
       if (!hasData) {
@@ -115,43 +125,38 @@ export function WelcomeModal() {
         return;
       }
       
-      // Ensure we have valid arrays and objects even if they're empty
-      const formattedData = {
-        bio: data.bio || "",
-        skills: Array.isArray(data.skills) ? data.skills : [],
-        education: Array.isArray(data.education) ? data.education : [],
-        experience: Array.isArray(data.experience) ? data.experience : [],
-        links: data.links || {}
+      // Convert links to the format expected by the API
+      const apiLinks: Record<string, string> = {};
+      if (data.links) {
+        Object.entries(data.links).forEach(([key, value]) => {
+          if (value) {
+            apiLinks[key] = value;
+          }
+        });
+      }
+      
+      const apiProfileData: Partial<ApiUserProfile> = {
+        bio: data.bio,
+        skills: data.skills,
+        education: data.education,
+        experience: data.experience,
+        links: apiLinks,
+        isSetup: true
       };
       
-      // Send the complete data to the API
-      const response = await fetch("/api/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formattedData),
-      });
-      
-      if (!response.ok) {
-        const result = await response.json();
-        throw new Error(result.error || "Failed to update profile");
-      }
+      await updateProfile.mutateAsync(apiProfileData);
       
       toast.success("Profile setup completed successfully!");
       
-      // Clear the welcome modal flag from localStorage
-      localStorage.removeItem('welcomeModalShown');
-      
-      // Close the modal without redirecting
-      setOpen(false);
+      // Close the modal
+      setVisible(false);
     } catch (error) {
       console.error("Error updating profile:", error);
       toast.error(error instanceof Error ? error.message : "Failed to update profile");
     } finally {
       setSubmitting(false);
     }
-  }, []);
+  }, [updateProfile]);
 
   // Navigation functions
   const nextStep = useCallback(() => {
@@ -167,76 +172,105 @@ export function WelcomeModal() {
   }, [currentStep]);
 
   // If the modal is closed, don't render anything
-  if (!open) {
+  if (!visible) {
     return null;
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className={`sm:max-w-${showSetupForm ? '3xl' : 'md'} border-0 shadow-lg rounded-xl overflow-hidden`}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div 
+        className={`bg-white rounded-xl shadow-lg overflow-hidden max-w-md w-full ${showSetupForm ? 'max-w-3xl' : 'max-w-md'}`}
+      >
         {!showSetupForm ? (
-          <>
+          <div className="relative">
             {/* Decorative header with gradient */}
-            <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-r from-blue-600 to-indigo-600 -mt-6 -mx-6"></div>
+            <div className="h-24 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
             
-            <DialogHeader className="relative z-10 pt-12">
-              <div className="mx-auto bg-white p-3 rounded-full shadow-md mb-4">
-                <UserCircle className="h-12 w-12 text-blue-600" />
+            <button 
+              onClick={handleSkipForNow}
+              className="absolute top-4 right-4 text-white hover:bg-white/20 rounded-full p-1"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            
+            <div className="px-6 pb-6">
+              <div className="relative -mt-12 text-center">
+                <div className="mx-auto bg-white p-3 rounded-full shadow-md mb-4 inline-block">
+                  <UserCircle className="h-12 w-12 text-blue-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900">Welcome to CamboConnect!</h2>
+                <p className="text-gray-600 mt-2 max-w-sm mx-auto">
+                  Your account has been created successfully. Now let's set up your profile to help you connect with the best opportunities.
+                </p>
               </div>
-              <DialogTitle className="text-2xl font-bold text-center text-gray-900">Welcome to CamboConnect!</DialogTitle>
-              <DialogDescription className="text-center pt-3 text-gray-600 max-w-sm mx-auto">
-                Your account has been created successfully. Now let's set up your profile to help you connect with the best opportunities.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="py-4">
-              <div className="space-y-4">
-                <div className="flex items-start space-x-3">
-                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-medium text-gray-900">Complete Your Profile</h4>
-                    <p className="text-sm text-gray-600">Add your education, experience, and skills to stand out</p>
+              
+              <div className="py-4">
+                <div className="space-y-4">
+                  <div className="flex items-start space-x-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-medium text-gray-900">Complete Your Profile</h4>
+                      <p className="text-sm text-gray-600">Add your education, experience, and skills to stand out</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-medium text-gray-900">Get Personalized Opportunities</h4>
+                      <p className="text-sm text-gray-600">We'll match you with opportunities based on your profile</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-medium text-gray-900">Connect with Organizations</h4>
+                      <p className="text-sm text-gray-600">Build your network with leading organizations in Cambodia</p>
+                    </div>
                   </div>
                 </div>
-                
-                <div className="flex items-start space-x-3">
-                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-medium text-gray-900">Get Personalized Opportunities</h4>
-                    <p className="text-sm text-gray-600">We'll match you with opportunities based on your profile</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start space-x-3">
-                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-medium text-gray-900">Connect with Organizations</h4>
-                    <p className="text-sm text-gray-600">Build your network with leading organizations in Cambodia</p>
-                  </div>
-                </div>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row sm:justify-center gap-3 pt-2">
+                <Button 
+                  variant="outline" 
+                  onClick={handleSkipForNow}
+                  className="w-full sm:w-auto border-gray-300 hover:bg-gray-50 text-gray-700"
+                >
+                  Skip for Now
+                </Button>
+                <Button 
+                  onClick={handleSetupNow}
+                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center group"
+                >
+                  Set Up Now
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
               </div>
             </div>
-            
-            <DialogFooter className="flex flex-col sm:flex-row sm:justify-center gap-3 pt-2">
+          </div>
+        ) : profileLoading ? (
+          <div className="text-center py-8 px-6">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading your profile data...</p>
+          </div>
+        ) : !profile ? (
+          <div className="text-center py-8 px-6">
+            <div className="bg-red-100 text-red-600 p-4 rounded-lg mb-4 mx-auto max-w-md">
+              <p className="text-gray-600 mb-4">Failed to load profile data. Please try again later.</p>
               <Button 
-                variant="outline" 
-                onClick={handleSkipForNow}
-                className="w-full sm:w-auto border-gray-300 hover:bg-gray-50 text-gray-700"
+                onClick={() => setShowSetupForm(false)}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
-                Skip for Now
+                Go Back
               </Button>
-              <Button 
-                onClick={handleSetupNow}
-                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center group"
-              >
-                Set Up Now
-                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Button>
-            </DialogFooter>
-          </>
+            </div>
+          </div>
         ) : (
-          <div className="w-full max-w-3xl">
-            <div className="flex items-center gap-4 mb-8">
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-4">
               <Button
                 variant="ghost"
                 size="icon"
@@ -246,115 +280,100 @@ export function WelcomeModal() {
                 <ArrowLeft className="h-5 w-5" />
                 <span className="sr-only">Back to welcome</span>
               </Button>
-              <h1 className="text-3xl font-bold text-gray-800">Set Up Your Profile</h1>
+              <h1 className="text-xl font-bold text-gray-800">Set Up Your Profile</h1>
+              
+              <button 
+                onClick={handleClose}
+                className="ml-auto text-gray-500 hover:bg-gray-100 rounded-full p-1"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
             
-            {/* Progress Steps */}
-            <div className="mb-8">
-              <div className="flex justify-between">
-                {steps.map((step, index) => (
-                  <div key={step.id} className="flex flex-col items-center">
-                    <div 
-                      className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
-                        index < currentStep 
-                          ? 'bg-blue-600 border-blue-600 text-white' 
-                          : index === currentStep 
-                            ? 'border-blue-600 text-blue-600' 
-                            : 'border-gray-300 text-gray-400'
-                      }`}
-                    >
-                      {index < currentStep ? (
-                        <Check className="h-5 w-5" />
-                      ) : (
-                        <span>{index + 1}</span>
-                      )}
-                    </div>
-                    <span className={`text-xs mt-2 ${
-                      index <= currentStep ? 'text-blue-600 font-medium' : 'text-gray-500'
-                    }`}>
-                      {step.title}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div className="relative mt-2">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gray-200 rounded-full">
+            {/* Progress indicator */}
+            <div className="flex justify-between mb-6">
+              {steps.map((step, index) => (
+                <div key={step.id} className="flex flex-col items-center">
                   <div 
-                    className="h-full bg-blue-600 rounded-full transition-all duration-300 ease-in-out"
-                    style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
-                  ></div>
+                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      index < currentStep 
+                        ? 'bg-green-500 text-white' 
+                        : index === currentStep 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-200 text-gray-500'
+                    }`}
+                  >
+                    {index < currentStep ? (
+                      <Check className="h-5 w-5" />
+                    ) : (
+                      <span>{index + 1}</span>
+                    )}
+                  </div>
+                  <span className={`text-xs mt-1 ${
+                    index === currentStep ? 'text-blue-600 font-medium' : 'text-gray-500'
+                  }`}>
+                    {step.title}
+                  </span>
                 </div>
-              </div>
+              ))}
             </div>
             
-            {isLoading ? (
-              <div className="flex justify-center items-center min-h-[300px]">
-                <div className="animate-spin h-10 w-10 border-4 border-blue-600 rounded-full border-t-transparent"></div>
-              </div>
-            ) : profile ? (
-              <div className="p-6 shadow-md border border-gray-200 bg-white rounded-lg">
-                <ProfileSetupForm 
-                  profile={profile} 
-                  onSubmit={handleSubmit} 
-                  isSubmitting={submitting}
-                  currentStep={currentStep}
-                  totalSteps={steps.length}
-                  setFormRef={setFormRef}
-                />
-                
-                <div className="flex justify-between mt-8 pt-4 border-t border-gray-200">
-                  <Button
-                    variant="outline"
-                    onClick={prevStep}
-                    disabled={currentStep === 0}
-                    className="flex items-center"
-                  >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Previous
-                  </Button>
-                  
-                  {currentStep < steps.length - 1 ? (
-                    <Button
-                      onClick={nextStep}
-                      className="bg-blue-600 hover:bg-blue-700 text-white flex items-center"
-                    >
-                      Next
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() => {
-                        if (profile && formRef) {
-                          console.log("Triggering form submission from Finish button");
-                          formRef.submitForm();
-                        } else {
-                          console.error("Cannot submit form: profile or formRef is null");
-                          toast.error("Something went wrong. Please try again.");
-                        }
-                      }}
-                      disabled={submitting}
-                      className="bg-blue-600 hover:bg-blue-700 text-white flex items-center"
-                    >
-                      {submitting ? "Saving..." : "Finish"}
-                      <Check className="h-4 w-4 ml-2" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
-                <p className="text-gray-600 mb-4">Failed to load profile data. Please try again later.</p>
-                <Button 
-                  onClick={fetchProfile}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+            {/* Only render the form if we have profile data */}
+            <ProfileSetupForm 
+              profile={profile} 
+              onSubmit={handleSubmit}
+              isSubmitting={submitting}
+              currentStep={currentStep}
+              totalSteps={steps.length}
+              setFormRef={setFormRef}
+            />
+            
+            <div className="flex justify-between mt-6 pt-4 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={prevStep}
+                disabled={currentStep === 0 || submitting}
+                className={`${currentStep === 0 ? 'invisible' : 'visible'}`}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Previous
+              </Button>
+              
+              {currentStep < steps.length - 1 ? (
+                <Button
+                  type="button"
+                  onClick={nextStep}
+                  disabled={submitting}
                 >
-                  Retry
+                  Next
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
-              </div>
-            )}
+              ) : (
+                <Button
+                  type="button"
+                  onClick={() => formRef?.submitForm()}
+                  disabled={submitting}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {submitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      Complete Setup
+                      <Check className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 } 

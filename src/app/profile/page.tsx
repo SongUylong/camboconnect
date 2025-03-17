@@ -55,6 +55,7 @@ type ExtendedUser = {
   twoFactorEnabled: boolean;
   twoFactorMethod: string | null;
   privacyLevel: string;
+  isSetup: boolean;
   followedOrgs: ExtendedFollow[];
   bookmarks: (BookmarkType & {
     opportunity: ExtendedOpportunity;
