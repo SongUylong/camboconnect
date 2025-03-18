@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/prisma';
+import { createNotification } from '@/lib/notifications';
 
 // CRON job to check for approaching deadlines and notify users
 export async function POST(req: Request) {
@@ -139,13 +140,11 @@ export async function POST(req: Request) {
         console.log(`Creating notification for user ${bookmark.user.id} about opportunity ${bookmark.opportunity.id}`);
         
         try {
-          const notification = await db.notification.create({
-            data: {
-              userId: bookmark.user.id,
-              type: 'DEADLINE_REMINDER',
-              message: message,
-              relatedEntityId: bookmark.opportunity.id,
-            }
+          const notification = await createNotification({
+            userId: bookmark.user.id,
+            type: 'DEADLINE_REMINDER',
+            message: message,
+            relatedEntityId: bookmark.opportunity.id,
           });
           notifications.push(notification);
           console.log(`Successfully created notification ID: ${notification.id}`);

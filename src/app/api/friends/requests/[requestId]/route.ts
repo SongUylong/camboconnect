@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/prisma";
 import { FriendRequestStatus } from "@prisma/client";
+import { createNotification } from "@/lib/notifications";
 
 interface ParamsType {
   params: {
@@ -84,14 +85,11 @@ export async function POST(req: NextRequest, { params }: ParamsType) {
     });
     
     // Create notification for sender with receiver's name
-    await db.notification.create({
-      data: {
-        userId: friendRequest.senderId,
-        type: "FRIEND_REQUEST",
-        message: `${friendRequest.receiver.firstName} ${friendRequest.receiver.lastName} accepted your friend request`,
-        isRead: false,
-        relatedEntityId: friendship.id
-      }
+    await createNotification({
+      userId: friendRequest.senderId,
+      type: "FRIEND_REQUEST",
+      message: `${friendRequest.receiver.firstName} ${friendRequest.receiver.lastName} accepted your friend request`,
+      relatedEntityId: friendship.id
     });
     
     return NextResponse.json({ success: true });

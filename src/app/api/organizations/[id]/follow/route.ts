@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/prisma';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { createNotification } from '@/lib/notifications';
 
 interface ParamsType {
   params: {
@@ -57,13 +58,11 @@ export async function POST(req: Request, { params }: ParamsType) {
         });
         
         // Create notification
-        await db.notification.create({
-          data: {
-            userId,
-            type: 'ORGANIZATION_UPDATE',
-            message: `You are now following ${organization.name}`,
-            relatedEntityId: id,
-          },
+        await createNotification({
+          userId,
+          type: 'ORGANIZATION_UPDATE',
+          message: `You are now following ${organization.name}`,
+          relatedEntityId: id,
         });
       }
       

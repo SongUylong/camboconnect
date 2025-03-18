@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/prisma';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { createNotification } from '@/lib/notifications';
 
 type ParamsType = {
   params: {
@@ -93,15 +94,13 @@ export async function POST(req: Request, { params }: ParamsType) {
     }
     
     // Create a notification for the user
-    await db.notification.create({
-      data: {
-        userId,
-        type: 'APPLICATION_UPDATE',
-        message: isConfirm 
-          ? `Your application for ${opportunity.title} has been ${isApplied ? 'completed' : 'started'}`
-          : `Please confirm your application status for ${opportunity.title}`,
-        relatedEntityId: id,
-      },
+    await createNotification({
+      userId,
+      type: 'APPLICATION_UPDATE',
+      message: isConfirm 
+        ? `Your application for ${opportunity.title} has been ${isApplied ? 'completed' : 'started'}`
+        : `Please confirm your application status for ${opportunity.title}`,
+      relatedEntityId: id,
     });
     
     return NextResponse.json(application);

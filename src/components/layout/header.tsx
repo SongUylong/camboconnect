@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { Bell, Menu, User, X, Bookmark, Users } from "lucide-react";
+import { Bell, Menu, User, X, Bookmark, Users, Settings } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import NotificationCenter from "./notification-center";
@@ -128,6 +128,18 @@ export function Header() {
                   <span className="absolute -inset-1.5" />
                   <span className="sr-only">View bookmarks</span>
                   <Bookmark className="h-6 w-6" aria-hidden="true" />
+                </Link>
+
+                {/* Settings button */}
+                <Link
+                  href="/settings"
+                  className={`relative rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mr-2 ${
+                    pathname.startsWith("/settings") ? "text-blue-500" : ""
+                  }`}
+                >
+                  <span className="absolute -inset-1.5" />
+                  <span className="sr-only">Settings</span>
+                  <Settings className="h-6 w-6" aria-hidden="true" />
                 </Link>
 
                 {/* Notification center */}

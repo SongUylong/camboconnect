@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/prisma';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { createNotification } from '@/lib/notifications';
 
 /**
  * GET /api/opportunities
@@ -237,13 +238,11 @@ export async function POST(req: Request) {
       if (followers.length > 0) {
         // Create notifications for all followers
         const notificationPromises = followers.map(follower => 
-          db.notification.create({
-            data: {
-              userId: follower.userId,
-              type: 'NEW_OPPORTUNITY',
-              message: `${organization.name} posted a new opportunity: ${body.title}`,
-              relatedEntityId: opportunity.id,
-            }
+          createNotification({
+            userId: follower.userId,
+            type: 'NEW_OPPORTUNITY',
+            message: `${organization.name} posted a new opportunity: ${body.title}`,
+            relatedEntityId: opportunity.id,
           })
         );
         

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/prisma";
 import { FriendRequestStatus } from "@prisma/client";
+import { createNotification } from "@/lib/notifications";
 
 // GET /api/friends/requests - Get all friend requests
 export async function GET(req: NextRequest) {
@@ -156,25 +157,19 @@ export async function POST(req: NextRequest) {
     });
     
     // Create notification with sender's name
-    await db.notification.create({
-      data: {
-        userId: receiverId,
-        type: "FRIEND_REQUEST",
-        message: `${sender.firstName} ${sender.lastName} sent you a friend request`,
-        isRead: false,
-        relatedEntityId: friendRequest.id
-      }
+    await createNotification({
+      userId: receiverId,
+      type: "FRIEND_REQUEST",
+      message: `${sender.firstName} ${sender.lastName} sent you a friend request`,
+      relatedEntityId: friendRequest.id
     });
     
     // Send notification to sender as well (optional)
-    await db.notification.create({
-      data: {
-        userId: userId,
-        type: "FRIEND_REQUEST",
-        message: `You sent a friend request to ${receiver.firstName} ${receiver.lastName}`,
-        isRead: false,
-        relatedEntityId: friendRequest.id
-      }
+    await createNotification({
+      userId: userId,
+      type: "FRIEND_REQUEST",
+      message: `You sent a friend request to ${receiver.firstName} ${receiver.lastName}`,
+      relatedEntityId: friendRequest.id
     });
     
     return NextResponse.json(friendRequest);

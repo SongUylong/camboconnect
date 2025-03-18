@@ -61,6 +61,10 @@ model User {
   isSetup           Boolean             @default(false)
   twoFactorEnabled  Boolean             @default(false)
   twoFactorMethod   TwoFactorMethod?
+  telegramChatId    String?             // Telegram chat ID for notifications
+  telegramUsername  String?             // Telegram username
+  telegramBindCode  String?             // Temporary code for binding Telegram
+  telegramBindExpiry DateTime?          // Expiry time for binding code
   privacyLevel      PrivacyLevel        @default(ONLY_ME)
   educationPrivacy  PrivacyLevel        @default(ONLY_ME)
   experiencePrivacy PrivacyLevel        @default(ONLY_ME)
