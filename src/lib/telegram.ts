@@ -25,8 +25,17 @@ export async function sendTelegramMessage(chatId: string | number, message: stri
 /**
  * Generate a deep link for Telegram bot
  */
-export function generateTelegramBotLink(botUsername: string, startParameter: string) {
-  return `https://t.me/${botUsername}?start=${startParameter}`;
+export function generateTelegramBotLink(botUsername: string, startParameter: string): string {
+  if (!botUsername) {
+    throw new Error('Bot username is required');
+  }
+  if (!startParameter) {
+    throw new Error('Start parameter is required');
+  }
+  
+  // Remove any @ symbol if present in the username
+  const cleanUsername = botUsername.replace(/^@/, '');
+  return `https://t.me/${cleanUsername}?start=${encodeURIComponent(startParameter)}`;
 }
 
 /**

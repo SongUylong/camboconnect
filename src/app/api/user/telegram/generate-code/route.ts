@@ -11,6 +11,7 @@ export async function GET(req: Request) {
     
     // Check if user is authenticated
     if (!session?.user) {
+      console.log('Authentication failed: No session or user');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -18,27 +19,40 @@ export async function GET(req: Request) {
     }
     
     const userId = session.user.id;
+    console.log('Generating code for user:', userId);
     
     // Generate a random 6-character code
     const bindCode = randomBytes(3).toString('hex');
+    console.log('Generated bind code:', bindCode);
     
     // Set expiry time (15 minutes from now)
     const expiryTime = new Date();
     expiryTime.setMinutes(expiryTime.getMinutes() + 15);
     
-    // Save the code in the user's record
-    await db.user.update({
-      where: { id: userId },
-      data: {
-        telegramBindCode: bindCode,
-        telegramBindExpiry: expiryTime
-      }
-    });
+    try {
+      // Save the code in the user's record
+      await db.user.update({
+        where: { id: userId },
+        data: {
+          telegramBindCode: bindCode,
+          telegramBindExpiry: expiryTime
+        }
+      });
+      console.log('Updated user record with bind code');
+    } catch (dbError) {
+      console.error('Database error:', dbError);
+      return NextResponse.json(
+        { error: 'Failed to save binding code' },
+        { status: 500 }
+      );
+    }
     
     // Get Telegram bot username from environment
     const botUsername = process.env.TELEGRAM_BOT_USERNAME;
+    console.log('Bot username from env:', botUsername);
     
     if (!botUsername) {
+      console.error('Telegram bot username not configured in environment variables');
       return NextResponse.json(
         { error: 'Telegram bot not configured' },
         { status: 500 }
@@ -47,6 +61,7 @@ export async function GET(req: Request) {
     
     // Generate the Telegram deep link
     const telegramLink = generateTelegramBotLink(botUsername, bindCode);
+    console.log('Generated Telegram link:', telegramLink);
     
     return NextResponse.json({
       success: true,
@@ -55,9 +70,9 @@ export async function GET(req: Request) {
       expires: expiryTime
     });
   } catch (error) {
-    console.error('Error generating Telegram binding code:', error);
+    console.error('Detailed error in generate-code:', error);
     return NextResponse.json(
-      { error: 'Failed to generate Telegram binding code' },
+      { error: 'Failed to generate Telegram binding code', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
