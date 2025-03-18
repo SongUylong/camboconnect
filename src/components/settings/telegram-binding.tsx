@@ -25,7 +25,7 @@ export default function TelegramBinding({ telegramConnected, telegramUsername }:
       setIsLoading(true);
       console.log("Generating binding code...");
       
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://158.178.228.121:3000';
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://uylongsong.lol';
       const response = await fetch(`${baseUrl}/api/user/telegram/generate-code`);
       console.log("Response status:", response.status);
       
