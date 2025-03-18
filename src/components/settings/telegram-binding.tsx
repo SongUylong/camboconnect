@@ -25,21 +25,45 @@ export default function TelegramBinding({ telegramConnected, telegramUsername }:
       setIsLoading(true);
       console.log("Generating binding code...");
       
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://uylongsong.lol';
-      const response = await fetch(`${baseUrl}/api/user/telegram/generate-code`);
+      // Use relative URL instead of absolute URL
+      const endpoint = '/api/user/telegram/generate-code';
+      console.log("Making request to:", endpoint);
+      
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+      
       console.log("Response status:", response.status);
+      
+      if (response.status === 401) {
+        // Session expired or not authenticated
+        toast.error("Session expired. Please log in again.");
+        // Redirect to login page
+        window.location.href = '/login';
+        return;
+      }
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to generate Telegram binding code");
+        console.error("Error response:", errorData);
+        throw new Error(errorData.error || errorData.message || "Failed to generate Telegram binding code");
       }
       
       const data = await response.json();
       console.log("Binding code data:", {
+        success: data.success,
         telegramLink: data.telegramLink,
         code: data.code,
         expires: data.expires
       });
+      
+      if (!data.telegramLink || !data.code || !data.expires) {
+        throw new Error("Invalid response data");
+      }
       
       setTelegramLink(data.telegramLink);
       setBindCode(data.code);
@@ -47,9 +71,11 @@ export default function TelegramBinding({ telegramConnected, telegramUsername }:
       
       // Start countdown
       setCountdown(15 * 60); // 15 minutes in seconds
+      
+      toast.success("Binding code generated successfully");
     } catch (error) {
       console.error("Error generating Telegram binding code:", error);
-      toast.error("Failed to generate Telegram binding code");
+      toast.error(error instanceof Error ? error.message : "Failed to generate Telegram binding code");
     } finally {
       setIsLoading(false);
     }
