@@ -16,6 +16,7 @@ const nextConfig = {
       'example.com',
       'images.unsplash.com',
       'picsum.photos',
+      'media.uylongsong.lol',
     ],
     // Add unoptimized option for Docker
     unoptimized: process.env.NODE_ENV === 'production',
