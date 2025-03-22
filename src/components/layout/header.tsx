@@ -3,17 +3,35 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { Bell, Menu, User, X, Bookmark, Users, Settings, LogOut, ChevronDown, ChevronRight } from "lucide-react";
+import { 
+  Bell, 
+  Menu, 
+  User, 
+  X, 
+  Bookmark, 
+  Users, 
+  Settings, 
+  LogOut, 
+  ChevronDown, 
+  ChevronRight,
+  Briefcase,
+  Users2,
+  HelpCircle,
+  Info,
+  ShieldAlert,
+  Home
+} from "lucide-react";
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import NotificationCenter from "./notification-center";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface NavigationItem {
   name: string;
   href: string;
   className?: string;
-  icon?: React.ReactNode;
+  icon: React.ReactNode;
 }
 
 interface ProfileMenuItem {
@@ -23,6 +41,36 @@ interface ProfileMenuItem {
   icon: React.ReactNode;
 }
 
+// Animation variants for the expandable tabs
+const tabVariants = {
+  initial: {
+    gap: 0,
+    paddingLeft: "0.75rem",
+    paddingRight: "0.75rem",
+  },
+  animate: (isExpanded: boolean) => ({
+    gap: isExpanded ? ".5rem" : 0,
+    paddingLeft: isExpanded ? "1rem" : "0.75rem",
+    paddingRight: isExpanded ? "1rem" : "0.75rem",
+    backgroundColor: isExpanded ? "rgb(243, 244, 246)" : "transparent",
+  }),
+};
+
+const textVariants = {
+  initial: { width: 0, opacity: 0 },
+  animate: { width: "auto", opacity: 1 },
+  exit: { width: 0, opacity: 0, transition: { duration: 0.15, opacity: { duration: 0.1 } } },
+};
+
+// Faster spring animation for better responsiveness
+const transition = { 
+  type: "spring", 
+  stiffness: 500, 
+  damping: 25, 
+  mass: 0.5,
+  duration: 0.25 
+};
+
 export function Header() {
   const { data: session } = useSession();
   const pathname = usePathname();
@@ -30,8 +78,12 @@ export function Header() {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
+  const [selectedTab, setSelectedTab] = useState<string | null>(null);
+  const [hoveredTab, setHoveredTab] = useState<string | null>(null);
+  
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const tabsRef = useRef<HTMLDivElement>(null);
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
@@ -45,14 +97,43 @@ export function Header() {
     };
   }, [mobileMenuOpen]);
 
+  // Set the active tab on page load
+  useEffect(() => {
+    // Find which navigation item matches the current path
+    const currentRoute = baseNavigation.find(item => pathname === item.href);
+    if (currentRoute) {
+      setSelectedTab(currentRoute.href);
+    } else {
+      setSelectedTab(null);
+    }
+    // Reset hovered tab when changing pages
+    setHoveredTab(null);
+  }, [pathname]);
+
   const baseNavigation: NavigationItem[] = [
-    { name: "Opportunities", href: "/opportunities" },
-    { name: "Community", href: "/community" },
-    { name: "Guide", href: "/guide" },
-    { name: "About", href: "/about" },
+    { name: "Opportunities", href: "/opportunities", icon: <Briefcase className="h-5 w-5" /> },
+    { name: "Community", href: "/community", icon: <Users2 className="h-5 w-5" /> },
+    { name: "Guide", href: "/guide", icon: <HelpCircle className="h-5 w-5" /> },
+    { name: "About", href: "/about", icon: <Info className="h-5 w-5" /> },
   ];
 
   const navigation: NavigationItem[] = baseNavigation;
+
+  // Close tabs when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (tabsRef.current && !tabsRef.current.contains(event.target as Node)) {
+        // Only reset selectedTab if it's not the active page
+        const activeTab = baseNavigation.find(item => pathname === item.href);
+        if (selectedTab && selectedTab !== activeTab?.href) {
+          setSelectedTab(null);
+        }
+      }
+    }
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [pathname, selectedTab]);
 
   // Close profile menu when clicking outside
   useEffect(() => {
@@ -125,8 +206,18 @@ export function Header() {
 
   // Add Admin option for admin users
   if (session?.user?.isAdmin) {
-    profileMenuItems.unshift({ name: "Admin", href: "/admin", icon: <Settings className="h-5 w-5 mr-2 text-yellow-600" /> });
+    profileMenuItems.unshift({ name: "Admin", href: "/admin", icon: <ShieldAlert className="h-5 w-5 mr-2 text-yellow-600" /> });
   }
+
+  // Get whether a tab should be expanded - either when hovered or when it's the selected/active tab
+  const isTabExpanded = (href: string) => {
+    // If any tab is being hovered, only that tab should be expanded
+    if (hoveredTab !== null) {
+      return hoveredTab === href;
+    }
+    // Otherwise, show the selected tab or the active page tab
+    return selectedTab === href || isActive(href);
+  };
 
   return (
     <header className="bg-white shadow relative z-30">
@@ -147,22 +238,63 @@ export function Header() {
             </Link>
           </div>
 
-          {/* Center Navigation */}
-          <div className="hidden md:flex items-center justify-center flex-1">
-            <div className="flex space-x-8">
+          {/* Center Navigation - Expandable Tabs */}
+          <div 
+            ref={tabsRef}
+            className="hidden md:flex items-center justify-center flex-1"
+            onMouseLeave={() => setHoveredTab(null)}
+          >
+            <div className="flex items-center space-x-2 rounded-xl border bg-white p-1.5 shadow-sm">
               {navigation.map((item) => (
                 <Link
-                  key={item.name}
+                  key={item.href}
                   href={item.href}
-                  className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
-                    item.className ||
-                    (isActive(item.href)
-                      ? "border-blue-500 text-gray-900"
-                      : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700")
-                  }`}
+                  passHref
+                  className="focus:outline-none"
                 >
-                  {item.icon}
-                  {item.name}
+                  <motion.div
+                    variants={tabVariants}
+                    initial="initial"
+                    animate="animate"
+                    custom={isTabExpanded(item.href)}
+                    transition={transition}
+                    className={`relative flex items-center rounded-lg ${
+                      isTabExpanded(item.href)
+                        ? 'bg-gray-100 text-gray-900'
+                        : isActive(item.href)
+                          ? 'text-blue-600 hover:bg-gray-50'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700'
+                    } cursor-pointer py-2`}
+                    onMouseEnter={() => setHoveredTab(item.href)}
+                    onClick={() => {
+                      // Only update selected tab if it's different from active page
+                      if (!isActive(item.href)) {
+                        setSelectedTab(item.href);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center justify-center min-w-[20px]">
+                      {/* Active dot indicator */}
+                      {isActive(item.href) && !isTabExpanded(item.href) && (
+                        <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                      )}
+                      {item.icon}
+                    </div>
+                    <AnimatePresence initial={false}>
+                      {isTabExpanded(item.href) && (
+                        <motion.span
+                          variants={textVariants}
+                          initial="initial"
+                          animate="animate"
+                          exit="exit"
+                          transition={transition}
+                          className="overflow-hidden ml-1 font-medium whitespace-nowrap"
+                        >
+                          {item.name}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
                 </Link>
               ))}
             </div>
@@ -234,10 +366,12 @@ export function Header() {
               </div>
             ) : (
               <div className="flex space-x-4">
-                <Link href="/login" className="btn btn-outline">
+                <Link href="/login" className="btn btn-outline flex items-center">
+                  <User className="h-5 w-5 mr-2" />
                   Log in
                 </Link>
-                <Link href="/register" className="btn btn-primary">
+                <Link href="/register" className="btn btn-primary flex items-center">
+                  <User className="h-5 w-5 mr-2" />
                   Sign up
                 </Link>
               </div>
@@ -312,7 +446,10 @@ export function Header() {
                   onClick={() => setMobileProfileOpen(!mobileProfileOpen)}
                   className="flex items-center justify-between w-full mt-4 px-2 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100"
                 >
-                  <span>Profile Settings</span>
+                  <div className="flex items-center">
+                    <User className="h-5 w-5 text-gray-500 mr-2" />
+                    <span>Profile Settings</span>
+                  </div>
                   <ChevronDown 
                     className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
                       mobileProfileOpen ? 'rotate-180' : ''
@@ -362,16 +499,18 @@ export function Header() {
               <div className="flex flex-col space-y-2">
                 <Link 
                   href="/login" 
-                  className="btn btn-outline w-full"
+                  className="btn btn-outline w-full flex items-center justify-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
+                  <User className="h-5 w-5 mr-2" />
                   Log in
                 </Link>
                 <Link 
                   href="/register" 
-                  className="btn btn-primary w-full"
+                  className="btn btn-primary w-full flex items-center justify-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
+                  <User className="h-5 w-5 mr-2" />
                   Sign up
                 </Link>
               </div>
@@ -393,7 +532,7 @@ export function Header() {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {item.icon}
-                    {item.name}
+                    <span className="mx-2">{item.name}</span>
                     <ChevronRight className="ml-auto h-5 w-5 text-gray-400" />
                   </Link>
                 </li>
