@@ -234,7 +234,7 @@ export function Header() {
                 className="h-8 w-auto"
                 priority
               />
-              <span className="hidden md:block ml-2 font-medium text-gray-900">CamboConnect</span>
+              <span className="hidden md:block ml-2 font-medium text-theme-navy">CamboConnect</span>
             </Link>
           </div>
 
@@ -260,10 +260,10 @@ export function Header() {
                     transition={transition}
                     className={`relative flex items-center rounded-lg ${
                       isTabExpanded(item.href)
-                        ? 'bg-gray-100 text-gray-900'
+                        ? 'bg-gray-100 text-theme-navy'
                         : isActive(item.href)
-                          ? 'text-blue-600 hover:bg-gray-50'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700'
+                          ? 'text-theme-teal hover:bg-gray-50'
+                          : 'text-theme-slate hover:bg-gray-50 hover:text-theme-navy'
                     } cursor-pointer py-2`}
                     onMouseEnter={() => setHoveredTab(item.href)}
                     onClick={() => {
@@ -276,7 +276,7 @@ export function Header() {
                     <div className="flex items-center justify-center min-w-[20px]">
                       {/* Active dot indicator */}
                       {isActive(item.href) && !isTabExpanded(item.href) && (
-                        <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                        <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-theme-teal"></span>
                       )}
                       {item.icon}
                     </div>
@@ -311,7 +311,7 @@ export function Header() {
                 <div className="relative" ref={profileMenuRef}>
                   <button
                     onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                    className="flex items-center space-x-1 rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="flex items-center space-x-1 rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-theme-teal focus:ring-offset-2"
                   >
                     <span className="sr-only">Open user menu</span>
                     <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
@@ -366,11 +366,11 @@ export function Header() {
               </div>
             ) : (
               <div className="flex space-x-4">
-                <Link href="/login" className="btn btn-outline flex items-center">
+                <Link href="/login" className="btn border border-gray-300 bg-white hover:bg-gray-100 flex items-center">
                   <User className="h-5 w-5 mr-2" />
                   Log in
                 </Link>
-                <Link href="/register" className="btn btn-primary flex items-center">
+                <Link href="/register" className="btn bg-theme-teal hover:bg-theme-teal text-white flex items-center">
                   <User className="h-5 w-5 mr-2" />
                   Sign up
                 </Link>
@@ -383,7 +383,7 @@ export function Header() {
             <button
               type="button"
               data-mobile-menu-button
-              className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+              className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-theme-teal"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               <span className="sr-only">Open main menu</span>
@@ -413,7 +413,7 @@ export function Header() {
       >
         {/* Mobile Menu Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">Menu</h2>
+          <h2 className="text-lg font-medium text-theme-navy">Menu</h2>
           <button 
             type="button" 
             className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
@@ -499,7 +499,7 @@ export function Header() {
               <div className="flex flex-col space-y-2">
                 <Link 
                   href="/login" 
-                  className="btn btn-outline w-full flex items-center justify-center"
+                  className="btn border border-gray-300 bg-white hover:bg-gray-100 w-full flex items-center justify-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <User className="h-5 w-5 mr-2" />
@@ -507,7 +507,7 @@ export function Header() {
                 </Link>
                 <Link 
                   href="/register" 
-                  className="btn btn-primary w-full flex items-center justify-center"
+                  className="btn bg-theme-teal hover:bg-theme-teal text-white w-full flex items-center justify-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <User className="h-5 w-5 mr-2" />
@@ -526,8 +526,8 @@ export function Header() {
                     href={item.href}
                     className={`flex items-center px-4 py-3 text-base font-medium rounded-md ${
                       isActive(item.href)
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                        ? "bg-theme-red bg-opacity-10 text-theme-red"
+                        : "text-theme-slate hover:bg-gray-50 hover:text-theme-navy"
                     }`}
                     onClick={() => setMobileMenuOpen(false)}
                   >

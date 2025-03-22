@@ -2,18 +2,18 @@ import Link from "next/link";
 
 export function Footer() {
   return (
-    <footer className="bg-white border-t border-gray-200">
+    <footer className="bg-theme-cream border-t border-gray-200">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="xl:grid xl:grid-cols-3 xl:gap-8">
           <div className="space-y-8 xl:col-span-1">
-            <Link href="/" className="text-lg font-bold text-blue-600">
+            <Link href="/" className="text-lg font-bold text-theme-teal">
               CamboConnect
             </Link>
-            <p className="text-gray-500 text-sm">
+            <p className="text-theme-slate text-sm">
               Connecting Cambodians with opportunities for growth and development.
             </p>
             <div className="flex space-x-6">
-              <a href="#" className="text-gray-400 hover:text-gray-500">
+              <a href="#" className="text-gray-400 hover:text-theme-teal transition-colors">
                 <span className="sr-only">Facebook</span>
                 <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path
@@ -23,7 +23,7 @@ export function Footer() {
                   />
                 </svg>
               </a>
-              <a href="#" className="text-gray-400 hover:text-gray-500">
+              <a href="#" className="text-gray-400 hover:text-theme-teal transition-colors">
                 <span className="sr-only">LinkedIn</span>
                 <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path
@@ -33,7 +33,7 @@ export function Footer() {
                   />
                 </svg>
               </a>
-              <a href="#" className="text-gray-400 hover:text-gray-500">
+              <a href="#" className="text-gray-400 hover:text-theme-teal transition-colors">
                 <span className="sr-only">Twitter</span>
                 <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path
@@ -46,40 +46,40 @@ export function Footer() {
           <div className="mt-12 grid grid-cols-2 gap-8 xl:col-span-2 xl:mt-0">
             <div className="md:grid md:grid-cols-2 md:gap-8">
               <div>
-                <h3 className="text-sm font-semibold text-gray-900">Platform</h3>
+                <h3 className="text-sm font-semibold text-theme-navy">Platform</h3>
                 <ul className="mt-4 space-y-4">
                   <li>
-                    <Link href="/opportunities" className="text-sm text-gray-500 hover:text-gray-900">
+                    <Link href="/opportunities" className="text-sm text-theme-slate hover:text-theme-teal transition-colors">
                       Opportunities
                     </Link>
                   </li>
                   <li>
-                    <Link href="/community" className="text-sm text-gray-500 hover:text-gray-900">
+                    <Link href="/community" className="text-sm text-theme-slate hover:text-theme-gold transition-colors">
                       Community
                     </Link>
                   </li>
                   <li>
-                    <Link href="/about" className="text-sm text-gray-500 hover:text-gray-900">
+                    <Link href="/about" className="text-sm text-theme-slate hover:text-theme-sage transition-colors">
                       About Us
                     </Link>
                   </li>
                 </ul>
               </div>
               <div className="mt-12 md:mt-0">
-                <h3 className="text-sm font-semibold text-gray-900">Support</h3>
+                <h3 className="text-sm font-semibold text-theme-navy">Support</h3>
                 <ul className="mt-4 space-y-4">
                   <li>
-                    <Link href="/faq" className="text-sm text-gray-500 hover:text-gray-900">
+                    <Link href="/faq" className="text-sm text-theme-slate hover:text-theme-teal transition-colors">
                       FAQ
                     </Link>
                   </li>
                   <li>
-                    <Link href="/contact" className="text-sm text-gray-500 hover:text-gray-900">
+                    <Link href="/contact" className="text-sm text-theme-slate hover:text-theme-gold transition-colors">
                       Contact Us
                     </Link>
                   </li>
                   <li>
-                    <Link href="/feedback" className="text-sm text-gray-500 hover:text-gray-900">
+                    <Link href="/feedback" className="text-sm text-theme-slate hover:text-theme-sage transition-colors">
                       Feedback
                     </Link>
                   </li>
@@ -88,30 +88,30 @@ export function Footer() {
             </div>
             <div className="md:grid md:grid-cols-2 md:gap-8">
               <div>
-                <h3 className="text-sm font-semibold text-gray-900">Legal</h3>
+                <h3 className="text-sm font-semibold text-theme-navy">Legal</h3>
                 <ul className="mt-4 space-y-4">
                   <li>
-                    <Link href="/privacy" className="text-sm text-gray-500 hover:text-gray-900">
+                    <Link href="/privacy" className="text-sm text-theme-slate hover:text-theme-teal transition-colors">
                       Privacy Policy
                     </Link>
                   </li>
                   <li>
-                    <Link href="/terms" className="text-sm text-gray-500 hover:text-gray-900">
+                    <Link href="/terms" className="text-sm text-theme-slate hover:text-theme-gold transition-colors">
                       Terms of Service
                     </Link>
                   </li>
                 </ul>
               </div>
               <div className="mt-12 md:mt-0">
-                <h3 className="text-sm font-semibold text-gray-900">Connect</h3>
+                <h3 className="text-sm font-semibold text-theme-navy">Connect</h3>
                 <ul className="mt-4 space-y-4">
                   <li>
-                    <a href="#" className="text-sm text-gray-500 hover:text-gray-900">
+                    <a href="#" className="text-sm text-theme-slate hover:text-theme-teal transition-colors">
                       Newsletter
                     </a>
                   </li>
                   <li>
-                    <a href="#" className="text-sm text-gray-500 hover:text-gray-900">
+                    <a href="#" className="text-sm text-theme-slate hover:text-theme-gold transition-colors">
                       Partners
                     </a>
                   </li>
@@ -121,7 +121,7 @@ export function Footer() {
           </div>
         </div>
         <div className="mt-12 border-t border-gray-200 pt-8">
-          <p className="text-sm text-gray-400 xl:text-center">
+          <p className="text-sm text-theme-slate xl:text-center">
             &copy; {new Date().getFullYear()} CamboConnect. All rights reserved.
           </p>
         </div>
