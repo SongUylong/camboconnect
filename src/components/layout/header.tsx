@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { Bell, Menu, User, X, Bookmark, Users, Settings } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
 import NotificationCenter from "./notification-center";
@@ -18,7 +19,6 @@ interface NavigationItem {
 export function Header() {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
@@ -27,7 +27,6 @@ export function Header() {
     { name: "Community", href: "/community" },
   ];
 
-  // Add admin item if user is authenticated and has admin role
   const navigation: NavigationItem[] = session?.user?.isAdmin
     ? [
         ...baseNavigation,
@@ -81,8 +80,15 @@ export function Header() {
         <div className="flex h-16 justify-between">
           <div className="flex">
             <div className="flex flex-shrink-0 items-center">
-              <Link href="/">
-                <span className="text-xl font-bold text-blue-600">CamboConnect</span>
+              <Link href="/" className="flex items-center">
+                <Image
+                  src="/images/logo.png"
+                  alt="CamboConnect"
+                  width={180}
+                  height={40}
+                  className="h-8 w-auto"
+                  priority
+                />
               </Link>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
