@@ -241,11 +241,9 @@ export default function NotificationCenter() {
         <span className="sr-only">View notifications</span>
         <Bell className="h-6 w-6" aria-hidden="true" />
         
-        {/* Unread Badge */}
+        {/* Unread Badge - Simple red dot */}
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 block h-4 w-4 rounded-full bg-red-500 text-xs text-white text-center">
-            {unreadCount > 9 ? "9+" : unreadCount}
-          </span>
+          <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-red-500" />
         )}
       </button>
 

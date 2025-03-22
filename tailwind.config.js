@@ -7,6 +7,21 @@ module.exports = {
     ],
     theme: {
       extend: {
+        fontSize: {
+          'xs': '0.85rem',
+          'sm': '0.95rem',
+          'base': '1.05rem',
+          'lg': '1.15rem',
+          'xl': '1.3rem',
+          '2xl': '1.563rem',
+          '3xl': '1.953rem',
+          '4xl': '2.441rem',
+          '5xl': '3.052rem',
+        },
+        fontFamily: {
+          heading: ['var(--font-open-sans)', 'system-ui', 'sans-serif'],
+          body: ['var(--font-source-sans)', 'system-ui', 'sans-serif'],
+        },
         colors: {
           'theme-red': '#e01717',
           'theme-navy': '#011e31',

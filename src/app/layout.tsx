@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Open_Sans, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth/auth-provider";
 import { ApplicationProvider } from "@/contexts/application-context";
@@ -8,7 +8,19 @@ import { UnconfirmedApplicationsCheck } from "@/components/global/UnconfirmedApp
 import { ApplicationStateInitializer } from "@/components/global/ApplicationStateInitializer";
 import { BookmarkStateInitializer } from "@/components/global/BookmarkStateInitializer";
 import { QueryProvider } from "@/providers/query-provider";
-const inter = Inter({ subsets: ["latin"] });
+
+// Import professional and highly readable fonts
+const sourceSans = Source_Sans_3({ 
+  subsets: ["latin"],
+  weight: ['400', '500', '600'],
+  variable: '--font-source-sans',
+});
+
+const openSans = Open_Sans({
+  subsets: ["latin"],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-open-sans',
+});
 
 export const metadata: Metadata = {
   title: "CamboConnect | Centralized Opportunities Platform",
@@ -46,8 +58,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className={`${sourceSans.variable} ${openSans.variable}`}>
+      <body className="font-body">
         <QueryProvider>
           <AuthProvider>
             <ApplicationProvider>
