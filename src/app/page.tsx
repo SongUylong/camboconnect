@@ -1,34 +1,77 @@
+"use client";
 import Link from "next/link";
 import { MainLayout } from "@/components/layout/main-layout";
+import DynamicLottie from "@/components/DynamicLottie";
+import { DecorativeHalfCircle } from "@/components/ui/decorative-half-circle";
+import { ReactiveBackground } from "@/components/ui/ReactiveBackground";
 
 export default function Home() {
   return (
     <MainLayout>
-      {/* Hero Section with subtle pattern background */}
-      <div className="relative isolate bg-theme-cream bg-dot-pattern">
+      {/* Hero Section with reactive dot background */}
+      <div className="relative isolate bg-theme-cream overflow-hidden">
+        {/* Reactive background dots */}
+        <ReactiveBackground 
+          dotColor="bg-theme-teal/20" 
+          dotSize={2} 
+          dotSpacing={30}
+          sensitivity={3}
+        />
+        
         <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white"></div>
         <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
-            <span className="inline-block px-4 py-1 rounded-full text-sm font-medium bg-theme-sand text-theme-navy mb-5">
-              Opportunity Platform for Cambodia
-            </span>
-            <h1 className="text-4xl font-bold tracking-tight text-theme-navy sm:text-6xl">
-              Discover Opportunities in Cambodia
-            </h1>
-            <p className="mt-6 text-lg leading-8 text-theme-slate">
-              CamboConnect is your centralized platform for finding and applying to opportunities
-              across Cambodia - from startups and incubation programs to hackathons and internships.
-            </p>
-            <div className="mt-10 flex items-center justify-center gap-x-6">
-              <Link
-                href="/opportunities"
-                className="btn bg-theme-teal hover:bg-theme-teal/90 text-white btn-lg"
-              >
-                Explore Opportunities
-              </Link>
-              <Link href="/about" className="text-sm font-semibold leading-6 text-theme-navy group transition-all duration-300 ease-in-out">
-                Learn more <span aria-hidden="true" className="inline-block transition-transform duration-300 ease-in-out group-hover:translate-x-1">→</span>
-              </Link>
+          <div className="mx-auto max-w-7xl flex flex-col lg:flex-row items-center justify-between relative ">
+            {/* Left Lottie Animation (hidden on small screens) */}
+            <div className="hidden lg:block absolute left-0 bottom-[-250px] z-0" style={{ marginLeft: '-30rem' }}>
+              <DynamicLottie 
+                animationUrl="/animations/wave.json" 
+                width={650} 
+                height={650} 
+              />
+            </div>
+            
+            {/* Center Text Content */}
+            <div className="mx-auto max-w-2xl text-center lg:w-1/2 z-30 relative">
+              {/* Using our enhanced DecorativeHalfCircle component with icons for Discover, Connect, and Grow */}
+              <DecorativeHalfCircle 
+                width={920}
+                height={450}
+                borderColor="border-theme-teal/40"
+                iconColor="text-theme-gold"
+                iconSize={24}
+                flowColor="text-theme-gold/40"
+              />
+              
+              <span className="inline-block px-4 py-1 rounded-full text-sm font-medium bg-theme-sand text-theme-navy mb-5 mt-10">
+                Opportunity Platform for Cambodia
+              </span>
+              <h1 className="text-4xl font-bold tracking-tight text-theme-navy sm:text-6xl">
+                Discover Opportunities in Cambodia
+              </h1>
+              <p className="mt-6 text-lg leading-8 text-theme-slate">
+                CamboConnect is your centralized platform for finding and applying to opportunities
+                across Cambodia - from startups and incubation programs to hackathons and internships.
+              </p>
+              <div className="mt-10 flex items-center justify-center gap-x-6">
+                <Link
+                  href="/opportunities"
+                  className="btn bg-theme-teal hover:bg-theme-teal/90 text-white btn-lg"
+                >
+                  Explore Opportunities
+                </Link>
+                <Link href="/about" className="text-sm font-semibold leading-6 text-theme-navy group transition-all duration-300 ease-in-out">
+                  Learn more <span aria-hidden="true" className="inline-block transition-transform duration-300 ease-in-out group-hover:translate-x-1">→</span>
+                </Link>
+              </div>
+            </div>
+            
+            {/* Right Lottie Animation (hidden on small screens) - flipped horizontally */}
+            <div className="hidden lg:block absolute right-0 bottom-[-250px] z-0 transform scale-x-[-1]" style={{ marginRight: '-30rem' }}>
+              <DynamicLottie 
+                animationUrl="/animations/wave.json" 
+                width={650} 
+                height={650} 
+              />
             </div>
           </div>
         </div>
