@@ -1,0 +1,235 @@
+name: Deploy CamboConnect to VPS
+
+on:
+  push:
+    branches: [ main ]  # Adjust based on your main branch name
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate image tags
+        id: tags
+        run: |
+          SHA_TAG=$(git rev-parse --short HEAD)
+          DATE_TAG=$(date +'%Y%m%d%H%M%S')
+          echo "sha_tag=${SHA_TAG}" >> $GITHUB_OUTPUT
+          echo "date_tag=${DATE_TAG}" >> $GITHUB_OUTPUT
+
+      # Build and push Next.js app using your existing Dockerfile
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          target: runner  # Using your existing runner target
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ steps.tags.outputs.sha_tag }}
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}:buildcache,mode=max
+
+      - name: Create deployment files
+        run: |
+          # Create docker-compose.yml for deployment
+          cat > docker-compose.deploy.yml << EOF
+          version: '3.8'
+
+          services:
+            app-prod:
+              image: ghcr.io/\${GITHUB_REPOSITORY}:\${IMAGE_TAG}
+              ports:
+                - "3000:3000"
+              environment:
+                - NODE_ENV=production
+                - HOSTNAME=0.0.0.0
+                - PORT=3000
+              env_file:
+                - .env
+              networks:
+                - app_network
+              restart: unless-stopped
+              healthcheck:
+                test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+                interval: 10s
+                timeout: 5s
+                retries: 3
+                start_period: 20s
+              logging:
+                driver: "json-file"
+                options:
+                  max-size: "10m"
+                  max-file: "3"
+
+          networks:
+            app_network:
+              driver: bridge
+          EOF
+
+      - name: Copy deployment files to VPS
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.DIGITAL_OCEAN_HOST }}
+          username: ${{ secrets.DIGITAL_OCEAN_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "docker-compose.deploy.yml"
+          target: "~/home/TestCamboConnect"
+          strip_components: 0
+
+      - name: Deploy to VPS
+        id: deploy
+        uses: appleboy/ssh-action@master
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          IMAGE_TAG: ${{ steps.tags.outputs.sha_tag }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        with:
+          host: ${{ secrets.DIGITAL_OCEAN_HOST }}
+          username: ${{ secrets.DIGITAL_OCEAN_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: GITHUB_REPOSITORY,IMAGE_TAG,DATABASE_URL
+          script: |
+            # Login to GitHub Container Registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Navigate to your app directory
+            cd ~/home/TestCamboConnect
+            
+            # Pull the new image
+            echo "Pulling image ghcr.io/${GITHUB_REPOSITORY}:${IMAGE_TAG}..."
+            docker pull ghcr.io/${GITHUB_REPOSITORY}:${IMAGE_TAG}
+            
+            # Create deployment environment file
+            echo "Creating deployment environment file..."
+            echo "GITHUB_REPOSITORY=${GITHUB_REPOSITORY}" > .env.deploy
+            echo "IMAGE_TAG=${IMAGE_TAG}" >> .env.deploy
+            
+            # Run Prisma migrations using the new image
+            echo "Running database migrations..."
+            docker run --rm \
+              --network host \
+              --env-file .env \
+              -e DATABASE_URL=${DATABASE_URL} \
+              ghcr.io/${GITHUB_REPOSITORY}:${IMAGE_TAG} \
+              npx prisma migrate deploy
+            
+            # Perform zero-downtime deployment
+            echo "Starting zero-downtime deployment..."
+            
+            # Check if container already exists
+            if [ "$(docker ps -a -q -f name=app-prod)" ]; then
+              # Create a new container with a temporary name
+              echo "Starting new container with updated image..."
+              docker-compose -f docker-compose.deploy.yml --env-file .env.deploy up -d --no-deps --name app-prod-new
+              
+              # Wait for the new container to be healthy
+              echo "Waiting for new container to be healthy..."
+              while true; do
+                HEALTH=$(docker inspect --format='{{.State.Health.Status}}' app-prod-new 2>/dev/null || echo "starting")
+                echo "Current health status: $HEALTH"
+                if [ "$HEALTH" = "healthy" ]; then
+                  break
+                fi
+                sleep 5
+              done
+              
+              echo "New container is healthy, switching traffic..."
+              
+              # Stop and remove the old container
+              docker stop app-prod
+              docker rm app-prod
+              
+              # Rename the new container
+              docker rename app-prod-new app-prod
+              
+              echo "Traffic switched to the new container successfully."
+            else
+              # First deploy - just start the container
+              echo "First deployment, starting container..."
+              docker-compose -f docker-compose.deploy.yml --env-file .env.deploy up -d
+            fi
+            
+            echo "Deployment completed successfully!"
+            
+            # Clean up old images (keep last 5)
+            echo "Cleaning up old images..."
+            docker image ls --format "{{.ID}} {{.Repository}}:{{.Tag}}" | grep "ghcr.io/${GITHUB_REPOSITORY}" | sort -k2 -r | tail -n +6 | awk '{print $1}' | xargs -r docker image rm 2>/dev/null || true
+            
+            echo "Current running containers:"
+            docker ps
+
+      - name: Record deployment timestamp
+        id: timestamp
+        run: echo "TIMESTAMP=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
+
+      - name: Send success email notification
+        if: success()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: camboconnect.co@gmail.com
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: 🚀 Successful Deployment - CamboConnect
+          body: |
+            Deployment to production was successful!
+            
+            Deployment Details:
+            -------------------
+            Repository: ${{ github.repository }}
+            Branch: ${{ github.ref_name }}
+            Commit: ${{ github.event.head_commit.message }}
+            Author: ${{ github.event.head_commit.author.name }} (${{ github.event.head_commit.author.email }})
+            
+            Image: ghcr.io/${{ github.repository }}:${{ steps.tags.outputs.sha_tag }}
+            
+            Timestamp: ${{ env.TIMESTAMP }}
+            
+            Deployment Status: ✅ Success
+            
+            View the GitHub Actions run at:
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          to: camboconnect.co@gmail.com
+          from: GitHub Deployment <camboconnect.co@gmail.com>
+
+      - name: Send failure email notification
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: camboconnect.co@gmail.com
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: ❌ Failed Deployment - CamboConnect
+          body: |
+            Deployment to production has failed!
+            
+            Deployment Details:
+            -------------------
+            Repository: ${{ github.repository }}
+            Branch: ${{ github.ref_name }}
+            Commit: ${{ github.event.head_commit.message }}
+            Author: ${{ github.event.head_commit.author.name }} (${{ github.event.head_commit.author.email }})
+            
+            Timestamp: ${{ env.TIMESTAMP }}
+            
+            Deployment Status: ❌ Failed
+            
+            Please check the GitHub Actions logs for more details:
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          to: camboconnect.co@gmail.com
+          from: GitHub Deployment <camboconnect.co@gmail.com>
