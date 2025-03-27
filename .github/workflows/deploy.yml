@@ -21,13 +21,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate image tags
+      - name: Generate image tags and lowercase repository
         id: tags
         run: |
           SHA_TAG=$(git rev-parse --short HEAD)
           DATE_TAG=$(date +'%Y%m%d%H%M%S')
+          REPO_LOWERCASE=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           echo "sha_tag=${SHA_TAG}" >> $GITHUB_OUTPUT
           echo "date_tag=${DATE_TAG}" >> $GITHUB_OUTPUT
+          echo "repo_lowercase=${REPO_LOWERCASE}" >> $GITHUB_OUTPUT
 
       # Build and push Next.js app using your existing Dockerfile
       - name: Build and push Docker image
@@ -38,10 +40,10 @@ jobs:
           target: runner  # Using your existing runner target
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ steps.tags.outputs.sha_tag }}
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}:buildcache
-          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}:buildcache,mode=max
+            ghcr.io/${{ steps.tags.outputs.repo_lowercase }}:latest
+            ghcr.io/${{ steps.tags.outputs.repo_lowercase }}:${{ steps.tags.outputs.sha_tag }}
+          cache-from: type=registry,ref=ghcr.io/${{ steps.tags.outputs.repo_lowercase }}:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ steps.tags.outputs.repo_lowercase }}:buildcache,mode=max
 
       - name: Create deployment files
         run: |
@@ -51,7 +53,7 @@ jobs:
 
           services:
             app-prod:
-              image: ghcr.io/\${GITHUB_REPOSITORY}:\${IMAGE_TAG}
+              image: ghcr.io/\${REPO_LOWERCASE}:\${IMAGE_TAG}
               ports:
                 - "3000:3000"
               environment:
@@ -94,14 +96,14 @@ jobs:
         id: deploy
         uses: appleboy/ssh-action@master
         env:
-          GITHUB_REPOSITORY: ${{ github.repository }}
+          REPO_LOWERCASE: ${{ steps.tags.outputs.repo_lowercase }}
           IMAGE_TAG: ${{ steps.tags.outputs.sha_tag }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         with:
           host: ${{ secrets.DIGITAL_OCEAN_HOST }}
           username: ${{ secrets.DIGITAL_OCEAN_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: GITHUB_REPOSITORY,IMAGE_TAG,DATABASE_URL
+          envs: REPO_LOWERCASE,IMAGE_TAG,DATABASE_URL
           script: |
             # Login to GitHub Container Registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -110,12 +112,12 @@ jobs:
             cd ~/home/TestCamboConnect
             
             # Pull the new image
-            echo "Pulling image ghcr.io/${GITHUB_REPOSITORY}:${IMAGE_TAG}..."
-            docker pull ghcr.io/${GITHUB_REPOSITORY}:${IMAGE_TAG}
+            echo "Pulling image ghcr.io/${REPO_LOWERCASE}:${IMAGE_TAG}..."
+            docker pull ghcr.io/${REPO_LOWERCASE}:${IMAGE_TAG}
             
             # Create deployment environment file
             echo "Creating deployment environment file..."
-            echo "GITHUB_REPOSITORY=${GITHUB_REPOSITORY}" > .env.deploy
+            echo "REPO_LOWERCASE=${REPO_LOWERCASE}" > .env.deploy
             echo "IMAGE_TAG=${IMAGE_TAG}" >> .env.deploy
             
             # Run Prisma migrations using the new image
@@ -124,7 +126,7 @@ jobs:
               --network host \
               --env-file .env \
               -e DATABASE_URL=${DATABASE_URL} \
-              ghcr.io/${GITHUB_REPOSITORY}:${IMAGE_TAG} \
+              ghcr.io/${REPO_LOWERCASE}:${IMAGE_TAG} \
               npx prisma migrate deploy
             
             # Perform zero-downtime deployment
@@ -167,7 +169,7 @@ jobs:
             
             # Clean up old images (keep last 5)
             echo "Cleaning up old images..."
-            docker image ls --format "{{.ID}} {{.Repository}}:{{.Tag}}" | grep "ghcr.io/${GITHUB_REPOSITORY}" | sort -k2 -r | tail -n +6 | awk '{print $1}' | xargs -r docker image rm 2>/dev/null || true
+            docker image ls --format "{{.ID}} {{.Repository}}:{{.Tag}}" | grep "ghcr.io/${REPO_LOWERCASE}" | sort -k2 -r | tail -n +6 | awk '{print $1}' | xargs -r docker image rm 2>/dev/null || true
             
             echo "Current running containers:"
             docker ps
@@ -195,7 +197,7 @@ jobs:
             Commit: ${{ github.event.head_commit.message }}
             Author: ${{ github.event.head_commit.author.name }} (${{ github.event.head_commit.author.email }})
             
-            Image: ghcr.io/${{ github.repository }}:${{ steps.tags.outputs.sha_tag }}
+            Image: ghcr.io/${{ steps.tags.outputs.repo_lowercase }}:${{ steps.tags.outputs.sha_tag }}
             
             Timestamp: ${{ env.TIMESTAMP }}
             
