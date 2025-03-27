@@ -8,7 +8,7 @@ CREATE TYPE "TwoFactorMethod" AS ENUM ('EMAIL');
 CREATE TYPE "OpportunityStatus" AS ENUM ('OPENING_SOON', 'ACTIVE', 'CLOSING_SOON', 'CLOSED');
 
 -- CreateEnum
-CREATE TYPE "FriendRequestStatus" AS ENUM ('PENDING', 'ACCEPTED', 'DECLINED');
+CREATE TYPE "FriendRequestStatus" AS ENUM ('PENDING', 'ACCEPTED', 'DECLINED', 'CANCELED');
 
 -- CreateEnum
 CREATE TYPE "NotificationType" AS ENUM ('NEW_OPPORTUNITY', 'DEADLINE_REMINDER', 'APPLICATION_UPDATE', 'FRIEND_REQUEST', 'ORGANIZATION_UPDATE');
@@ -63,6 +63,10 @@ CREATE TABLE "User" (
     "isSetup" BOOLEAN NOT NULL DEFAULT false,
     "twoFactorEnabled" BOOLEAN NOT NULL DEFAULT false,
     "twoFactorMethod" "TwoFactorMethod",
+    "telegramChatId" TEXT,
+    "telegramUsername" TEXT,
+    "telegramBindCode" TEXT,
+    "telegramBindExpiry" TIMESTAMP(3),
     "privacyLevel" "PrivacyLevel" NOT NULL DEFAULT 'ONLY_ME',
     "educationPrivacy" "PrivacyLevel" NOT NULL DEFAULT 'ONLY_ME',
     "experiencePrivacy" "PrivacyLevel" NOT NULL DEFAULT 'ONLY_ME',
