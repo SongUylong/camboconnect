@@ -9,3 +9,4 @@ Navigation & Menus: Inter (Simple and easy to scan)
 
 ✅ Best for: Clean, tech-friendly, and easy-to-read interfaces.
 
+Okay
