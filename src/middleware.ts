@@ -10,7 +10,7 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/api/') ||
     request.nextUrl.pathname.startsWith('/static/') ||
     request.nextUrl.pathname.startsWith('/images/') ||
-    request.nextUrl.pathname === '/loaderio-3eef899fa214518d3995640c27c21967'
+    request.nextUrl.pathname === '/loaderio-3eef899fa214518d3995640c27c21967.txt'
   ) {
     return NextResponse.next();
   }
@@ -51,6 +51,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|loaderio-3eef899fa214518d3995640c27c21967.txt).*)',
   ],
 };
