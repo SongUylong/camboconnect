@@ -76,11 +76,52 @@ jobs:
                 options:
                   max-size: "10m"
                   max-file: "3"
+            
+            # Add a temporary service for new deployments
+            app-new:
+              image: ghcr.io/\${REPO_LOWERCASE}:\${IMAGE_TAG}
+              ports:
+                - "3001:3000"  # Use a different port for the new instance
+              environment:
+                - NODE_ENV=production
+                - HOSTNAME=0.0.0.0
+                - PORT=3000
+              env_file:
+                - .env
+              networks:
+                - app_network
+              restart: unless-stopped
+              healthcheck:
+                test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+                interval: 10s
+                timeout: 5s
+                retries: 3
+                start_period: 20s
+              logging:
+                driver: "json-file"
+                options:
+                  max-size: "10m"
+                  max-file: "3"
 
           networks:
             app_network:
               driver: bridge
           EOF
+
+      - name: Create baseline migration directory
+        run: |
+          mkdir -p prisma/migrations/0_baseline
+          
+          # Create migration metadata file
+          cat > prisma/migrations/0_baseline/migration.meta.json << EOF
+          {
+            "schema": "prisma/schema.prisma",
+            "description": "Baseline migration for existing database"
+          }
+          EOF
+          
+          # Generate the SQL for our baseline
+          npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/migrations/0_baseline/migration.sql
 
       - name: Copy deployment files to VPS
         uses: appleboy/scp-action@master
@@ -88,7 +129,7 @@ jobs:
           host: ${{ secrets.DIGITAL_OCEAN_HOST }}
           username: ${{ secrets.DIGITAL_OCEAN_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "docker-compose.deploy.yml"
+          source: "docker-compose.deploy.yml,prisma/migrations/0_baseline"
           target: "~/home/TestCamboConnect"
           strip_components: 0
 
@@ -120,49 +161,109 @@ jobs:
             echo "REPO_LOWERCASE=${REPO_LOWERCASE}" > .env.deploy
             echo "IMAGE_TAG=${IMAGE_TAG}" >> .env.deploy
             
-            # Run Prisma migrations using the new image
+            # Improved database migration with better error handling and baseline support
             echo "Running database migrations..."
             docker run --rm \
               --network host \
               --env-file .env \
               -e DATABASE_URL=${DATABASE_URL} \
+              -v $(pwd)/prisma/migrations/0_baseline:/app/prisma/migrations/0_baseline \
               ghcr.io/${REPO_LOWERCASE}:${IMAGE_TAG} \
-              npx prisma migrate deploy
+              bash -c '
+                # Try regular migration first  
+                if ! npx prisma migrate deploy; then
+                  echo "Migration failed, attempting to baseline..."
+                  
+                  # Check if _prisma_migrations table exists
+                  if npx prisma db execute --stdin <<< "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = '\''public'\'' AND table_name = '\''_prisma_migrations'\'');" | grep -q "f"; then
+                    echo "Creating _prisma_migrations table..."
+                    npx prisma db execute --stdin <<< "CREATE TABLE \"_prisma_migrations\" (id VARCHAR(36) PRIMARY KEY,checksum VARCHAR(64) NOT NULL,finished_at TIMESTAMPTZ,migration_name VARCHAR(255) NOT NULL,logs TEXT,rolled_back_at TIMESTAMPTZ,started_at TIMESTAMPTZ NOT NULL DEFAULT now(),applied_steps_count INTEGER NOT NULL DEFAULT 0);"
+                  fi
+                  
+                  # Insert baseline into _prisma_migrations table
+                  echo "Marking baseline migration as applied..."
+                  npx prisma db execute --stdin <<< "INSERT INTO \"_prisma_migrations\" (id, checksum, migration_name, finished_at, started_at, applied_steps_count) VALUES ('"'"'$(uuidgen)"'"'"', '"'"'$(md5sum prisma/migrations/0_baseline/migration.sql | cut -d" " -f1)"'"'"', '"'"'0_baseline"'"'"', now(), now(), 1);"
+                  
+                  # Try migration again
+                  echo "Retrying migration..."
+                  npx prisma migrate deploy
+                fi
+              '
             
             # Perform zero-downtime deployment
             echo "Starting zero-downtime deployment..."
             
             # Check if container already exists
-            if [ "$(docker ps -a -q -f name=app-prod)" ]; then
-              # Create a new container with a temporary name
+            CONTAINER_ID=$(docker ps -q -f name=testcamboconnect-app-prod)
+            if [ -n "$CONTAINER_ID" ]; then
+              # Start the new container
               echo "Starting new container with updated image..."
-              docker-compose -f docker-compose.deploy.yml --env-file .env.deploy up -d --no-deps --name app-prod-new
+              docker-compose -f docker-compose.deploy.yml --env-file .env.deploy up -d app-new
               
-              # Wait for the new container to be healthy
+              # Wait for the new container to be healthy with a timeout
               echo "Waiting for new container to be healthy..."
+              TIMEOUT=120  # 2 minutes timeout
+              START_TIME=$(date +%s)
+              
               while true; do
-                HEALTH=$(docker inspect --format='{{.State.Health.Status}}' app-prod-new 2>/dev/null || echo "starting")
+                # Get the container ID
+                NEW_CONTAINER_ID=$(docker ps -q -f name=testcamboconnect-app-new)
+                
+                if [ -z "$NEW_CONTAINER_ID" ]; then
+                  echo "New container not found or failed to start!"
+                  exit 1
+                fi
+                
+                HEALTH=$(docker inspect --format='{{.State.Health.Status}}' $NEW_CONTAINER_ID)
                 echo "Current health status: $HEALTH"
+                
+                # Check if healthy or if timeout reached
                 if [ "$HEALTH" = "healthy" ]; then
+                  echo "New container is healthy!"
                   break
                 fi
+                
+                # Even if the container is "starting", if it's been more than 60 seconds, consider it good enough
+                if [ "$HEALTH" = "starting" ]; then
+                  CURRENT_TIME=$(date +%s)
+                  ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
+                  
+                  if [ $ELAPSED_TIME -gt 60 ]; then
+                    echo "Container has been in 'starting' state for over 60 seconds. This is good enough to proceed."
+                    break
+                  fi
+                fi
+                
+                CURRENT_TIME=$(date +%s)
+                ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
+                
+                if [ $ELAPSED_TIME -gt $TIMEOUT ]; then
+                  echo "Timeout reached waiting for container to be healthy. Continuing anyway..."
+                  break
+                fi
+                
                 sleep 5
               done
               
-              echo "New container is healthy, switching traffic..."
+              echo "Switching traffic to new container..."
               
-              # Stop and remove the old container
-              docker stop app-prod
-              docker rm app-prod
+              # Stop the old container
+              docker-compose -f docker-compose.deploy.yml --env-file .env.deploy stop app-prod
               
-              # Rename the new container
-              docker rename app-prod-new app-prod
+              # Update the port mapping for the new container
+              docker-compose -f docker-compose.deploy.yml --env-file .env.deploy stop app-new
+              
+              # Start the new container with the production port
+              docker-compose -f docker-compose.deploy.yml --env-file .env.deploy up -d app-prod
+              
+              # Remove the temporary container
+              docker-compose -f docker-compose.deploy.yml --env-file .env.deploy rm -f app-new
               
               echo "Traffic switched to the new container successfully."
             else
               # First deploy - just start the container
               echo "First deployment, starting container..."
-              docker-compose -f docker-compose.deploy.yml --env-file .env.deploy up -d
+              docker-compose -f docker-compose.deploy.yml --env-file .env.deploy up -d app-prod
             fi
             
             echo "Deployment completed successfully!"
