@@ -1,0 +1,50 @@
+# Redirect HTTP (port 80) to HTTPS (port 443)
+server {
+    if ($host = www.camboconnect.com) {
+        return 301 https://$host$request_uri;
+    }
+
+    if ($host = camboconnect.com) {
+        return 301 https://$host$request_uri;
+    }
+
+    listen 80;
+    listen [::]:80;
+
+    server_name camboconnect.com www.camboconnect.com;
+    return 404; # managed by Certbot
+}
+
+# HTTPS server configuration with SSL
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl ipv6only=on;
+
+    server_name camboconnect.com www.camboconnect.com;
+
+    ssl_certificate /etc/letsencrypt/live/camboconnect.com/fullchain.pem;  # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/camboconnect.com/privkey.pem;  # managed by Certbot
+    ssl_protocols TLSv1.2 TLSv1.3;
+    include /etc/letsencrypt/options-ssl-nginx.conf;  # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;  # managed by Certbot
+
+    # Proxy requests to the app running on localhost:3000
+    location / {
+        proxy_pass http://localhost:3000;  # Change to localhost:3000
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# HTTP redirect for www and non-www to HTTPS
+server {
+    listen 80;
+    listen [::]:80;
+
+    server_name camboconnect.com www.camboconnect.com;
+

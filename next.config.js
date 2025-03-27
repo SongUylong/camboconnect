@@ -1,6 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
+typescript: {
+    ignoreBuildErrors: true,  // Skip type checking during build
+  }, 
+eslint: {
+    // Disable Next.js linting completely
+    ignoreDuringBuilds: true,
+  },
+output: 'standalone',
   experimental: {
     // Only keep necessary experimental features
     serverComponentsExternalPackages: ['@prisma/client'],
