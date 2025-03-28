@@ -1,0 +1,4 @@
+{
+  "schema": "prisma/schema.prisma",
+  "description": "Baseline migration for existing database"
+}

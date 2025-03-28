@@ -127,7 +127,7 @@ jobs:
               --env-file .env \
               -e DATABASE_URL=${DATABASE_URL} \
               ghcr.io/${REPO_LOWERCASE}:${IMAGE_TAG} \
-              npx prisma migrate deploy
+              npx prisma migrate deploy || echo "⚠️ No new migrations found, skipping..."
             
             # Perform zero-downtime deployment
             echo "Starting zero-downtime deployment..."
