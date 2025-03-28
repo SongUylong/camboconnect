@@ -83,7 +83,7 @@ model User {
   events            EventLog[]
   passwordResetToken PasswordResetToken?
   twoFactorToken    TwoFactorToken?
-  
+  isSmart           Boolean             @default(false)
   // Relations for profile data
   educationEntries  Education[]
   experienceEntries Experience[]

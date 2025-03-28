@@ -3,12 +3,28 @@ import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
 export async function middleware(request: NextRequest) {
+  // Allow access to the coming-soon page and any static assets
+  // if (
+  //   request.nextUrl.pathname === '/coming-soon' ||
+  //   request.nextUrl.pathname.startsWith('/_next/') ||
+  //   request.nextUrl.pathname.startsWith('/api/') ||
+  //   request.nextUrl.pathname.startsWith('/static/') ||
+  //   request.nextUrl.pathname.startsWith('/images/') ||
+  //   request.nextUrl.pathname === '/loaderio-3eef899fa214518d3995640c27c21967.txt'
+  // ) {
+  //   return NextResponse.next();
+  // }
+
+  // Redirect all other traffic to coming-soon page
+  // const url = new URL('/coming-soon', request.url);
+  // return NextResponse.redirect(url);
+
+  // Original authentication logic preserved for future use
   const token = await getToken({ 
     req: request,
-    secureCookie: false // Set to false for IP address
+    secureCookie: false
   });
   
-  // Paths that require authentication
   const protectedPaths = [
     '/opportunities/',
     '/profile',
@@ -16,7 +32,6 @@ export async function middleware(request: NextRequest) {
     '/settings',
     '/admin',
     '/friends',
-    // '/community', - Removed to allow public access
   ];
   
   const isProtectedPath = protectedPaths.some(path => 
@@ -34,12 +49,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/opportunities/:path*',
-    '/profile/:path*',
-    '/notifications',
-    '/settings',
-    '/admin/:path*',
-    '/friends/:path*',
-    // '/community/:path*', - Removed to allow public access
+    '/((?!api|_next/static|_next/image|favicon.ico|loaderio-3eef899fa214518d3995640c27c21967.txt).*)',
   ],
-}; 
+};
