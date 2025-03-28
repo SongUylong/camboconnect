@@ -168,9 +168,8 @@ jobs:
               --env-file .env \
               -e DATABASE_URL=${DATABASE_URL} \
               -v $(pwd)/prisma/migrations:/app/prisma/migrations \
-            --entrypoint bash \
               ghcr.io/${REPO_LOWERCASE}:${IMAGE_TAG} \
-               -c "
+              sh -c "
                 if ! npx prisma migrate deploy; then
                   echo 'Migration failed, attempting to baseline...'
                   # Check if _prisma_migrations table exists
