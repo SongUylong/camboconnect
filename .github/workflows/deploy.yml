@@ -31,13 +31,12 @@ jobs:
           echo "date_tag=${DATE_TAG}" >> $GITHUB_OUTPUT
           echo "repo_lowercase=${REPO_LOWERCASE}" >> $GITHUB_OUTPUT
 
-      # Build and push Next.js app using your existing Dockerfile
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
           file: ./Dockerfile
-          target: runner  # Using your existing runner target
+          target: runner
           push: true
           tags: |
             ghcr.io/${{ steps.tags.outputs.repo_lowercase }}:latest
@@ -47,10 +46,8 @@ jobs:
 
       - name: Create deployment files
         run: |
-          # Create docker-compose.yml for deployment
           cat > docker-compose.deploy.yml << EOF
           version: '3.8'
-
           services:
             app-prod:
               image: ghcr.io/\${REPO_LOWERCASE}:\${IMAGE_TAG}
@@ -66,7 +63,7 @@ jobs:
                 - app_network
               restart: unless-stopped
               healthcheck:
-                test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+                test: ["CMD", "wget", "--no-verbose", "--tries=1", "-O", "-", "http://localhost:3000/api/health", "|", "grep", "-q", "\"status\": \"ok\""]
                 interval: 10s
                 timeout: 5s
                 retries: 3
@@ -76,12 +73,10 @@ jobs:
                 options:
                   max-size: "10m"
                   max-file: "3"
-            
-            # Add a temporary service for new deployments
             app-new:
               image: ghcr.io/\${REPO_LOWERCASE}:\${IMAGE_TAG}
               ports:
-                - "3001:3000"  # Use a different port for the new instance
+                - "3001:3000"
               environment:
                 - NODE_ENV=production
                 - HOSTNAME=0.0.0.0
@@ -92,7 +87,7 @@ jobs:
                 - app_network
               restart: unless-stopped
               healthcheck:
-                test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+                test: ["CMD", "wget", "--no-verbose", "--tries=1", "-O", "-", "http://localhost:3000/api/health", "|", "grep", "-q", "\"status\": \"ok\""]
                 interval: 10s
                 timeout: 5s
                 retries: 3
@@ -102,7 +97,6 @@ jobs:
                 options:
                   max-size: "10m"
                   max-file: "3"
-
           networks:
             app_network:
               driver: bridge
@@ -111,16 +105,12 @@ jobs:
       - name: Create baseline migration directory
         run: |
           mkdir -p prisma/migrations/0_baseline
-          
-          # Create migration metadata file
           cat > prisma/migrations/0_baseline/migration.meta.json << EOF
           {
             "schema": "prisma/schema.prisma",
             "description": "Baseline migration for existing database"
           }
           EOF
-          
-          # Generate the SQL for our baseline
           npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/migrations/0_baseline/migration.sql
 
       - name: Copy deployment files to VPS
@@ -146,22 +136,13 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           envs: REPO_LOWERCASE,IMAGE_TAG,DATABASE_URL
           script: |
-            # Login to GitHub Container Registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            
-            # Navigate to your app directory
             cd ~/home/TestCamboConnect
-            
-            # Pull the new image
             echo "Pulling image ghcr.io/${REPO_LOWERCASE}:${IMAGE_TAG}..."
             docker pull ghcr.io/${REPO_LOWERCASE}:${IMAGE_TAG}
-            
-            # Create deployment environment file
             echo "Creating deployment environment file..."
             echo "REPO_LOWERCASE=${REPO_LOWERCASE}" > .env.deploy
             echo "IMAGE_TAG=${IMAGE_TAG}" >> .env.deploy
-            
-            # Improved database migration with better error handling and baseline support
             echo "Running database migrations..."
             docker run --rm \
               --network host \
@@ -169,104 +150,71 @@ jobs:
               -e DATABASE_URL=${DATABASE_URL} \
               -v $(pwd)/prisma/migrations:/app/prisma/migrations \
               --entrypoint sh \
-  ghcr.io/${REPO_LOWERCASE}:${IMAGE_TAG} \
-  -c "
-    if ! npx prisma migrate deploy; then
-      echo 'Migration failed, attempting to baseline...'
-      if npx prisma db execute --stdin <<< \"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = '_prisma_migrations');\" | grep -q 'f'; then
-        echo 'Creating _prisma_migrations table...'
-        npx prisma db execute --stdin <<< 'CREATE TABLE \"_prisma_migrations\" (id VARCHAR(36) PRIMARY KEY, checksum VARCHAR(64) NOT NULL, finished_at TIMESTAMPTZ, migration_name VARCHAR(255) NOT NULL, logs TEXT, rolled_back_at TIMESTAMPTZ, started_at TIMESTAMPTZ NOT NULL DEFAULT now(), applied_steps_count INTEGER NOT NULL DEFAULT 0);'
-      fi
-      UUID=\$(node -e \"console.log(require('crypto').randomUUID())\")
-      CHECKSUM=\$(openssl md5 /app/prisma/migrations/0_baseline/migration.sql | awk '{print \$2}')
-      echo 'Marking baseline migration as applied...'
-      npx prisma db execute --stdin <<< \"INSERT INTO \\\"_prisma_migrations\\\" (id, checksum, migration_name, finished_at, started_at, applied_steps_count) VALUES ('\$UUID', '\$CHECKSUM', '0_baseline', now(), now(), 1);\"
-      echo 'Retrying migration...'
-      npx prisma migrate deploy
-    fi
-  "
-            # Perform zero-downtime deployment
+              ghcr.io/${REPO_LOWERCASE}:${IMAGE_TAG} \
+              -c "
+                if ! npx prisma migrate deploy; then
+                  echo 'Migration failed, attempting to baseline...'
+                  if npx prisma db execute --stdin <<< \"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = '_prisma_migrations');\" | grep -q 'f'; then
+                    echo 'Creating _prisma_migrations table...'
+                    npx prisma db execute --stdin <<< 'CREATE TABLE \"_prisma_migrations\" (id VARCHAR(36) PRIMARY KEY, checksum VARCHAR(64) NOT NULL, finished_at TIMESTAMPTZ, migration_name VARCHAR(255) NOT NULL, logs TEXT, rolled_back_at TIMESTAMPTZ, started_at TIMESTAMPTZ NOT NULL DEFAULT now(), applied_steps_count INTEGER NOT NULL DEFAULT 0);'
+                  fi
+                  UUID=\$(node -e \"console.log(require('crypto').randomUUID())\")
+                  CHECKSUM=\$(openssl md5 /app/prisma/migrations/0_baseline/migration.sql | awk '{print \$2}')
+                  echo 'Marking baseline migration as applied...'
+                  npx prisma db execute --stdin <<< \"INSERT INTO \\\"_prisma_migrations\\\" (id, checksum, migration_name, finished_at, started_at, applied_steps_count) VALUES ('\$UUID', '\$CHECKSUM', '0_baseline', now(), now(), 1);\"
+                  echo 'Retrying migration...'
+                  npx prisma migrate deploy
+                fi
+              "
             echo "Starting zero-downtime deployment..."
-            
-            # Check if container already exists
             CONTAINER_ID=$(docker ps -q -f name=testcamboconnect-app-prod)
             if [ -n "$CONTAINER_ID" ]; then
-              # Start the new container
               echo "Starting new container with updated image..."
               docker-compose -f docker-compose.deploy.yml --env-file .env.deploy up -d app-new
-              
-              # Wait for the new container to be healthy with a timeout
               echo "Waiting for new container to be healthy..."
-              TIMEOUT=120  # 2 minutes timeout
+              TIMEOUT=120
               START_TIME=$(date +%s)
-              
               while true; do
-                # Get the container ID
                 NEW_CONTAINER_ID=$(docker ps -q -f name=testcamboconnect-app-new)
-                
                 if [ -z "$NEW_CONTAINER_ID" ]; then
                   echo "New container not found or failed to start!"
                   exit 1
                 fi
-                
                 HEALTH=$(docker inspect --format='{{.State.Health.Status}}' $NEW_CONTAINER_ID)
                 echo "Current health status: $HEALTH"
-                
-                # Check if healthy or if timeout reached
                 if [ "$HEALTH" = "healthy" ]; then
                   echo "New container is healthy!"
                   break
                 fi
-                
-                # Even if the container is "starting", if it's been more than 60 seconds, consider it good enough
                 if [ "$HEALTH" = "starting" ]; then
                   CURRENT_TIME=$(date +%s)
                   ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
-                  
                   if [ $ELAPSED_TIME -gt 60 ]; then
                     echo "Container has been in 'starting' state for over 60 seconds. This is good enough to proceed."
                     break
                   fi
                 fi
-                
                 CURRENT_TIME=$(date +%s)
                 ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
-                
                 if [ $ELAPSED_TIME -gt $TIMEOUT ]; then
                   echo "Timeout reached waiting for container to be healthy. Continuing anyway..."
                   break
                 fi
-                
                 sleep 5
               done
-              
               echo "Switching traffic to new container..."
-              
-              # Stop the old container
               docker-compose -f docker-compose.deploy.yml --env-file .env.deploy stop app-prod
-              
-              # Update the port mapping for the new container
               docker-compose -f docker-compose.deploy.yml --env-file .env.deploy stop app-new
-              
-              # Start the new container with the production port
               docker-compose -f docker-compose.deploy.yml --env-file .env.deploy up -d app-prod
-              
-              # Remove the temporary container
               docker-compose -f docker-compose.deploy.yml --env-file .env.deploy rm -f app-new
-              
               echo "Traffic switched to the new container successfully."
             else
-              # First deploy - just start the container
               echo "First deployment, starting container..."
               docker-compose -f docker-compose.deploy.yml --env-file .env.deploy up -d app-prod
             fi
-            
             echo "Deployment completed successfully!"
-            
-            # Clean up old images (keep last 5)
             echo "Cleaning up old images..."
             docker image ls --format "{{.ID}} {{.Repository}}:{{.Tag}}" | grep "ghcr.io/${REPO_LOWERCASE}" | sort -k2 -r | tail -n +6 | awk '{print $1}' | xargs -r docker image rm 2>/dev/null || true
-            
             echo "Current running containers:"
             docker ps
 
@@ -285,20 +233,15 @@ jobs:
           subject: 🚀 Successful Deployment - CamboConnect
           body: |
             Deployment to production was successful!
-            
             Deployment Details:
             -------------------
             Repository: ${{ github.repository }}
             Branch: ${{ github.ref_name }}
             Commit: ${{ github.event.head_commit.message }}
             Author: ${{ github.event.head_commit.author.name }} (${{ github.event.head_commit.author.email }})
-            
             Image: ghcr.io/${{ steps.tags.outputs.repo_lowercase }}:${{ steps.tags.outputs.sha_tag }}
-            
             Timestamp: ${{ env.TIMESTAMP }}
-            
             Deployment Status: ✅ Success
-            
             View the GitHub Actions run at:
             ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           to: camboconnect.co@gmail.com
@@ -315,18 +258,14 @@ jobs:
           subject: ❌ Failed Deployment - CamboConnect
           body: |
             Deployment to production has failed!
-            
             Deployment Details:
             -------------------
             Repository: ${{ github.repository }}
             Branch: ${{ github.ref_name }}
             Commit: ${{ github.event.head_commit.message }}
             Author: ${{ github.event.head_commit.author.name }} (${{ github.event.head_commit.author.email }})
-            
             Timestamp: ${{ env.TIMESTAMP }}
-            
             Deployment Status: ❌ Failed
-            
             Please check the GitHub Actions logs for more details:
             ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           to: camboconnect.co@gmail.com
