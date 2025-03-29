@@ -144,6 +144,8 @@ jobs:
             echo "REPO_LOWERCASE=${REPO_LOWERCASE}" > .env.deploy
             echo "IMAGE_TAG=${IMAGE_TAG}" >> .env.deploy
             echo "Running database migrations..."
+            
+            # Fix for the migration script - creating temporary SQL files
             docker run --rm \
               --network host \
               --env-file .env \
@@ -151,21 +153,29 @@ jobs:
               -v $(pwd)/prisma/migrations:/app/prisma/migrations \
               --entrypoint sh \
               ghcr.io/${REPO_LOWERCASE}:${IMAGE_TAG} \
-              -c "
-                if ! npx prisma migrate deploy; then
-                  echo 'Migration failed, attempting to baseline...'
-                  if npx prisma db execute --stdin <<< \"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = '_prisma_migrations');\" | grep -q 'f'; then
-                    echo 'Creating _prisma_migrations table...'
-                    npx prisma db execute --stdin <<< 'CREATE TABLE \"_prisma_migrations\" (id VARCHAR(36) PRIMARY KEY, checksum VARCHAR(64) NOT NULL, finished_at TIMESTAMPTZ, migration_name VARCHAR(255) NOT NULL, logs TEXT, rolled_back_at TIMESTAMPTZ, started_at TIMESTAMPTZ NOT NULL DEFAULT now(), applied_steps_count INTEGER NOT NULL DEFAULT 0);'
-                  fi
-                  UUID=\$(node -e \"console.log(require('crypto').randomUUID())\")
-                  CHECKSUM=\$(openssl md5 /app/prisma/migrations/0_baseline/migration.sql | awk '{print \$2}')
-                  echo 'Marking baseline migration as applied...'
-                  npx prisma db execute --stdin <<< \"INSERT INTO \\\"_prisma_migrations\\\" (id, checksum, migration_name, finished_at, started_at, applied_steps_count) VALUES ('\$UUID', '\$CHECKSUM', '0_baseline', now(), now(), 1);\"
-                  echo 'Retrying migration...'
-                  npx prisma migrate deploy
+              -c 'if ! npx prisma migrate deploy; then
+                echo "Migration failed, attempting to baseline..."
+                
+                # Create temporary SQL files instead of using heredocs
+                echo "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = '"'"'public'"'"' AND table_name = '"'"'_prisma_migrations'"'"')" > /tmp/check_table.sql
+                
+                if npx prisma db execute --file=/tmp/check_table.sql | grep -q "f"; then
+                  echo "Creating _prisma_migrations table..."
+                  echo "CREATE TABLE \"_prisma_migrations\" (id VARCHAR(36) PRIMARY KEY, checksum VARCHAR(64) NOT NULL, finished_at TIMESTAMPTZ, migration_name VARCHAR(255) NOT NULL, logs TEXT, rolled_back_at TIMESTAMPTZ, started_at TIMESTAMPTZ NOT NULL DEFAULT now(), applied_steps_count INTEGER NOT NULL DEFAULT 0)" > /tmp/create_table.sql
+                  npx prisma db execute --file=/tmp/create_table.sql
                 fi
-              "
+                
+                UUID=$(node -e "console.log(require('"'"'crypto'"'"').randomUUID())")
+                CHECKSUM=$(openssl md5 /app/prisma/migrations/0_baseline/migration.sql | awk '"'"'{print $2}'"'"')
+                
+                echo "Marking baseline migration as applied..."
+                echo "INSERT INTO \"_prisma_migrations\" (id, checksum, migration_name, finished_at, started_at, applied_steps_count) VALUES ('"'"'$UUID'"'"', '"'"'$CHECKSUM'"'"', '"'"'0_baseline'"'"', now(), now(), 1)" > /tmp/insert_baseline.sql
+                npx prisma db execute --file=/tmp/insert_baseline.sql
+                
+                echo "Retrying migration..."
+                npx prisma migrate deploy
+              fi'
+            
             echo "Starting zero-downtime deployment..."
             CONTAINER_ID=$(docker ps -q -f name=testcamboconnect-app-prod)
             if [ -n "$CONTAINER_ID" ]; then
