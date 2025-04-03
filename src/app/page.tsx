@@ -2,57 +2,59 @@
 import Link from "next/link";
 import { MainLayout } from "@/components/layout/main-layout";
 import { motion } from "framer-motion";
-import { DecorativeHalfCircle } from "@/components/ui/decorative-half-circle";
 import { ReactiveBackground } from "@/components/ui/ReactiveBackground";
 import { FloatingPaths } from "@/components/ui/FloatingPaths";
+import { DotLottieWorkerReact } from "@lottiefiles/dotlottie-react";
+import { BackgroundBeams } from "@/components/ui/BackgroundBeams";
 
 export default function Home() {
   return (
     <MainLayout>
       {/* Hero Section with reactive dot background */}
-      <div className="relative isolate bg-theme-cream overflow-hidden">
+      <div className="relative isolate bg-gradient-to-r from-theme-navy to-theme-teal/90 overflow-hidden ">
         {/* Reactive background dots */}
-        <ReactiveBackground 
-          dotColor="bg-theme-teal/20" 
-          dotSize={2} 
+        <BackgroundBeams className="h-screen absolute inset-0 overflow-hidden pointer-events-none z-0 opacity-90" />
+        <ReactiveBackground
+          dotColor="bg-white/10"
+          dotSize={2}
           dotSpacing={30}
           sensitivity={3}
         />
-        
-        <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white"></div>
-        <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:px-8">
+
+        {/* Reduced top padding to move content up */}
+        <div className="mx-auto max-w-7xl px-6 py-16 sm:py-24 lg:px-8 mb-24">
           <div className="mx-auto max-w-7xl flex flex-col lg:flex-row items-center justify-between relative">
             {/* Left Floating Paths Animation */}
-            <div className="hidden lg:block absolute left-0 top-0 z-0 w-full h-full lg:w-[800px] lg:h-[800px] opacity-90 pointer-events-none" 
-                 style={{ transform: 'translate(-45%, -20%)' }}>
+            <div className="hidden lg:block absolute left-0 top-0 z-0 w-full h-full lg:w-[800px] lg:h-[800px] opacity-90 pointer-events-none"
+              style={{ transform: 'translate(-45%, -20%)' }}>
               <FloatingPaths position={1} />
             </div>
-            
-            {/* Center Text Content */}
+
+            {/* Center Text Content - removed mt-10 from span to move content up */}
             <div className="mx-auto max-w-2xl text-center lg:w-1/2 z-30 relative">
               {/* Using our enhanced DecorativeHalfCircle component with icons for Discover, Connect, and Grow */}
-              <DecorativeHalfCircle 
+              {/* <DecorativeHalfCircle 
                 width={920}
                 height={450}
-                borderColor="border-theme-teal/40"
+                borderColor="border-white/40"
                 iconColor="text-theme-gold"
                 iconSize={24}
                 flowColor="text-theme-gold/40"
-              />
-              
-              <span className="inline-block px-4 py-1 rounded-full text-sm font-medium bg-theme-sand text-theme-navy mb-5 mt-10">
+              /> */}
+
+              <span className="inline-block px-4 py-1 rounded-full text-sm font-medium bg-white/20 text-white mb-5">
                 Opportunity Platform for Cambodia
               </span>
-              <motion.h1 
-                className="text-4xl font-bold tracking-tight text-theme-navy sm:text-6xl"
+              <motion.h1
+                className="text-4xl font-bold tracking-tight text-white sm:text-6xl"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
                 Discover Opportunities in Cambodia
               </motion.h1>
-              <motion.p 
-                className="mt-6 text-lg leading-8 text-theme-slate"
+              <motion.p
+                className="mt-6 text-lg leading-8 text-gray-200"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
@@ -60,32 +62,55 @@ export default function Home() {
                 CamboConnect is your centralized platform for finding and applying to opportunities
                 across Cambodia - from startups and incubation programs to hackathons and internships.
               </motion.p>
-              <motion.div 
-                className="mt-10 flex items-center justify-center gap-x-6"
+              <motion.div
+                className="mt-6 flex items-center justify-center gap-x-6"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.6 }}
               >
                 <Link
                   href="/opportunities"
-                  className="btn bg-theme-teal hover:bg-theme-teal/90 text-white btn-lg"
+                  className="btn bg-white hover:bg-white/90 text-theme-navy btn-lg"
                 >
                   Explore Opportunities
                 </Link>
-                <Link href="/about" className="text-sm font-semibold leading-6 text-theme-navy group transition-all duration-300 ease-in-out">
+                <Link href="/about" className="text-sm font-semibold leading-6 text-white flex items-center gap-x-1 hover:text-theme-gold transition-all duration-300 ease-in-out">
                   Learn more <span aria-hidden="true" className="inline-block transition-transform duration-300 ease-in-out group-hover:translate-x-1">→</span>
                 </Link>
               </motion.div>
             </div>
-            
+
             {/* Right Floating Paths Animation */}
-            <div className="hidden lg:block absolute right-0 top-0 z-0 w-full h-full lg:w-[800px] lg:h-[800px] opacity-70 pointer-events-none" 
-                 style={{ transform: 'translate(75%, -25%) scaleX(-0.75)' }}>
+            <div className="hidden lg:block absolute right-0 top-0 z-0 w-full h-full lg:w-[800px] lg:h-[800px] opacity-70 pointer-events-none"
+              style={{ transform: 'translate(75%, -25%) scaleX(-0.75)' }}>
               <FloatingPaths position={-1} />
             </div>
           </div>
         </div>
-        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-white"></div>
+
+        {/* Replace straight gradient with curved SVG wave divider */}
+        <div className="absolute inset-x-0 bottom-0 w-full overflow-hidden leading-none">
+          <div className="relative w-full h-16 sm:h-24">
+            <svg className="absolute block w-full h-16 sm:h-24 lg:bottom-2 bottom-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+              <path
+                d="M985.66,92.83C906.67,72,823.78,31,743.84,14.19c-82.26-17.34-168.06-16.33-250.45.39-57.84,11.73-114,31.07-172,41.86A600.21,600.21,0,0,1,0,27.35V120H1200V95.8C1132.19,118.92,1055.71,111.31,985.66,92.83Z"
+                className="fill-theme-teal-light"
+              ></path>
+            </svg>
+            <svg className="absolute block w-full h-16 sm:h-24 lg:left-20 left-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+              <path
+                d="M985.66,92.83C906.67,72,823.78,31,743.84,14.19c-82.26-17.34-168.06-16.33-250.45.39-57.84,11.73-114,31.07-172,41.86A600.21,600.21,0,0,1,0,27.35V120H1200V95.8C1132.19,118.92,1055.71,111.31,985.66,92.83Z"
+                className="fill-gray-600"
+              ></path>
+            </svg>
+            <svg className="absolute block w-full h-16 sm:h-24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+              <path
+                d="M985.66,92.83C906.67,72,823.78,31,743.84,14.19c-82.26-17.34-168.06-16.33-250.45.39-57.84,11.73-114,31.07-172,41.86A600.21,600.21,0,0,1,0,27.35V120H1200V95.8C1132.19,118.92,1055.71,111.31,985.66,92.83Z"
+                className="fill-white"
+              ></path>
+            </svg>
+          </div>
+        </div>
       </div>
 
       {/* Feature section with light background */}
@@ -133,13 +158,13 @@ export default function Home() {
                       href="/opportunities"
                       className="group flex items-center text-sm font-semibold leading-6 text-theme-teal hover:text-theme-teal/90 transition-colors"
                     >
-                      Explore opportunities 
+                      Explore opportunities
                       <span aria-hidden="true" className="inline-block transition-transform duration-300 ease-in-out group-hover:translate-x-1 ml-1">→</span>
                     </Link>
                   </p>
                 </dd>
               </div>
-              
+
               <div className="flex flex-col bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 ease-in-out">
                 <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-theme-navy">
                   <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-theme-gold/10">
@@ -174,7 +199,7 @@ export default function Home() {
                   </p>
                 </dd>
               </div>
-              
+
               <div className="flex flex-col bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 ease-in-out">
                 <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-theme-navy">
                   <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-theme-sage/10">
@@ -264,12 +289,12 @@ export default function Home() {
               Get started
             </Link>
             <Link href="/opportunities" className="text-sm font-semibold leading-6 text-theme-navy group flex items-center">
-              Browse opportunities 
+              Browse opportunities
               <span aria-hidden="true" className="inline-block transition-transform duration-300 ease-in-out group-hover:translate-x-1 ml-1">→</span>
             </Link>
           </div>
         </div>
       </div>
-    </MainLayout>
+    </MainLayout >
   );
 }

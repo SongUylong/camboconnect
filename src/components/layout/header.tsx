@@ -48,10 +48,11 @@ const tabVariants = {
     paddingRight: "0.75rem",
   },
   animate: (isExpanded: boolean) => ({
+    borderRadius: isExpanded ? "1rem" : "0.5rem",
     gap: isExpanded ? ".5rem" : 0,
     paddingLeft: isExpanded ? "1rem" : "0.75rem",
     paddingRight: isExpanded ? "1rem" : "0.75rem",
-    backgroundColor: isExpanded ? "rgb(243, 244, 246)" : "rgba(0, 0, 0, 0)",
+    backgroundColor: "rgba(0, 0, 0, 0)", // Remove the default white background
   }),
 };
 
@@ -79,7 +80,9 @@ export function Header() {
   const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState<string | null>(null);
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
-
+  
+  const isHomePage = pathname === "/";
+  
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -219,21 +222,33 @@ export function Header() {
 
 
   return (
-    <header className="bg-white shadow relative z-30">
+    <header className={`relative z-30 ${
+      isHomePage 
+      ? "bg-gradient-to-r from-theme-navy to-theme-teal/90 border-0 border-transparent"
+      : "bg-white shadow"
+    }`}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 justify-between items-center">
           {/* Logo and Brand */}
           <div className="flex items-center flex-shrink-0">
             <Link href="/" className="flex items-center">
-              <Image
-                src="/images/logo.png"
-                alt="CamboConnect"
-                width={180}
-                height={40}
-                className="h-8 w-auto"
-                priority
-              />
-              <span className="hidden md:block ml-2 font-medium text-theme-navy">CamboConnect</span>
+              <div className={`flex items-center justify-center rounded-full ${
+                isHomePage ? "bg-white p-1" : "bg-white p-1"
+              }`}>
+                <Image
+                  src="/images/logo.png"
+                  alt="CamboConnect"
+                  width={32}
+                  height={32}
+                  className="h-8 w-auto"
+                  priority
+                />
+              </div>
+              <span className={`hidden md:block ml-2 font-medium ${
+                isHomePage ? "text-white" : "text-theme-navy"
+              }`}>
+                CamboConnect
+              </span>
             </Link>
           </div>
 
@@ -243,7 +258,9 @@ export function Header() {
             className="hidden md:flex items-center absolute left-1/2 transform -translate-x-1/2"
             onMouseLeave={() => setHoveredTab(null)}
           >
-            <div className="flex items-center justify-center space-x-2 rounded-xl border bg-white p-1.5 shadow-sm">
+            <div className={`flex items-center justify-center space-x-2 rounded-xl border  ${
+              isHomePage ? "bg-white/20 backdrop-blur-sm border-white/30" : "bg-white border-gray-200"
+            } p-1.5 shadow-sm`}>
               {navigation.map((item) => (
                 <Link
                   key={item.href}
@@ -257,12 +274,19 @@ export function Header() {
                     animate="animate"
                     custom={isTabExpanded(item.href)}
                     transition={transition}
-                    className={`relative flex items-center rounded-lg ${isTabExpanded(item.href)
-                        ? 'bg-gray-100 text-theme-navy'
+                    className={`relative flex items-center rounded-lg ${
+                      isTabExpanded(item.href)
+                        ? isHomePage 
+                          ? 'bg-white/40 text-white font-medium ' 
+                          : 'bg-gray-100 text-theme-navy font-medium'
                         : isActive(item.href)
-                          ? 'text-theme-teal hover:bg-gray-50'
-                          : 'text-theme-slate hover:bg-gray-50 hover:text-theme-navy'
-                      } cursor-pointer py-2`}
+                          ? isHomePage
+                            ? 'text-white'
+                            : 'text-theme-teal hover:bg-gray-50 hover:text-theme-navy'
+                          : isHomePage
+                            ? 'text-white hover:text-white '
+                            : 'text-theme-slate hover:bg-gray-50 hover:text-theme-navy'
+                      } cursor-pointer py-2 transition-colors duration-150 ease-in-out`}
                     onMouseEnter={() => setHoveredTab(item.href)}
                     onClick={() => {
                       // Only update selected tab if it's different from active page
@@ -270,11 +294,24 @@ export function Header() {
                         setSelectedTab(item.href);
                       }
                     }}
+                    style={{
+                      // Handle background for various states with improved contrast
+                      ...(isTabExpanded(item.href) && isHomePage ? {
+                        backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                        backdropFilter: 'blur(4px)',
+                      } : {}),
+                      // Improved hover background for better contrast on homepage
+                      ...(!isTabExpanded(item.href) && hoveredTab === item.href ? {
+                        backgroundColor: isHomePage ? 'rgba(255, 255, 255, 0.4)' : 'rgba(243, 244, 246, 1)',
+                      } : {}),
+                    }}
                   >
                     <div className="flex items-center justify-center min-w-[20px]">
                       {/* Active dot indicator */}
                       {isActive(item.href) && !isTabExpanded(item.href) && (
-                        <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-theme-teal"></span>
+                        <span className={`absolute top-1 right-1 h-1.5 w-1.5 rounded-full ${
+                          isHomePage ? "bg-white" : "bg-theme-teal"
+                        }`}></span>
                       )}
                       {item.icon}
                     </div>
@@ -308,10 +345,14 @@ export function Header() {
                 <div className="relative" ref={profileMenuRef}>
                   <button
                     onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                    className="flex items-center space-x-1 rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-theme-teal focus:ring-offset-2"
+                    className={`flex items-center space-x-1 rounded-full ${
+                      isHomePage ? "bg-white/10 text-white" : "bg-white text-gray-700"
+                    } text-sm focus:outline-none focus:ring-2 focus:ring-theme-teal focus:ring-offset-2`}
                   >
                     <span className="sr-only">Open user menu</span>
-                    <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                    <div className={`h-8 w-8 rounded-full ${
+                      isHomePage ? "bg-white/20" : "bg-gray-200"
+                    } flex items-center justify-center`}>
                       {session.user.image ? (
                         session.user.image.includes('googleusercontent.com') ? (
                           <Image
@@ -333,10 +374,10 @@ export function Header() {
                           />
                         )
                       ) : (
-                        <User className="h-5 w-5 text-gray-400" />
+                        <User className={`h-5 w-5 ${isHomePage ? "text-white/70" : "text-gray-400"}`} />
                       )}
                     </div>
-                    <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${profileMenuOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`h-4 w-4 ${isHomePage ? "text-white/70" : "text-gray-500"} transition-transform ${profileMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {/* Profile dropdown menu */}
                   {profileMenuOpen && (
@@ -388,7 +429,11 @@ export function Header() {
               </div>
             ) : (
               <div className="flex space-x-4">
-                <Link href="/login" className="btn bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 flex items-center px-4 py-2 rounded-md transition-colors">
+                <Link href="/login" className={`btn ${
+                  isHomePage 
+                    ? "bg-white/10 hover:bg-white/20 text-white border-white/30" 
+                    : "bg-white border border-gray-300 hover:bg-gray-50 text-gray-700"
+                  } flex items-center px-4 py-2 rounded-md transition-colors`}>
                   <User className="h-5 w-5 mr-2" />
                   Log in
                 </Link>
@@ -406,7 +451,11 @@ export function Header() {
             <button
               type="button"
               data-mobile-menu-button
-              className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-theme-teal"
+              className={`inline-flex items-center justify-center rounded-md p-2 ${
+                isHomePage 
+                  ? "text-white hover:bg-white/10" 
+                  : "text-gray-400 hover:bg-gray-100 hover:text-gray-500"
+              } focus:outline-none focus:ring-2 focus:ring-inset focus:ring-theme-teal`}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               <span className="sr-only">Open main menu</span>
