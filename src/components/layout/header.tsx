@@ -223,9 +223,9 @@ export function Header() {
   return (
     <header className="bg-white shadow relative z-30">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 justify-between">
+        <div className="flex h-16 justify-between items-center">
           {/* Logo and Brand */}
-          <div className="flex items-center">
+          <div className="flex items-center flex-shrink-0">
             <Link href="/" className="flex items-center">
               <Image
                 src="/images/logo.png"
@@ -242,10 +242,10 @@ export function Header() {
           {/* Center Navigation - Expandable Tabs */}
           <div
             ref={tabsRef}
-            className="hidden md:flex items-center justify-center flex-1"
+            className="hidden md:flex items-center absolute left-1/2 transform -translate-x-1/2"
             onMouseLeave={() => setHoveredTab(null)}
           >
-            <div className="flex items-center space-x-2 rounded-xl border bg-white p-1.5 shadow-sm">
+            <div className="flex items-center justify-center space-x-2 rounded-xl border bg-white p-1.5 shadow-sm">
               {navigation.map((item) => (
                 <Link
                   key={item.href}
@@ -301,7 +301,7 @@ export function Header() {
           </div>
 
           {/* Right Side - Auth Controls or User Menu */}
-          <div className="hidden md:flex items-center">
+          <div className="hidden md:flex items-center flex-shrink-0">
             {session ? (
               <div className="flex items-center space-x-4">
                 {/* Notification center */}
@@ -377,7 +377,7 @@ export function Header() {
                               item.onClick?.();
                             }}
                             disabled={isSigningOut && item.name === "Sign out"}
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left disabled:opacity-50"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left disabled:opacity-50 rounded-md transition-colors"
                           >
                             {item.icon}
                             {isSigningOut && item.name === "Sign out" ? "Signing out..." : item.name}
@@ -390,11 +390,11 @@ export function Header() {
               </div>
             ) : (
               <div className="flex space-x-4">
-                <Link href="/login" className="btn border border-gray-300 bg-white hover:bg-gray-100 flex items-center">
+                <Link href="/login" className="btn bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 flex items-center px-4 py-2 rounded-md transition-colors">
                   <User className="h-5 w-5 mr-2" />
                   Log in
                 </Link>
-                <Link href="/register" className="btn bg-theme-teal hover:bg-theme-teal text-white flex items-center">
+                <Link href="/register" className="btn bg-theme-teal hover:bg-theme-teal/90 text-white flex items-center px-4 py-2 rounded-md transition-colors">
                   <User className="h-5 w-5 mr-2" />
                   Sign up
                 </Link>
@@ -541,7 +541,7 @@ export function Header() {
               <div className="flex flex-col space-y-2">
                 <Link
                   href="/login"
-                  className="btn border border-gray-300 bg-white hover:bg-gray-100 w-full flex items-center justify-center"
+                  className="btn bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 flex items-center justify-center px-4 py-2 rounded-md transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <User className="h-5 w-5 mr-2" />
@@ -549,7 +549,7 @@ export function Header() {
                 </Link>
                 <Link
                   href="/register"
-                  className="btn bg-theme-teal hover:bg-theme-teal text-white w-full flex items-center justify-center"
+                  className="btn bg-theme-teal hover:bg-theme-teal/90 text-white flex items-center justify-center px-4 py-2 rounded-md transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <User className="h-5 w-5 mr-2" />

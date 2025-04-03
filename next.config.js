@@ -1,18 +1,29 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-typescript: {
-    ignoreBuildErrors: true,  // Skip type checking during build
-  }, 
-eslint: {
-    // Disable Next.js linting completely
-    ignoreDuringBuilds: true,
-  },
 output: 'standalone',
   experimental: {
     // Only keep necessary experimental features
     serverComponentsExternalPackages: ['@prisma/client'],
   },
   images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'media.camboconnect.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'f002.backblazeb2.com',
+      }
+    ],
     domains: [
       'avatars.githubusercontent.com',
       'lh3.googleusercontent.com',

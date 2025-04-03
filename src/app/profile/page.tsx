@@ -22,6 +22,9 @@ const SettingsPopover = dynamic(() => import("./settings-popover"), { ssr: false
 // Import the ShareProfileButton component
 const ShareProfileButton = dynamic(() => import("@/components/profile/share-profile-button"), { ssr: false });
 
+// Import ProfileImageUpload component with dynamic import
+const ProfileImageUpload = dynamic(() => import("@/components/profile/profile-image-upload"), { ssr: false });
+
 type ExtendedOrganization = Organization & {
   _count: {
     followers: number;
@@ -217,30 +220,11 @@ export default async function ProfilePage() {
           <div className="md:w-1/3">
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
               <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-32 flex items-center justify-center">
-                <div className="h-20 w-20 rounded-full bg-white border-4 border-white flex items-center justify-center overflow-hidden relative top-12">
-                  {user.profileImage ? (
-                    user.profileImage.includes('googleusercontent.com') ? (
-                      <Image 
-                        src={user.profileImage} 
-                        alt={`${user.firstName} ${user.lastName}`} 
-                        className="h-full w-full object-cover"
-                        referrerPolicy="no-referrer"
-                        width={80}
-                        height={80}
-                      />
-                    ) : (
-                      <Image 
-                        src={user.profileImage} 
-                        alt={`${user.firstName} ${user.lastName}`} 
-                        className="h-full w-full object-cover"
-                        referrerPolicy="no-referrer"
-                        width={80}
-                        height={80}
-                      />
-                    )
-                  ) : (
-                    <User className="h-10 w-10 text-gray-400" />
-                  )}
+                <div className="h-20 w-20 rounded-full bg-white border-4 border-white overflow-hidden relative top-12">
+                  <ProfileImageUpload 
+                    currentImage={user.profileImage}
+                    userId={user.id}
+                  />
                 </div>
               </div>
               
