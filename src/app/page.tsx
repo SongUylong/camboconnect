@@ -1,9 +1,10 @@
 "use client";
 import Link from "next/link";
 import { MainLayout } from "@/components/layout/main-layout";
-import DynamicLottie from "@/components/DynamicLottie";
+import { motion } from "framer-motion";
 import { DecorativeHalfCircle } from "@/components/ui/decorative-half-circle";
 import { ReactiveBackground } from "@/components/ui/ReactiveBackground";
+import { FloatingPaths } from "@/components/ui/FloatingPaths";
 
 export default function Home() {
   return (
@@ -20,14 +21,11 @@ export default function Home() {
         
         <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white"></div>
         <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:px-8">
-          <div className="mx-auto max-w-7xl flex flex-col lg:flex-row items-center justify-between relative ">
-            {/* Left Lottie Animation (hidden on small screens) */}
-            <div className="hidden lg:block absolute left-0 bottom-[-250px] z-0" style={{ marginLeft: '-30rem' }}>
-              <DynamicLottie 
-                animationUrl="/animations/wave.json" 
-                width={650} 
-                height={650} 
-              />
+          <div className="mx-auto max-w-7xl flex flex-col lg:flex-row items-center justify-between relative">
+            {/* Left Floating Paths Animation */}
+            <div className="hidden lg:block absolute left-0 top-0 z-0 w-full h-full lg:w-[800px] lg:h-[800px] opacity-90 pointer-events-none" 
+                 style={{ transform: 'translate(-45%, -20%)' }}>
+              <FloatingPaths position={1} />
             </div>
             
             {/* Center Text Content */}
@@ -45,14 +43,29 @@ export default function Home() {
               <span className="inline-block px-4 py-1 rounded-full text-sm font-medium bg-theme-sand text-theme-navy mb-5 mt-10">
                 Opportunity Platform for Cambodia
               </span>
-              <h1 className="text-4xl font-bold tracking-tight text-theme-navy sm:text-6xl">
+              <motion.h1 
+                className="text-4xl font-bold tracking-tight text-theme-navy sm:text-6xl"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+              >
                 Discover Opportunities in Cambodia
-              </h1>
-              <p className="mt-6 text-lg leading-8 text-theme-slate">
+              </motion.h1>
+              <motion.p 
+                className="mt-6 text-lg leading-8 text-theme-slate"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+              >
                 CamboConnect is your centralized platform for finding and applying to opportunities
                 across Cambodia - from startups and incubation programs to hackathons and internships.
-              </p>
-              <div className="mt-10 flex items-center justify-center gap-x-6">
+              </motion.p>
+              <motion.div 
+                className="mt-10 flex items-center justify-center gap-x-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.6 }}
+              >
                 <Link
                   href="/opportunities"
                   className="btn bg-theme-teal hover:bg-theme-teal/90 text-white btn-lg"
@@ -62,16 +75,13 @@ export default function Home() {
                 <Link href="/about" className="text-sm font-semibold leading-6 text-theme-navy group transition-all duration-300 ease-in-out">
                   Learn more <span aria-hidden="true" className="inline-block transition-transform duration-300 ease-in-out group-hover:translate-x-1">→</span>
                 </Link>
-              </div>
+              </motion.div>
             </div>
             
-            {/* Right Lottie Animation (hidden on small screens) - flipped horizontally */}
-            <div className="hidden lg:block absolute right-0 bottom-[-250px] z-0 transform scale-x-[-1]" style={{ marginRight: '-30rem' }}>
-              <DynamicLottie 
-                animationUrl="/animations/wave.json" 
-                width={650} 
-                height={650} 
-              />
+            {/* Right Floating Paths Animation */}
+            <div className="hidden lg:block absolute right-0 top-0 z-0 w-full h-full lg:w-[800px] lg:h-[800px] opacity-70 pointer-events-none" 
+                 style={{ transform: 'translate(75%, -25%) scaleX(-0.75)' }}>
+              <FloatingPaths position={-1} />
             </div>
           </div>
         </div>
