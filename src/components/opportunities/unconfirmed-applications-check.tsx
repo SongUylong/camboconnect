@@ -67,7 +67,6 @@ export function UnconfirmedApplicationsCheck() {
     
     // Only process data if we have successfully fetched it and there are applications
     if (isSuccess && unconfirmedData?.applications && unconfirmedData.applications.length > 0) {
-      console.log("Unconfirmed applications found:", unconfirmedData.applications);
       
       // Set the applications in state
       setUnconfirmedApplications(unconfirmedData.applications);
@@ -79,7 +78,6 @@ export function UnconfirmedApplicationsCheck() {
       }
     } else if (isSuccess && (!unconfirmedData?.applications || unconfirmedData.applications.length === 0)) {
       // No unconfirmed applications found, reset modal state
-      console.log("No unconfirmed applications found");
       resetModalState();
       setHasChecked(false);
       setCurrentApplicationIndex(0);

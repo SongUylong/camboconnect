@@ -3,10 +3,9 @@ import { db } from '@/lib/prisma';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { hash } from 'bcrypt';
-import { Prisma } from '@prisma/client';
 
 // Define types for the structured response
-interface ProfileResponse {
+interface Request {
   id: string;
   email: string;
   firstName: string;
@@ -20,11 +19,9 @@ interface ProfileResponse {
   [key: string]: any;
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    // Get the user session
     const session = await getServerSession(authOptions);
-    
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

@@ -3,16 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { 
-  Bell, 
-  Menu, 
-  User, 
-  X, 
-  Bookmark, 
-  Users, 
-  Settings, 
-  LogOut, 
-  ChevronDown, 
+import {
+  Menu,
+  User,
+  X,
+  Bookmark,
+  Users,
+  Settings,
+  LogOut,
+  ChevronDown,
   ChevronRight,
   Briefcase,
   Users2,
@@ -52,7 +51,7 @@ const tabVariants = {
     gap: isExpanded ? ".5rem" : 0,
     paddingLeft: isExpanded ? "1rem" : "0.75rem",
     paddingRight: isExpanded ? "1rem" : "0.75rem",
-    backgroundColor: isExpanded ? "rgb(243, 244, 246)" : "transparent",
+    backgroundColor: isExpanded ? "rgb(243, 244, 246)" : "rgba(0, 0, 0, 0)",
   }),
 };
 
@@ -63,12 +62,12 @@ const textVariants = {
 };
 
 // Faster spring animation for better responsiveness
-const transition = { 
-  type: "spring", 
-  stiffness: 500, 
-  damping: 25, 
+const transition = {
+  type: "spring",
+  stiffness: 500,
+  damping: 25,
   mass: 0.5,
-  duration: 0.25 
+  duration: 0.25
 };
 
 export function Header() {
@@ -80,7 +79,7 @@ export function Header() {
   const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState<string | null>(null);
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
-  
+
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -130,7 +129,7 @@ export function Header() {
         }
       }
     }
-    
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [pathname, selectedTab]);
@@ -142,7 +141,7 @@ export function Header() {
         setProfileMenuOpen(false);
       }
     }
-    
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -152,15 +151,15 @@ export function Header() {
     function handleClickOutside(event: MouseEvent) {
       // Only close if we're clicking outside the menu and not on the menu button
       if (
-        mobileMenuOpen && 
-        mobileMenuRef.current && 
-        !mobileMenuRef.current.contains(event.target as Node) && 
+        mobileMenuOpen &&
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target as Node) &&
         !(event.target as HTMLElement).closest('[data-mobile-menu-button]')
       ) {
         setMobileMenuOpen(false);
       }
     }
-    
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [mobileMenuOpen]);
@@ -168,25 +167,24 @@ export function Header() {
   const handleSignOut = async () => {
     try {
       setIsSigningOut(true);
-      
+
       // Add a timeout to prevent infinite loading
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error("Sign out timed out")), 5000)
       );
-      
+
       // Race between the signOut call and the timeout
       await Promise.race([
-        signOut({ 
+        signOut({
           callbackUrl: '/',
-          redirect: false 
+          redirect: false
         }),
         timeoutPromise
       ]);
-      
+
       // Force a hard refresh to clear any cached state
       window.location.href = '/';
     } catch (error) {
-      console.error("Sign out error:", error);
       toast.error("Failed to sign out. Please try again.");
       setIsSigningOut(false);
     }
@@ -219,12 +217,13 @@ export function Header() {
     return selectedTab === href || isActive(href);
   };
 
+
   return (
     <header className="bg-white shadow relative z-30">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 justify-between">
+        <div className="flex h-16 justify-between items-center">
           {/* Logo and Brand */}
-          <div className="flex items-center">
+          <div className="flex items-center flex-shrink-0">
             <Link href="/" className="flex items-center">
               <Image
                 src="/images/logo.png"
@@ -239,12 +238,12 @@ export function Header() {
           </div>
 
           {/* Center Navigation - Expandable Tabs */}
-          <div 
+          <div
             ref={tabsRef}
-            className="hidden md:flex items-center justify-center flex-1"
+            className="hidden md:flex items-center absolute left-1/2 transform -translate-x-1/2"
             onMouseLeave={() => setHoveredTab(null)}
           >
-            <div className="flex items-center space-x-2 rounded-xl border bg-white p-1.5 shadow-sm">
+            <div className="flex items-center justify-center space-x-2 rounded-xl border bg-white p-1.5 shadow-sm">
               {navigation.map((item) => (
                 <Link
                   key={item.href}
@@ -258,13 +257,12 @@ export function Header() {
                     animate="animate"
                     custom={isTabExpanded(item.href)}
                     transition={transition}
-                    className={`relative flex items-center rounded-lg ${
-                      isTabExpanded(item.href)
+                    className={`relative flex items-center rounded-lg ${isTabExpanded(item.href)
                         ? 'bg-gray-100 text-theme-navy'
                         : isActive(item.href)
                           ? 'text-theme-teal hover:bg-gray-50'
                           : 'text-theme-slate hover:bg-gray-50 hover:text-theme-navy'
-                    } cursor-pointer py-2`}
+                      } cursor-pointer py-2`}
                     onMouseEnter={() => setHoveredTab(item.href)}
                     onClick={() => {
                       // Only update selected tab if it's different from active page
@@ -301,12 +299,11 @@ export function Header() {
           </div>
 
           {/* Right Side - Auth Controls or User Menu */}
-          <div className="hidden md:flex items-center">
+          <div className="hidden md:flex items-center flex-shrink-0">
             {session ? (
               <div className="flex items-center space-x-4">
                 {/* Notification center */}
                 <NotificationCenter />
-
                 {/* Profile dropdown */}
                 <div className="relative" ref={profileMenuRef}>
                   <button
@@ -315,31 +312,56 @@ export function Header() {
                   >
                     <span className="sr-only">Open user menu</span>
                     <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
-                      <User className="h-5 w-5 text-gray-500" />
+                      {session.user.image ? (
+                        session.user.image.includes('googleusercontent.com') ? (
+                          <Image
+                            src={session.user?.image}
+                            alt={`${session.user.name}`}
+                            className="h-full w-full object-cover overflow-hidden rounded-full border-2 border-white"
+                            referrerPolicy="no-referrer"
+                            width={80}
+                            height={80}
+                          />
+                        ) : (
+                          <Image
+                            src={session.user?.image}
+                            alt={`${session.user.name}`}
+                            className="h-full w-full object-cover overflow-hidden rounded-full border-2 border-white"
+                            referrerPolicy="no-referrer"
+                            width={80}
+                            height={80}
+                          />
+                        )
+                      ) : (
+                        <User className="h-5 w-5 text-gray-400" />
+                      )}
                     </div>
                     <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${profileMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
-
                   {/* Profile dropdown menu */}
                   {profileMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
                       <div className="px-4 py-2 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-800">
-                          {session.user.name}
+                        <p className="text-sm font-semibold text-gray-800 capitalize ">
+                          <Link
+                            href={'/profile'}
+                            className="text-sm font-semibold text-gray-800 capitalize "
+                            >
+                            <p className="hover:underline">{session.user.name}</p>  
+                            </Link>
                         </p>
-                        <p className="text-xs text-gray-500 truncate">
+                        <p className="text-xs text-gray-500 truncate ">
                           {session.user.email}
                         </p>
                       </div>
-                      
+
                       {profileMenuItems.map((item) => (
                         item.href ? (
                           <Link
                             key={item.name}
                             href={item.href}
-                            className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left ${
-                              item.name === "Admin" ? "text-yellow-600 font-medium" : ""
-                            }`}
+                            className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left ${item.name === "Admin" ? "text-yellow-600 font-medium" : ""
+                              }`}
                             onClick={() => setProfileMenuOpen(false)}
                           >
                             {item.icon}
@@ -353,7 +375,7 @@ export function Header() {
                               item.onClick?.();
                             }}
                             disabled={isSigningOut && item.name === "Sign out"}
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left disabled:opacity-50"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left disabled:opacity-50 rounded-md transition-colors"
                           >
                             {item.icon}
                             {isSigningOut && item.name === "Sign out" ? "Signing out..." : item.name}
@@ -366,11 +388,11 @@ export function Header() {
               </div>
             ) : (
               <div className="flex space-x-4">
-                <Link href="/login" className="btn border border-gray-300 bg-white hover:bg-gray-100 flex items-center">
+                <Link href="/login" className="btn bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 flex items-center px-4 py-2 rounded-md transition-colors">
                   <User className="h-5 w-5 mr-2" />
                   Log in
                 </Link>
-                <Link href="/register" className="btn bg-theme-teal hover:bg-theme-teal text-white flex items-center">
+                <Link href="/register" className="btn bg-theme-teal hover:bg-theme-teal/90 text-white flex items-center px-4 py-2 rounded-md transition-colors">
                   <User className="h-5 w-5 mr-2" />
                   Sign up
                 </Link>
@@ -380,6 +402,7 @@ export function Header() {
 
           {/* Mobile menu button */}
           <div className="flex items-center md:hidden">
+            <NotificationCenter />
             <button
               type="button"
               data-mobile-menu-button
@@ -398,24 +421,22 @@ export function Header() {
       </div>
 
       {/* Mobile slide-in menu */}
-      <div 
-        className={`fixed inset-0 bg-gray-800 bg-opacity-75 z-40 transition-opacity duration-300 ${
-          mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
+      <div
+        className={`fixed inset-0 bg-gray-800 bg-opacity-75 z-40 transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
         aria-hidden="true"
       ></div>
 
-      <div 
+      <div
         ref={mobileMenuRef}
-        className={`fixed top-0 right-0 bottom-0 w-72 bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
-          mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+        className={`fixed top-0 right-0 bottom-0 w-72 bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
       >
         {/* Mobile Menu Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h2 className="text-lg font-medium text-theme-navy">Menu</h2>
-          <button 
-            type="button" 
+          <button
+            type="button"
             className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
             onClick={() => setMobileMenuOpen(false)}
           >
@@ -432,17 +453,38 @@ export function Header() {
               <div className="p-4 border-b border-gray-200">
                 <div className="flex items-center">
                   <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                    <User className="h-6 w-6 text-gray-500" />
+
+                    {session.user.image ? (
+                      session.user.image.includes('googleusercontent.com') ? (
+                        <Image
+                          src={session.user?.image}
+                          alt={`${session.user.name}`}
+                          className="h-full w-full object-cover"
+                          referrerPolicy="no-referrer"
+                          width={80}
+                          height={80}
+                        />
+                      ) : (
+                        <Image
+                          src={session.user?.image}
+                          alt={`${session.user.name}`}
+                          className="h-full w-full object-cover"
+                          referrerPolicy="no-referrer"
+                          width={80}
+                          height={80}
+                        />
+                      )
+                    ) : (
+                      <User className="h-5 w-5 text-gray-400" />
+                    )}
                   </div>
                   <div className="ml-3 flex-1">
                     <div className="text-base font-medium text-gray-800">{session.user.name}</div>
-                    <div className="text-sm text-gray-500 truncate">{session.user.email}</div>
                   </div>
-                  <NotificationCenter />
                 </div>
 
                 {/* Profile dropdown toggle */}
-                <button 
+                <button
                   onClick={() => setMobileProfileOpen(!mobileProfileOpen)}
                   className="flex items-center justify-between w-full mt-4 px-2 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100"
                 >
@@ -450,10 +492,9 @@ export function Header() {
                     <User className="h-5 w-5 text-gray-500 mr-2" />
                     <span>Profile Settings</span>
                   </div>
-                  <ChevronDown 
-                    className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
-                      mobileProfileOpen ? 'rotate-180' : ''
-                    }`}
+                  <ChevronDown
+                    className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${mobileProfileOpen ? 'rotate-180' : ''
+                      }`}
                   />
                 </button>
 
@@ -465,11 +506,10 @@ export function Header() {
                         <Link
                           key={item.name}
                           href={item.href}
-                          className={`flex items-center px-4 py-2 text-sm rounded-md ${
-                            item.name === "Admin" 
-                              ? "text-yellow-600 font-medium hover:bg-yellow-50" 
+                          className={`flex items-center px-4 py-2 text-sm rounded-md ${item.name === "Admin"
+                              ? "text-yellow-600 font-medium hover:bg-yellow-50"
                               : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                          }`}
+                            }`}
                           onClick={() => setMobileMenuOpen(false)}
                         >
                           {item.icon}
@@ -497,17 +537,17 @@ export function Header() {
           ) : (
             <div className="p-4 border-b border-gray-200">
               <div className="flex flex-col space-y-2">
-                <Link 
-                  href="/login" 
-                  className="btn border border-gray-300 bg-white hover:bg-gray-100 w-full flex items-center justify-center"
+                <Link
+                  href="/login"
+                  className="btn bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 flex items-center justify-center px-4 py-2 rounded-md transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <User className="h-5 w-5 mr-2" />
                   Log in
                 </Link>
-                <Link 
-                  href="/register" 
-                  className="btn bg-theme-teal hover:bg-theme-teal text-white w-full flex items-center justify-center"
+                <Link
+                  href="/register"
+                  className="btn bg-theme-teal hover:bg-theme-teal/90 text-white flex items-center justify-center px-4 py-2 rounded-md transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <User className="h-5 w-5 mr-2" />
@@ -524,11 +564,10 @@ export function Header() {
                 <li key={item.name}>
                   <Link
                     href={item.href}
-                    className={`flex items-center px-4 py-3 text-base font-medium rounded-md ${
-                      isActive(item.href)
+                    className={`flex items-center px-4 py-3 text-base font-medium rounded-md ${isActive(item.href)
                         ? "bg-theme-red bg-opacity-10 text-theme-red"
                         : "text-theme-slate hover:bg-gray-50 hover:text-theme-navy"
-                    }`}
+                      }`}
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {item.icon}
