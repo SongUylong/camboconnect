@@ -21,7 +21,6 @@ export function ApplicationProvider({ children }: { children: ReactNode }) {
 
   // Function to reset the modal state
   const resetModalState = useCallback(() => {
-    console.log("Resetting modal state");
     // Use a timeout to ensure the state is updated after any pending state updates
     setTimeout(() => {
       setShowConfirmationModal(false);
@@ -29,10 +28,6 @@ export function ApplicationProvider({ children }: { children: ReactNode }) {
     }, 0);
   }, []);
 
-  // Debug logging
-  useEffect(() => {
-    console.log("Modal state:", { showConfirmationModal, currentOpportunity });
-  }, [showConfirmationModal, currentOpportunity]);
 
   return (
     <ApplicationContext.Provider 

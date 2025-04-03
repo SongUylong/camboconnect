@@ -24,11 +24,6 @@ output: 'standalone',
         hostname: 'f002.backblazeb2.com',
       }
     ],
-    domains: [
-      'avatars.githubusercontent.com',
-      'lh3.googleusercontent.com',
-      'media.camboconnect.com',
-    ],
     // Add unoptimized option for Docker
     unoptimized: process.env.NODE_ENV === 'production',
   },

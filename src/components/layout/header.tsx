@@ -51,7 +51,7 @@ const tabVariants = {
     gap: isExpanded ? ".5rem" : 0,
     paddingLeft: isExpanded ? "1rem" : "0.75rem",
     paddingRight: isExpanded ? "1rem" : "0.75rem",
-    backgroundColor: isExpanded ? "rgb(243, 244, 246)" : "transparent",
+    backgroundColor: isExpanded ? "rgb(243, 244, 246)" : "rgba(0, 0, 0, 0)",
   }),
 };
 
@@ -185,7 +185,6 @@ export function Header() {
       // Force a hard refresh to clear any cached state
       window.location.href = '/';
     } catch (error) {
-      console.error("Sign out error:", error);
       toast.error("Failed to sign out. Please try again.");
       setIsSigningOut(false);
     }
@@ -218,7 +217,6 @@ export function Header() {
     return selectedTab === href || isActive(href);
   };
 
-  console.log(session?.user)
 
   return (
     <header className="bg-white shadow relative z-30">
