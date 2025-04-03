@@ -25,6 +25,7 @@ export interface Experience {
   description: string;
 }
 
+
 export interface SocialLinks {
   portfolio?: string;
   linkedin?: string;
