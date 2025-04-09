@@ -28,7 +28,8 @@ export const BackgroundBeams = ({
 
   // Calculate beam positions based on container width
   const getBeams = () => {
-    const width = containerWidth || window.innerWidth;
+    // Use a safe default width for server-side rendering
+    const width = containerWidth || (typeof window !== 'undefined' ? window.innerWidth : 1000);
     
     return [
       {

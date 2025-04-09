@@ -153,24 +153,21 @@ export default async function OpportunitiesPage({
   return (
     <MainLayout>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page header with title and search bar */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Opportunities</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Discover opportunities across Cambodia
-            </p>
-          </div>
-
-          {/* Search component for text-based filtering */}
-          <div className="mt-4 md:mt-0 w-full md:w-auto">
-            <OpportunitySearch />
-          </div>
+        {/* Page header with title */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Opportunities</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Discover opportunities across Cambodia
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Left sidebar with filter options */}
+          {/* Left sidebar with search bar and filter options */}
           <div className="col-span-1">
+            {/* Search component moved above filter for large screens */}
+            <div className="mb-4 w-full">
+              <OpportunitySearch />
+            </div>
             <OpportunityFilter categories={categories} />
           </div>
 

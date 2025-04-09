@@ -52,26 +52,60 @@ export async function GET(req: Request) {
     // Add text search if query parameter is provided
     // Searches in title, description, and shortDescription fields
     if (query) {
-      where.OR = [
-        {
-          title: {
-            contains: query,
-            mode: 'insensitive',
+      // Split search query into individual words for better matching
+      // Remove special characters and ensure words are at least 2 characters long
+      const searchWords = query
+        .toLowerCase()
+        .split(/\s+/)
+        .filter(word => word.length >= 2)
+        .map(word => word.replace(/[^\w\s]/g, ''));
+      
+      // If we have search words to process
+      if (searchWords.length > 0) {
+        // Create a condition that matches any of the words
+        where.OR = searchWords.flatMap(word => [
+          {
+            title: {
+              contains: word,
+              mode: 'insensitive',
+            },
           },
-        },
-        {
-          description: {
-            contains: query,
-            mode: 'insensitive',
+          {
+            description: {
+              contains: word,
+              mode: 'insensitive',
+            },
           },
-        },
-        {
-          shortDescription: {
-            contains: query,
-            mode: 'insensitive',
+          {
+            shortDescription: {
+              contains: word,
+              mode: 'insensitive',
+            },
           },
-        },
-      ];
+        ]);
+      } else {
+        // Fallback to simple contains search if no valid search words
+        where.OR = [
+          {
+            title: {
+              contains: query,
+              mode: 'insensitive',
+            },
+          },
+          {
+            description: {
+              contains: query,
+              mode: 'insensitive',
+            },
+          },
+          {
+            shortDescription: {
+              contains: query,
+              mode: 'insensitive',
+            },
+          },
+        ];
+      }
     }
     
     // Determine sort order based on the sort parameter
@@ -120,13 +154,60 @@ export async function GET(req: Request) {
     
     // Transform opportunities to include bookmark status
     // This simplifies the data structure for the client
-    const transformedOpportunities = opportunities.map(opportunity => {
+    let transformedOpportunities = opportunities.map(opportunity => {
       const { bookmarks, ...rest } = opportunity;
       return {
         ...rest,
         isBookmarked: userId ? bookmarks.length > 0 : false,
       };
     });
+
+    // Calculate match relevance if search query exists
+    if (query && query.trim() !== '') {
+      // Split the query into individual words for matching
+      const searchTerms = query
+        .toLowerCase()
+        .split(/\s+/)
+        .filter(term => term.length >= 2)
+        .map(term => term.replace(/[^\w\s]/g, ''));
+
+      if (searchTerms.length > 0) {
+        // Calculate relevance scores for each opportunity
+        const scoredOpportunities = transformedOpportunities.map(opportunity => {
+          // Count matches in title (highest importance)
+          const titleText = opportunity.title.toLowerCase();
+          const titleMatches = searchTerms.filter(term => 
+            titleText.includes(term)
+          ).length * 3; // Weight title matches higher
+          
+          // Count matches in shortDescription (medium importance)
+          const shortDescText = opportunity.shortDescription.toLowerCase();
+          const shortDescMatches = searchTerms.filter(term => 
+            shortDescText.includes(term)
+          ).length * 2; // Weight short description matches medium
+          
+          // Count matches in description (lower importance)
+          const descText = opportunity.description.toLowerCase();
+          const descMatches = searchTerms.filter(term => 
+            descText.includes(term)
+          ).length;
+          
+          // Calculate total relevance score
+          const relevanceScore = titleMatches + shortDescMatches + descMatches;
+          
+          return {
+            ...opportunity,
+            relevanceScore
+          };
+        });
+        
+        // Sort by relevance score (highest first)
+        scoredOpportunities.sort((a, b) => b.relevanceScore - a.relevanceScore);
+        
+        // Replace the transformed opportunities with the sorted ones
+        transformedOpportunities = scoredOpportunities;
+      }
+    }
     
     // Return the opportunities with pagination metadata
     return NextResponse.json({

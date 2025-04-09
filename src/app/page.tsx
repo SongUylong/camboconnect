@@ -4,12 +4,51 @@ import { MainLayout } from "@/components/layout/main-layout";
 import { motion } from "framer-motion";
 import { ReactiveBackground } from "@/components/ui/ReactiveBackground";
 import { FloatingPaths } from "@/components/ui/FloatingPaths";
-import { DotLottieWorkerReact } from "@lottiefiles/dotlottie-react";
 import { BackgroundBeams } from "@/components/ui/BackgroundBeams";
+import { ArrowRight, Upload, Users, RotateCcw } from "lucide-react";
+import { AnimatedFeatureCardGrid } from "@/components/ui/AnimatedFeatureCard";
+import { InfiniteSlider } from "@/components/ui/infinite-slider";
+import WhyWeExist from "@/components/ui/Why-we-exit";
+// Animation variants
+const fadeIn = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6 }
+  }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.2
+    }
+  }
+};
+
+// Pain points data for the "Why We Exist" section
+const painPoints = [
+  {
+    title: "Fragmented Information",
+    description: "Opportunities are scattered across different platforms, making it difficult for Cambodians to discover them."
+  },
+  {
+    title: "Limited Access",
+    description: "Many talented individuals miss opportunities because they aren't connected to the right networks."
+  },
+  {
+    title: "Lack of Guidance",
+    description: "Navigating application processes and requirements can be challenging without proper support and resources."
+  }
+];
 
 export default function Home() {
   return (
     <MainLayout>
+
       {/* Hero Section with reactive dot background */}
       <div className="relative isolate bg-gradient-to-r from-theme-navy to-theme-teal/90 overflow-hidden ">
         {/* Reactive background dots */}
@@ -74,7 +113,7 @@ export default function Home() {
                 >
                   Explore Opportunities
                 </Link>
-                <Link href="/about" className="text-sm font-semibold leading-6 text-white flex items-center gap-x-1 hover:text-theme-gold transition-all duration-300 ease-in-out">
+                <Link href="/guide" className="text-sm font-semibold leading-6 text-white flex items-center gap-x-1 hover:text-theme-gold transition-all duration-300 ease-in-out">
                   Learn more <span aria-hidden="true" className="inline-block transition-transform duration-300 ease-in-out group-hover:translate-x-1">→</span>
                 </Link>
               </motion.div>
@@ -124,177 +163,375 @@ export default function Home() {
               Everything you need to grow and succeed
             </p>
             <p className="mt-6 text-lg leading-8 text-theme-slate">
-              CamboConnect brings together opportunities, communities, and resources to help you take
-              the next step in your career or entrepreneurial journey.
+              CamboConnect brings it all together!
             </p>
           </div>
-          <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
-            <dl className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-3">
-              <div className="flex flex-col bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 ease-in-out">
-                <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-theme-navy">
-                  <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-theme-teal/10">
-                    <svg
-                      className="h-5 w-5 flex-none text-theme-teal"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.5 17a4.5 4.5 0 01-1.44-8.765 4.5 4.5 0 018.302-3.046 3.5 3.5 0 014.504 4.272A4 4 0 0115 17H5.5zm3.75-2.75a.75.75 0 001.5 0V9.66l1.95 2.1a.75.75 0 101.1-1.02l-3.25-3.5a.75.75 0 00-1.1 0l-3.25 3.5a.75.75 0 101.1 1.02l1.95-2.1v4.59z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  Discover Opportunities
-                </dt>
-                <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-theme-slate">
-                  <p className="flex-auto">
-                    Browse opportunities from startups, incubators, companies, and more. Filter by
-                    category, deadline, and eligibility to find the perfect match.
-                  </p>
-                  <p className="mt-6">
-                    <Link
-                      href="/opportunities"
-                      className="group flex items-center text-sm font-semibold leading-6 text-theme-teal hover:text-theme-teal/90 transition-colors"
-                    >
-                      Explore opportunities
-                      <span aria-hidden="true" className="inline-block transition-transform duration-300 ease-in-out group-hover:translate-x-1 ml-1">→</span>
-                    </Link>
-                  </p>
-                </dd>
-              </div>
-
-              <div className="flex flex-col bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 ease-in-out">
-                <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-theme-navy">
-                  <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-theme-gold/10">
-                    <svg
-                      className="h-5 w-5 flex-none text-theme-gold"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  Connect with Community
-                </dt>
-                <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-theme-slate">
-                  <p className="flex-auto">
-                    Engage with organizations and past participants. Learn from others' experiences
-                    and expand your network in Cambodia's growing ecosystem.
-                  </p>
-                  <p className="mt-6">
-                    <Link
-                      href="/community"
-                      className="group flex items-center text-sm font-semibold leading-6 text-theme-gold hover:text-theme-gold/90 transition-colors"
-                    >
-                      Join community
-                      <span aria-hidden="true" className="inline-block transition-transform duration-300 ease-in-out group-hover:translate-x-1 ml-1">→</span>
-                    </Link>
-                  </p>
-                </dd>
-              </div>
-
-              <div className="flex flex-col bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 ease-in-out">
-                <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-theme-navy">
-                  <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-theme-sage/10">
-                    <svg
-                      className="h-5 w-5 flex-none text-theme-sage"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H3.989a.75.75 0 00-.75.75v4.242a.75.75 0 001.5 0v-2.43l.31.31a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm1.23-3.723a.75.75 0 00.219-.53V2.929a.75.75 0 00-1.5 0V5.36l-.31-.31A7 7 0 003.239 8.188a.75.75 0 101.448.389A5.5 5.5 0 0113.89 6.11l.311.31h-2.432a.75.75 0 000 1.5h4.243a.75.75 0 00.53-.219z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  Track Your Journey
-                </dt>
-                <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-theme-slate">
-                  <p className="flex-auto">
-                    Save opportunities, track applications, and build a portfolio of your experiences.
-                    Show off your accomplishments and growth along the way.
-                  </p>
-                  <p className="mt-6">
-                    <Link
-                      href="/register"
-                      className="group flex items-center text-sm font-semibold leading-6 text-theme-sage hover:text-theme-sage/90 transition-colors"
-                    >
-                      Create account
-                      <span aria-hidden="true" className="inline-block transition-transform duration-300 ease-in-out group-hover:translate-x-1 ml-1">→</span>
-                    </Link>
-                  </p>
-                </dd>
-              </div>
-            </dl>
+          <div className="mx-auto mt-8 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
+            <AnimatedFeatureCardGrid
+              cards={[
+                {
+                  icon: "./animations/icon1.json",
+                  title: "Discover Opportunities",
+                  description: "Browse opportunities from startups, incubators, companies, and more. Filter by category, deadline, and eligibility to find the perfect match.",
+                  linkText: "Explore opportunities",
+                  linkHref: "/opportunities",
+                  accentColor: "#EAB308",
+                  iconBackground: "bg-theme-teal/10",
+                  linkColor: "text-theme-teal hover:text-theme-teal/90",
+                  width: 100,
+                  height: 100,
+                },
+                {
+                  icon: "./animations/icon2.json",
+                  title: "Connect with Community",
+                  description: "Engage with organizations and past participants. Learn from others' experiences and expand your network in Cambodia's growing ecosystem.",
+                  linkText: "Join community",
+                  linkHref: "/community",
+                  accentColor: "#EAB308", // theme-gold
+                  iconBackground: "bg-theme-teal/10",
+                  linkColor: "text-theme-gold hover:text-theme-gold/90",
+                  width: 200,
+                  height: 200,
+                },
+                {
+                  icon: "./animations/icon3.json",
+                  title: "Track Your Journey",
+                  description: "Save opportunities, track applications, and build a portfolio of your experiences. Show off your accomplishments and growth along the way.",
+                  linkText: "Create account",
+                  linkHref: "/register",
+                  accentColor: "#EAB308", // theme-sage
+                  iconBackground: "bg-theme-teal/10",
+                  linkColor: "text-theme-sage hover:text-theme-sage/90",
+                  width: 100,
+                  height: 100,
+                }
+              ]}
+              className="px-4"
+            />
           </div>
+
+          <div className="w-screen relative sm:left-[49%] sm:right-[51%] left-[49%] right-[49%] -ml-[50vw] -mr-[50vw] mt-16 py-12 px-6 overflow-hidden">
+            <InfiniteSlider gap={10} reverse children={[
+              <div key="text1" className="bg-white px-3 py-4 rounded-lg shadow-md">
+                <p className="font-bold tracking-wider text-theme-teal uppercase text-lg">STARTUP INCUBATOR</p>
+              </div>,
+              <div key="text2" className="bg-white px-3 py-4 rounded-lg shadow-md">
+                <p className="font-bold tracking-wider text-theme-gold uppercase text-lg">ENTREPRENEURSHIP</p>
+              </div>,
+              <div key="text3" className="bg-white px-3 py-4 rounded-lg shadow-md">
+                <p className="font-bold tracking-wider text-theme-sage uppercase text-lg">MENTORSHIP</p>
+              </div>,
+              <div key="text4" className="bg-white px-3 py-4 rounded-lg shadow-md">
+                <p className="font-bold tracking-wider text-theme-teal-light uppercase text-lg">HACKATHONS</p>
+              </div>,
+              <div key="text5" className="bg-white px-3 py-4 rounded-lg shadow-md">
+                <p className="font-bold tracking-wider text-theme-gold uppercase text-lg">TECH EVENTS</p>
+              </div>,
+              <div key="text6" className="bg-white px-3 py-4 rounded-lg shadow-md">
+                <p className="font-bold tracking-wider text-theme-sage uppercase text-lg">GLOBAL EXCHANGE</p>
+              </div>,
+              <div key="text7" className="bg-white px-3 py-4 rounded-lg shadow-md">
+                <p className="font-bold tracking-wider text-theme-teal uppercase text-lg">COMPETITIONS</p>
+              </div>,
+              <div key="text8" className="bg-white px-3 py-4 rounded-lg shadow-md">
+                <p className="font-bold tracking-wider text-theme-gold uppercase text-lg">SCHOLARSHIPS</p>
+              </div>,
+              <div key="text9" className="bg-white px-3 py-4 rounded-lg shadow-md">
+                <p className="font-bold tracking-wider text-theme-sage uppercase text-lg">INTERNSHIPS</p>
+              </div>,
+              <div key="text10" className="bg-white px-3 py-4 rounded-lg shadow-md">
+                <p className="font-bold tracking-wider text-theme-teal-light uppercase text-lg">NETWORKING</p>
+              </div>
+            ]} />
+          </div>
+
         </div>
       </div>
 
-      {/* Stats section with gradient background */}
-      <div className="bg-gradient-to-r from-theme-navy to-theme-navy/80 py-16 sm:py-24">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl lg:max-w-none">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                Trusted by individuals and organizations across Cambodia
-              </h2>
-              <p className="mt-4 text-lg leading-8 text-gray-300">
-                Join thousands of students, professionals, and organizations building Cambodia's future.
-              </p>
+      {/* Stats section with dynamic background gradient and sticky title - Redesigned */}
+      <div className="relative">
+        {/* Section Content */}
+        <div className="bg-gradient-to-t from-theme-navy to-theme-navy/80 py-24 sm:py-32 relative z-10 overflow-visible">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8 relative z-30">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 relative">
+
+              {/* Left: Sticky Title Section */}
+              <div className="lg:col-span-1 relative lg:sticky top-0 self-start">
+                <div className="text-left space-y-4">
+                  <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
+                    Empowering Cambodia's Future
+                  </h2>
+                  <p className="text-xl leading-8 text-gray-300">
+                    A thriving community of students, organizations, and changemakers building Cambodia’s future.
+                  </p>
+                </div>
+              </div>
+
+              {/* Right: Stats Section */}
+              <div className="lg:col-span-1">
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1  gap-6">
+
+
+                    {/* Active Users Stat */}
+                    <div className="bg-white/5 backdrop-blur-sm p-8 rounded-xl border border-white/10 hover:border-white/20 transition-all duration-300">
+                      <div className="flex items-center justify-between">
+                        <div className="text-left">
+                          <p className="text-sm font-medium text-gray-300 mb-1">Active Users</p>
+                          <h3 className="text-3xl md:text-4xl font-bold text-white">8,000+</h3>
+                        </div>
+                        <div className="h-12 w-12 bg-theme-teal/20 rounded-full flex items-center justify-center">
+                          <Users className="h-6 w-6 text-theme-teal" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Organizations Stat */}
+                    <div className="bg-white/5 backdrop-blur-sm p-8 rounded-xl border border-white/10 hover:border-white/20 transition-all duration-300">
+                      <div className="flex items-center justify-between">
+                        <div className="text-left">
+                          <p className="text-sm font-medium text-gray-300 mb-1">Organizations</p>
+                          <h3 className="text-3xl md:text-4xl font-bold text-white">200+</h3>
+                        </div>
+                        <div className="h-12 w-12 bg-theme-gold/20 rounded-full flex items-center justify-center">
+                          <RotateCcw className="h-6 w-6 text-theme-gold" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Opportunities Stat */}
+                    <div className="bg-white/5 backdrop-blur-sm p-8 rounded-xl border border-white/10 hover:border-white/20 transition-all duration-300">
+                      <div className="flex items-center justify-between">
+                        <div className="text-left">
+                          <p className="text-sm font-medium text-gray-300 mb-1">Opportunities</p>
+                          <h3 className="text-3xl md:text-4xl font-bold text-white">500+</h3>
+                        </div>
+                        <div className="h-12 w-12 bg-theme-sage/20 rounded-full flex items-center justify-center">
+                          <Upload className="h-6 w-6 text-theme-sage" />
+                        </div>
+                      </div>
+                    </div>
+
+
+
+                  </div>
+                </div>
+
+              </div>
             </div>
-            <dl className="mt-16 grid grid-cols-1 gap-0.5 overflow-hidden rounded-2xl text-center sm:grid-cols-2 lg:grid-cols-4">
-              <div className="flex flex-col bg-white/5 backdrop-blur-sm p-8">
-                <dt className="text-sm font-semibold leading-6 text-gray-300">Active Users</dt>
-                <dd className="order-first text-3xl font-semibold tracking-tight text-white">8,000+</dd>
-              </div>
-              <div className="flex flex-col bg-white/5 backdrop-blur-sm p-8">
-                <dt className="text-sm font-semibold leading-6 text-gray-300">Organizations</dt>
-                <dd className="order-first text-3xl font-semibold tracking-tight text-white">200+</dd>
-              </div>
-              <div className="flex flex-col bg-white/5 backdrop-blur-sm p-8">
-                <dt className="text-sm font-semibold leading-6 text-gray-300">Opportunities</dt>
-                <dd className="order-first text-3xl font-semibold tracking-tight text-white">500+</dd>
-              </div>
-              <div className="flex flex-col bg-white/5 backdrop-blur-sm p-8">
-                <dt className="text-sm font-semibold leading-6 text-gray-300">Success Stories</dt>
-                <dd className="order-first text-3xl font-semibold tracking-tight text-white">1,200+</dd>
-              </div>
-            </dl>
+          </div>
+
+          {/* SVG Background at Bottom */}
+          <div className="sm:absolute bottom-0 left-0 right-0 z-10 opacity-70 hidden lg:block">
+            <svg
+              className="w-full"
+              viewBox="0 0 1920 265"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              preserveAspectRatio="none"
+            >
+              <g clipPath="url(#clip0_11004_227)">
+                <path
+                  opacity="0.3"
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M1919.76 156.196C1716.39 264.124 1424.92 293.756 1045.34 245.092C727.146 57.0101 378.617 27.378 -0.242188 156.196V363.769H1919.76V156.196Z"
+                  fill="white"
+                />
+
+                <path
+                  opacity="0.6"
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M1919.76 186.084C1627.29 306.095 1307.29 306.095 959.758 186.084C612.227 66.0735 292.227 66.0735 -0.242188 186.084V363.768H1919.76V186.084Z"
+                  fill="#f0e6d2"
+                />
+
+                <path
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M1919.76 199.967C1631.04 280.184 1311.04 280.184 959.758 199.967C608.471 119.751 288.471 119.751 -0.242188 199.967V684.65H1919.76V199.967Z"
+                  fill="#001525"
+                />
+              </g>
+              <defs>
+                <clipPath id="clip0_11004_227">
+                  <rect width="1920" height="353" fill="white" />
+                </clipPath>
+              </defs>
+            </svg>
+
           </div>
         </div>
       </div>
 
-      {/* CTA Section with accent color */}
-      <div className="bg-theme-sand">
-        <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:px-8 lg:flex lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight text-theme-navy sm:text-4xl">
-              Ready to discover opportunities?
-            </h2>
-            <p className="mt-4 text-lg text-theme-slate">
-              Sign up for CamboConnect today and take the next step in your journey.
+      {/* Why We Exist Section with accent background to match CTA */}
+      <WhyWeExist />
+      <section className="py-16 bg-white">
+        <div className="max-w-6xl mx-auto px-4">
+          <motion.div
+            className="text-center mb-12"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={fadeIn}
+          >
+            <h2 className="font-heading font-bold text-3xl md:text-4xl text-theme-navy mb-4">How to Use CamboConnect</h2>
+            <p className="text-xl max-w-3xl mx-auto text-theme-slate">
+              Start your journey in just a few simple steps.
             </p>
-          </div>
-          <div className="mt-10 flex flex-col sm:flex-row items-center gap-y-4 gap-x-6 lg:mt-0 lg:flex-shrink-0">
-            <Link href="/register" className="btn bg-theme-navy text-white hover:bg-theme-navy/90 btn-lg w-full sm:w-auto">
-              Get started
-            </Link>
-            <Link href="/opportunities" className="text-sm font-semibold leading-6 text-theme-navy group flex items-center">
-              Browse opportunities
-              <span aria-hidden="true" className="inline-block transition-transform duration-300 ease-in-out group-hover:translate-x-1 ml-1">→</span>
-            </Link>
-          </div>
+          </motion.div>
+
+          <motion.div
+            className="relative"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={fadeIn}
+          >
+            <div className="bg-theme-cream rounded-2xl p-8 md:p-12 relative overflow-hidden">
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                <div className="md:w-1/2">
+                  <h3 className="text-2xl font-semibold text-theme-navy mb-4">Your Gateway to Opportunities</h3>
+                  <ul className="space-y-4">
+                    <li className="flex items-start">
+                      <span className="flex-shrink-0 bg-theme-teal rounded-full w-6 h-6 flex items-center justify-center text-white mr-3 mt-1">1</span>
+                      <p><span className="font-semibold">Create your profile</span> - Complete your information to receive personalized opportunity matches.</p>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="flex-shrink-0 bg-theme-teal rounded-full w-6 h-6 flex items-center justify-center text-white mr-3 mt-1">2</span>
+                      <p><span className="font-semibold">Discover opportunities</span> - Browse and filter opportunities based on your interests and qualifications.</p>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="flex-shrink-0 bg-theme-teal rounded-full w-6 h-6 flex items-center justify-center text-white mr-3 mt-1">3</span>
+                      <p><span className="font-semibold">Apply with ease</span> - Track your application status all in one place.</p>
+                    </li>
+                  </ul>
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Link
+                      href="/guide"
+                      className="mt-6 bg-theme-teal hover:bg-teal-600 text-white px-6 py-3 rounded-lg font-semibold inline-block"
+                    >
+                      View Complete Guide <ArrowRight className="ml-2 h-5 w-5 inline-block" />
+                    </Link>
+                  </motion.div>
+                </div>
+                <div className="md:w-1/2">
+                  <div className="bg-white rounded-xl shadow-lg p-4 relative">
+                    {/* Placeholder for dashboard image */}
+                    <div className="aspect-video bg-gray-200 rounded-lg flex items-center justify-center">
+                      <p className="text-gray-500">Dashboard Preview</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
-      </div>
+      </section>
+      {/* Explore opportunities */}
+      {/* Testimonials Section */}
+      <section className="py-16 bg-theme-cream">
+        <div className="max-w-6xl mx-auto px-4">
+          <motion.div
+            className="text-center mb-12"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={fadeIn}
+          >
+            <h2 className="font-heading font-bold text-3xl md:text-4xl text-theme-navy mb-4">What Our Users Say</h2>
+            <p className="text-xl max-w-3xl mx-auto text-theme-slate">
+              Hear from students and educators who've experienced CamboConnect.
+            </p>
+          </motion.div>
+
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-2 gap-8"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={staggerContainer}
+          >
+            {/* {testimonials.map((testimonial, index) => (
+              <motion.div 
+                key={index}
+                className="bg-white rounded-xl shadow-md p-6 flex flex-col"
+                variants={fadeIn}
+                whileHover={{ y: -5 }}
+              >
+                <div className="mb-4 text-theme-teal">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="currentColor" className="opacity-20">
+                    <path d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621c.537-.278 1.24-.375 1.929-.311c1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 0 1-3.5 3.5a3.871 3.871 0 0 1-2.748-1.179Zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621c.537-.278 1.24-.375 1.929-.311c1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 0 1-3.5 3.5a3.871 3.871 0 0 1-2.748-1.179Zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621c.537-.278 1.24-.375 1.929-.311c1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 0 1-3.5 3.5a3.871 3.871 0 0 1-2.748-1.179Z"/>
+                  </svg>
+                </div>
+                <p className="text-lg mb-6 flex-grow italic">{testimonial.quote}</p>
+                <div>
+                  <p className="font-semibold text-theme-navy">{testimonial.author}</p>
+                  <p className="text-sm text-theme-slate">{testimonial.role}</p>
+                </div>
+              </motion.div>
+            ))} */}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* About Us Section */}
+      <section className="py-16 bg-white">
+        <div className="max-w-6xl mx-auto px-4">
+          <motion.div
+            className="text-center mb-12"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={fadeIn}
+          >
+            <h2 className="font-heading font-bold text-3xl md:text-4xl text-theme-navy mb-4">About Us</h2>
+            <p className="text-xl max-w-3xl mx-auto text-theme-slate">
+              A team of passionate students committed to democratizing access to opportunities.
+            </p>
+          </motion.div>
+
+          <motion.div
+            className="bg-theme-cream rounded-xl p-6 md:p-10"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={fadeIn}
+          >
+            <div className="flex flex-col md:flex-row gap-8 items-center">
+              <div className="md:w-1/2">
+                <h3 className="text-2xl font-semibold text-theme-navy mb-4">Our Mission</h3>
+                <p className="mb-4">
+                  CamboConnect was founded by students from Paragon International University who recognized the challenges Cambodian students face in finding and accessing opportunities.
+                </p>
+                <p className="mb-6">
+                  Led by founder Uylongsong and CEO Linhcheu Meng, we're building a platform that bridges the gap between talented individuals and life-changing opportunities.
+                </p>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Link
+                    href="/about"
+                    className="bg-theme-navy hover:bg-blue-900 text-white px-6 py-3 rounded-lg font-semibold inline-block"
+                  >
+                    Learn More About Us <ArrowRight className="ml-2 h-5 w-5 inline-block" />
+                  </Link>
+                </motion.div>
+              </div>
+              <div className="md:w-1/2">
+                <div className="relative h-64 bg-gray-200 rounded-lg flex items-center justify-center">
+                  <p className="text-gray-500">Team Photo</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
     </MainLayout >
   );
 }

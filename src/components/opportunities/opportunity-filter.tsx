@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { ChevronDown, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { StatusFilter, StatusOption } from "@/components/ui/status";
+import { SortBy } from "../ui/Sortby";
 
 /**
  * Type definition for a category object
@@ -19,6 +21,22 @@ type CategoryType = {
 type FilterProps = {
   categories: CategoryType[];  // Array of categories to display in the filter
 };
+
+// Define status options with their respective colors
+const STATUS_OPTIONS: StatusOption[] = [
+  { value: "", label: "All", color: "bg-gray-100" },
+  { value: "ACTIVE", label: "Active", color: "bg-green-200" },
+  { value: "OPENING_SOON", label: "Open Soon", color: "bg-blue-200" },
+  { value: "CLOSING_SOON", label: "Close Soon", color: "bg-yellow-200" },
+  { value: "CLOSED", label: "Closed", color: "bg-red-200" }
+];
+
+// Define sort options with their respective colors
+const SORT_OPTIONS: StatusOption[] = [
+  { value: "latest", label: "Latest", color: "bg-purple-100" },
+  { value: "deadline", label: "Deadline", color: "bg-blue-100" },
+  { value: "popular", label: "Popular", color: "bg-orange-100" }
+];
 
 /**
  * OpportunityFilter - Client Component
@@ -38,10 +56,10 @@ export function OpportunityFilter({ categories }: FilterProps) {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   
-  // Initialize state from URL search parameters
-  const [status, setStatus] = useState<string>(searchParams.get("status") || "");
-  const [category, setCategory] = useState<string>(searchParams.get("category") || "");
-  const [sort, setSort] = useState<string>(searchParams.get("sort") || "latest");
+  // Initialize state from URL search parameters - with null check
+  const [status, setStatus] = useState<string>(searchParams?.get("status") || "");
+  const [category, setCategory] = useState<string>(searchParams?.get("category") || "");
+  const [sort, setSort] = useState<string>(searchParams?.get("sort") || "latest");
   
   // Get loading state from React Query
   const isFetching = queryClient.isFetching({ queryKey: ['opportunities'] }) > 0;
@@ -51,7 +69,7 @@ export function OpportunityFilter({ categories }: FilterProps) {
    * This triggers a refetch in the parent component without a full page reload
    */
   useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() || "");
     
     // Update status parameter
     if (status) {
@@ -88,28 +106,6 @@ export function OpportunityFilter({ categories }: FilterProps) {
       </div>
       
       <div className="space-y-4">
-        {/* Status Filter Dropdown */}
-        <div>
-          <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-            Status
-          </label>
-          <div className="relative">
-            <select
-              id="status"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="input appearance-none pr-10 w-full"
-              disabled={isFetching}
-            >
-              <option value="">All Statuses</option>
-              <option value="ACTIVE">Active</option>
-              <option value="OPENING_SOON">Opening Soon</option>
-              <option value="CLOSING_SOON">Closing Soon</option>
-              <option value="CLOSED">Closed</option>
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 pointer-events-none text-gray-400" />
-          </div>
-        </div>
         
         {/* Category Filter Dropdown */}
         <div>
@@ -134,26 +130,30 @@ export function OpportunityFilter({ categories }: FilterProps) {
             <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 pointer-events-none text-gray-400" />
           </div>
         </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Status
+          </label>
+          <StatusFilter
+            options={STATUS_OPTIONS}
+            selectedValue={status}
+            onChange={setStatus}
+            disabled={isFetching}
+          />
+        </div>
         
         {/* Sort Order Dropdown */}
         <div>
           <label htmlFor="sort" className="block text-sm font-medium text-gray-700 mb-1">
             Sort By
           </label>
-          <div className="relative">
-            <select
-              id="sort"
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              className="input appearance-none pr-10 w-full"
-              disabled={isFetching}
-            >
-              <option value="latest">Latest</option>
-              <option value="deadline">Deadline (Soonest)</option>
-              <option value="popular">Most Popular</option>
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 pointer-events-none text-gray-400" />
-          </div>
+          <SortBy
+            options={SORT_OPTIONS}
+            selectedValue={sort}
+            onChange={setSort}
+            disabled={isFetching}
+          />
         </div>
         
         {/* Reset Button - Clears all filters */}

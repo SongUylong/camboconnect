@@ -83,7 +83,7 @@ export function CommunityClient({
 
   // Handle layout toggle
   const toggleLayout = (newLayout: string) => {
-    const params = new URLSearchParams(urlSearchParams.toString());
+    const params = new URLSearchParams(urlSearchParams?.toString());
     params.set("layout", newLayout);
     router.push(`/community?${params.toString()}`);
     setLayout(newLayout);
