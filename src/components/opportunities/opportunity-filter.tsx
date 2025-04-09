@@ -5,7 +5,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { ChevronDown, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { StatusFilter, StatusOption } from "@/components/ui/status";
-import { SortBy } from "../ui/Sortby";
+import { SortBy } from "../ui/sortby";
 
 /**
  * Type definition for a category object

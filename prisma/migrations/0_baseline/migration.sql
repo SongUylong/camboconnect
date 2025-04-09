@@ -72,7 +72,6 @@ CREATE TABLE "User" (
     "experiencePrivacy" "PrivacyLevel" NOT NULL DEFAULT 'ONLY_ME',
     "skillsPrivacy" "PrivacyLevel" NOT NULL DEFAULT 'ONLY_ME',
     "contactUrlPrivacy" "PrivacyLevel" NOT NULL DEFAULT 'ONLY_ME',
-    "isSmart" BOOLEAN NOT NULL DEFAULT false,
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
 

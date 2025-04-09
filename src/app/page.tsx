@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { ReactiveBackground } from "@/components/ui/ReactiveBackground";
 import { FloatingPaths } from "@/components/ui/FloatingPaths";
 import { BackgroundBeams } from "@/components/ui/BackgroundBeams";
-import { ArrowRight, Upload, Users, RotateCcw } from "lucide-react";
+import { ArrowRight, Upload, Users, RotateCcw ,CheckCircle, UserCheck ,Search, Send} from "lucide-react";
 import { AnimatedFeatureCardGrid } from "@/components/ui/AnimatedFeatureCard";
 import { InfiniteSlider } from "@/components/ui/infinite-slider";
 import WhyWeExist from "@/components/ui/Why-we-exit";
@@ -28,7 +28,26 @@ const staggerContainer = {
     }
   }
 };
-
+const testimonials = [
+  {
+    quote: "CamboConnect made finding internships so much easier! I discovered opportunities I wouldn't have found otherwise.",
+    author: "Sokunthea Lim",
+    role: "University Student",
+    image: "/images/placeholder-avatar-1.png" // Replace with actual image paths
+  },
+  {
+    quote: "As an organization, posting our programs on CamboConnect significantly increased our applicant pool quality.",
+    author: "Dara Khim",
+    role: "Program Manager, Tech Startup",
+    image: "/images/placeholder-avatar-2.png" // Replace with actual image paths
+  },
+  {
+    quote: "The platform is intuitive and connects students directly to valuable resources. It's a game-changer for Cambodian youth.",
+    author: "Chanmony Meas",
+    role: "Career Advisor, Paragon.U",
+    image: "/images/placeholder-avatar-3.png" // Replace with actual image paths
+  }
+];
 // Pain points data for the "Why We Exist" section
 const painPoints = [
   {
@@ -258,6 +277,9 @@ export default function Home() {
               {/* Left: Sticky Title Section */}
               <div className="lg:col-span-1 relative lg:sticky top-0 self-start">
                 <div className="text-left space-y-4">
+                  <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-theme-teal/20 text-theme-teal mb-2"> {/* Added a badge */}
+                    Platform Impact
+                  </span>
                   <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
                     Empowering Cambodia's Future
                   </h2>
@@ -367,18 +389,25 @@ export default function Home() {
 
       {/* Why We Exist Section with accent background to match CTA */}
       <WhyWeExist />
-      <section className="py-16 bg-white">
-        <div className="max-w-6xl mx-auto px-4">
+
+
+       <section className="py-20 sm:py-28 bg-gradient-to-b from-white via-theme-cream/30 to-theme-cream/60">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
           <motion.div
-            className="text-center mb-12"
+            className="text-center mb-12 md:mb-16"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, amount: 0.3 }}
             variants={fadeIn}
           >
-            <h2 className="font-heading font-bold text-3xl md:text-4xl text-theme-navy mb-4">How to Use CamboConnect</h2>
-            <p className="text-xl max-w-3xl mx-auto text-theme-slate">
-              Start your journey in just a few simple steps.
+            <span className="inline-block px-4 py-1 rounded-full text-sm font-medium bg-theme-teal/10 text-theme-teal mb-3">
+              Get Started Easily
+            </span>
+            <h2 className="font-heading font-bold text-3xl md:text-4xl lg:text-5xl text-theme-navy mb-4">
+              How CamboConnect Works
+            </h2>
+            <p className="text-lg md:text-xl max-w-3xl mx-auto text-theme-slate">
+              Navigate your path to opportunity in three simple steps.
             </p>
           </motion.div>
 
@@ -386,148 +415,209 @@ export default function Home() {
             className="relative"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, amount: 0.2 }}
             variants={fadeIn}
           >
-            <div className="bg-theme-cream rounded-2xl p-8 md:p-12 relative overflow-hidden">
-              <div className="flex flex-col md:flex-row items-center gap-8">
-                <div className="md:w-1/2">
-                  <h3 className="text-2xl font-semibold text-theme-navy mb-4">Your Gateway to Opportunities</h3>
-                  <ul className="space-y-4">
-                    <li className="flex items-start">
-                      <span className="flex-shrink-0 bg-theme-teal rounded-full w-6 h-6 flex items-center justify-center text-white mr-3 mt-1">1</span>
-                      <p><span className="font-semibold">Create your profile</span> - Complete your information to receive personalized opportunity matches.</p>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="flex-shrink-0 bg-theme-teal rounded-full w-6 h-6 flex items-center justify-center text-white mr-3 mt-1">2</span>
-                      <p><span className="font-semibold">Discover opportunities</span> - Browse and filter opportunities based on your interests and qualifications.</p>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="flex-shrink-0 bg-theme-teal rounded-full w-6 h-6 flex items-center justify-center text-white mr-3 mt-1">3</span>
-                      <p><span className="font-semibold">Apply with ease</span> - Track your application status all in one place.</p>
-                    </li>
-                  </ul>
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Link
-                      href="/guide"
-                      className="mt-6 bg-theme-teal hover:bg-teal-600 text-white px-6 py-3 rounded-lg font-semibold inline-block"
+            {/* Card with gradient border effect */}
+            <div className="relative p-1 bg-gradient-to-br from-theme-teal/50 via-theme-gold/50 to-theme-sage/50 rounded-2xl shadow-xl">
+              <div className="bg-white rounded-xl p-8 md:p-12 relative overflow-hidden">
+                <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-10 lg:gap-16">
+                  {/* Left Side: Steps */}
+                  <div className="space-y-6">
+                    <h3 className="text-2xl font-semibold text-theme-navy mb-6">Your Gateway to Opportunities</h3>
+                    <motion.div variants={fadeIn} className="flex items-start space-x-4">
+                      <div className="flex-shrink-0 bg-theme-teal text-white rounded-full w-10 h-10 flex items-center justify-center mt-1 shadow-md">
+                        <UserCheck className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-lg text-theme-navy">1. Create Your Profile</h4>
+                        <p className="text-theme-slate">Sign up and complete your profile to unlock personalized opportunity recommendations.</p>
+                      </div>
+                    </motion.div>
+                    <motion.div variants={fadeIn} className="flex items-start space-x-4">
+                      <div className="flex-shrink-0 bg-theme-gold text-white rounded-full w-10 h-10 flex items-center justify-center mt-1 shadow-md">
+                         <Search className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-lg text-theme-navy">2. Discover & Filter</h4>
+                        <p className="text-theme-slate">Browse diverse opportunities. Use filters to find the perfect match for your goals.</p>
+                      </div>
+                    </motion.div>
+                     <motion.div variants={fadeIn} className="flex items-start space-x-4">
+                       <div className="flex-shrink-0 bg-theme-sage text-white rounded-full w-10 h-10 flex items-center justify-center mt-1 shadow-md">
+                         <Send className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-lg text-theme-navy">3. Apply & Track</h4>
+                        <p className="text-theme-slate">Apply directly through the platform and easily monitor your application status.</p>
+                      </div>
+                    </motion.div>
+                     <motion.div
+                      className="mt-8"
+                      whileHover={{ scale: 1.03 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
                     >
-                      View Complete Guide <ArrowRight className="ml-2 h-5 w-5 inline-block" />
-                    </Link>
-                  </motion.div>
-                </div>
-                <div className="md:w-1/2">
-                  <div className="bg-white rounded-xl shadow-lg p-4 relative">
-                    {/* Placeholder for dashboard image */}
-                    <div className="aspect-video bg-gray-200 rounded-lg flex items-center justify-center">
-                      <p className="text-gray-500">Dashboard Preview</p>
-                    </div>
+                      <Link
+                        href="/guide"
+                        className="inline-flex items-center gap-x-2 btn btn-primary bg-theme-teal hover:bg-theme-teal/90 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
+                      >
+                        View Complete Guide <ArrowRight className="w-5 h-5" />
+                      </Link>
+                    </motion.div>
                   </div>
+
+                  {/* Right Side: Image Placeholder */}
+                  <motion.div
+                    className="relative aspect-[16/10] rounded-lg overflow-hidden shadow-lg group"
+                     variants={fadeIn}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-theme-navy/80 to-theme-teal/80 opacity-80 group-hover:opacity-90 transition-opacity duration-300 z-10"></div>
+                     {/* Placeholder image - replace with actual screenshot */}
+                    <img
+                      src="/images/dashboard-placeholder.png" // Replace with your actual dashboard preview image
+                      alt="CamboConnect Dashboard Preview"
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                     />
+                    <div className="absolute inset-0 flex items-center justify-center z-20 p-4">
+                      <p className="text-white text-xl font-semibold text-center bg-black/30 backdrop-blur-sm px-4 py-2 rounded-md">
+                        Simplified Opportunity Tracking
+                      </p>
+                    </div>
+                  </motion.div>
                 </div>
               </div>
             </div>
           </motion.div>
         </div>
       </section>
-      {/* Explore opportunities */}
-      {/* Testimonials Section */}
-      <section className="py-16 bg-theme-cream">
-        <div className="max-w-6xl mx-auto px-4">
+
+      {/* --- Testimonials Section (Improved Design) --- */}
+      <section className="py-20 sm:py-28 bg-theme-sand/40"> {/* Use light sand background */}
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
           <motion.div
-            className="text-center mb-12"
+            className="text-center mb-12 md:mb-16"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, amount: 0.3 }}
             variants={fadeIn}
           >
-            <h2 className="font-heading font-bold text-3xl md:text-4xl text-theme-navy mb-4">What Our Users Say</h2>
-            <p className="text-xl max-w-3xl mx-auto text-theme-slate">
-              Hear from students and educators who've experienced CamboConnect.
+             <span className="inline-block px-4 py-1 rounded-full text-sm font-medium bg-theme-gold/10 text-theme-gold mb-3">
+              Community Voices
+            </span>
+            <h2 className="font-heading font-bold text-3xl md:text-4xl lg:text-5xl text-theme-navy mb-4">
+              Success Stories
+            </h2>
+            <p className="text-lg md:text-xl max-w-3xl mx-auto text-theme-slate">
+              Hear from individuals and organizations thriving with CamboConnect.
             </p>
           </motion.div>
 
           <motion.div
-            className="grid grid-cols-1 md:grid-cols-2 gap-8"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, amount: 0.1 }}
             variants={staggerContainer}
           >
-            {/* {testimonials.map((testimonial, index) => (
-              <motion.div 
+            {testimonials.map((testimonial, index) => (
+              <motion.div
                 key={index}
-                className="bg-white rounded-xl shadow-md p-6 flex flex-col"
+                className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl border border-transparent hover:border-theme-teal/30"
                 variants={fadeIn}
-                whileHover={{ y: -5 }}
+                whileHover={{ y: -8 }}
               >
-                <div className="mb-4 text-theme-teal">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="currentColor" className="opacity-20">
-                    <path d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621c.537-.278 1.24-.375 1.929-.311c1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 0 1-3.5 3.5a3.871 3.871 0 0 1-2.748-1.179Zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621c.537-.278 1.24-.375 1.929-.311c1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 0 1-3.5 3.5a3.871 3.871 0 0 1-2.748-1.179Zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621c.537-.278 1.24-.375 1.929-.311c1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 0 1-3.5 3.5a3.871 3.871 0 0 1-2.748-1.179Z"/>
+                <div className="p-6 md:p-8 flex-grow">
+                   {/* Quote Icon */}
+                   <svg className="w-10 h-10 text-theme-teal/20 mb-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 18 14">
+                    <path d="M6 0H2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a3 3 0 0 1-3 3H2a1 1 0 0 0 0 2h1a5.006 5.006 0 0 0 5-5V2a2 2 0 0 0-2-2Zm10 0h-4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a3 3 0 0 1-3 3h-1a1 1 0 0 0 0 2h1a5.006 5.006 0 0 0 5-5V2a2 2 0 0 0-2-2Z"/>
                   </svg>
+                  <p className="text-lg text-theme-slate mb-6 italic">"{testimonial.quote}"</p>
                 </div>
-                <p className="text-lg mb-6 flex-grow italic">{testimonial.quote}</p>
-                <div>
-                  <p className="font-semibold text-theme-navy">{testimonial.author}</p>
-                  <p className="text-sm text-theme-slate">{testimonial.role}</p>
+                <div className="bg-theme-cream/50 px-6 py-5 mt-auto border-t border-gray-100">
+                  <div className="flex items-center space-x-4">
+                    <img className="w-12 h-12 rounded-full object-cover ring-2 ring-theme-teal/30" src={testimonial.image} alt={testimonial.author} />
+                    <div>
+                      <p className="font-semibold text-base text-theme-navy">{testimonial.author}</p>
+                      <p className="text-sm text-theme-slate">{testimonial.role}</p>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
-            ))} */}
+            ))}
           </motion.div>
         </div>
       </section>
 
-      {/* About Us Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-6xl mx-auto px-4">
+      {/* --- About Us Section (Improved Design) --- */}
+      <section className="py-20 sm:py-28 bg-white">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
           <motion.div
-            className="text-center mb-12"
+            className="text-center mb-12 md:mb-16"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, amount: 0.3 }}
             variants={fadeIn}
           >
-            <h2 className="font-heading font-bold text-3xl md:text-4xl text-theme-navy mb-4">About Us</h2>
-            <p className="text-xl max-w-3xl mx-auto text-theme-slate">
-              A team of passionate students committed to democratizing access to opportunities.
+             <span className="inline-block px-4 py-1 rounded-full text-sm font-medium bg-theme-navy/10 text-theme-navy mb-3">
+              Our Story
+            </span>
+            <h2 className="font-heading font-bold text-3xl md:text-4xl lg:text-5xl text-theme-navy mb-4">
+              Meet the Team Behind CamboConnect
+            </h2>
+            <p className="text-lg md:text-xl max-w-3xl mx-auto text-theme-slate">
+              Driven by passion, built by students, for students.
             </p>
           </motion.div>
 
           <motion.div
-            className="bg-theme-cream rounded-xl p-6 md:p-10"
+            className="bg-gradient-to-br from-theme-navy to-theme-teal/90 rounded-2xl p-8 md:p-12 shadow-xl text-white"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, amount: 0.2 }}
             variants={fadeIn}
           >
-            <div className="flex flex-col md:flex-row gap-8 items-center">
-              <div className="md:w-1/2">
-                <h3 className="text-2xl font-semibold text-theme-navy mb-4">Our Mission</h3>
-                <p className="mb-4">
-                  CamboConnect was founded by students from Paragon International University who recognized the challenges Cambodian students face in finding and accessing opportunities.
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+              {/* Left Side: Text Content */}
+              <div className="space-y-5">
+                <h3 className="text-2xl md:text-3xl font-semibold text-white">Our Mission</h3>
+                <p className="text-lg text-gray-200 leading-relaxed">
+                  Founded by students from Paragon International University, CamboConnect addresses the critical need for a centralized platform showcasing opportunities for Cambodian youth. We saw firsthand the fragmentation and difficulty in accessing internships, scholarships, and programs.
                 </p>
-                <p className="mb-6">
-                  Led by founder Uylongsong and CEO Linhcheu Meng, we're building a platform that bridges the gap between talented individuals and life-changing opportunities.
+                <p className="text-lg text-gray-200 leading-relaxed">
+                  Led by founder Uylong Song and CEO Linhcheu Meng, our dedicated team is committed to bridging this gap, empowering students and young professionals to achieve their full potential.
                 </p>
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
+                 <motion.div
+                    className="mt-8"
+                    whileHover={{ scale: 1.03 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  >
                   <Link
                     href="/about"
-                    className="bg-theme-navy hover:bg-blue-900 text-white px-6 py-3 rounded-lg font-semibold inline-block"
-                  >
-                    Learn More About Us <ArrowRight className="ml-2 h-5 w-5 inline-block" />
+                     className="inline-flex items-center gap-x-2 btn bg-white hover:bg-white/90 text-theme-navy px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
+                   >
+                    Learn More About Us <ArrowRight className="w-5 h-5" />
                   </Link>
                 </motion.div>
               </div>
-              <div className="md:w-1/2">
-                <div className="relative h-64 bg-gray-200 rounded-lg flex items-center justify-center">
-                  <p className="text-gray-500">Team Photo</p>
+
+              {/* Right Side: Image Placeholder */}
+               <motion.div
+                className="relative aspect-video rounded-lg overflow-hidden shadow-lg group border-4 border-white/20"
+                variants={fadeIn}
+              >
+                 {/* Placeholder image - replace with actual team photo */}
+                 <img
+                  src="/images/team-placeholder.jpg" // Replace with your actual team photo
+                  alt="CamboConnect Team"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10 z-10"></div>
+                <div className="absolute bottom-4 left-4 z-20 p-2">
+                  <p className="text-white text-lg font-semibold drop-shadow-md">
+                    Paragon.U Student Team
+                  </p>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </motion.div>
         </div>

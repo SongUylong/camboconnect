@@ -6,16 +6,16 @@ async function main() {
   // Create admin user
   const admin = await prisma.user.create({
     data: {
-      email: 'admin@camboconnect.com',
-      password: '$2b$10$EpRnTzVlqHNP0.fUbXUwSOyuiXe/QLSUG6xNekdHgTGmrpHEfIoxm', // 'password123'
+      email: 'uylongsong@gmail.com',
+      password: 'uylongsong@gmail.com',
       firstName: 'Admin',
       lastName: 'User',
       isAdmin: true,
       isSetup: true,
       privacyLevel: PrivacyLevel.PUBLIC
-    }
+    },
   });
-
+  
   // Create categories
   const categories = await Promise.all([
     prisma.category.create({

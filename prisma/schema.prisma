@@ -83,7 +83,6 @@ model User {
   events            EventLog[]
   passwordResetToken PasswordResetToken?
   twoFactorToken    TwoFactorToken?
-  isSmart           Boolean             @default(false)
   // Relations for profile data
   educationEntries  Education[]
   experienceEntries Experience[]
@@ -166,6 +165,7 @@ model Opportunity {
   title             String
   description       String
   shortDescription  String
+  imageUrl          String?
   eligibility       String
   applicationProcess String
   benefits          String
@@ -187,6 +187,7 @@ model Opportunity {
   bookmarks         Bookmark[]
   applications      Application[]
   participations    Participation[]
+  
 }
 
 // Category model for dynamic opportunity categories

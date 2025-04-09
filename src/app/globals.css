@@ -1,57 +1,117 @@
-/* 
- * This file uses Tailwind CSS directives.
- * The CSS language service might show warnings for @tailwind and @apply directives,
- * but these are valid Tailwind CSS syntax and will compile correctly.
- */
+/* Import Tailwind directives */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* --- Shadcn UI CSS Variables --- */
+/* Make sure these match the theme you chose during Shadcn setup */
+/* This is the default light/dark theme. Copy from Shadcn docs if you used a different one. */
 @layer base {
-  /* Apply font styling to different elements */
-  body {
-    @apply font-body bg-gray-50 text-gray-900;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem; /* Default border radius */
   }
 
-  /* Clear, professional headings with Open Sans */
-  h1 {
-    @apply font-heading font-bold tracking-tight;
-  }
-  
-  h2 {
-    @apply font-heading font-bold tracking-tight;
-  }
-  
-  h3 {
-    @apply font-heading font-semibold;
-  }
-  
-  h4 {
-    @apply font-heading font-semibold;
-  }
-  
-  h5, h6 {
-    @apply font-heading font-semibold;
-  }
-
-  /* Highly readable body text */
-  p {
-    @apply font-body leading-relaxed;
-  }
-
-  /* Open Sans Semi-Bold for buttons */
-  button, .btn {
-    @apply font-heading font-semibold tracking-wide;
-  }
-
-  /* Source Sans Pro for navigation */
-  nav, .nav-item {
-    @apply font-body font-medium;
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    /* --radius remains the same */
   }
 }
 
+/* --- Apply Base Shadcn Styles --- */
+@layer base {
+  * {
+    @apply border-border; /* Apply border color variable */
+  }
+  body {
+    @apply bg-background text-foreground; /* Apply background/text variables */
+    /* Keep your font smoothing */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Apply your custom body font from config */
+    @apply font-body;
+  }
+}
+
+
+/* --- Your Custom Base Styles --- */
+@layer base {
+  /* Apply your custom heading/paragraph/etc fonts from config */
+  /* Note: Body font is applied above */
+  h1 { @apply font-heading font-bold tracking-tight; }
+  h2 { @apply font-heading font-bold tracking-tight; }
+  h3 { @apply font-heading font-semibold; }
+  h4 { @apply font-heading font-semibold; }
+  h5, h6 { @apply font-heading font-semibold; }
+  p { @apply leading-relaxed; } /* font-body applied via body tag */
+  button, .btn { @apply font-heading font-semibold tracking-wide; } /* Note: Shadcn Button has its own styles */
+  nav, .nav-item { @apply font-body font-medium; }
+}
+
+/* --- Your Custom Component Styles --- */
+/* Be aware: These might conflict with Shadcn components (e.g., .btn vs <Button>) */
+/* Consider removing these if you exclusively use Shadcn components for these elements */
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md font-semibold ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-heading;
+    /* Using ring-slate-950 - consider using ring-ring instead for theme consistency */
+  }
+  .btn-primary { @apply bg-blue-600 text-white hover:bg-blue-700 h-11 px-5 py-2; }
+  .btn-secondary { @apply bg-gray-100 text-gray-900 hover:bg-gray-200 h-11 px-5 py-2; }
+  .btn-outline { @apply border border-gray-300 bg-white hover:bg-gray-100 h-11 px-5 py-2; } /* Consider using border-border */
+  .btn-sm { @apply h-9 px-4; }
+  .btn-lg { @apply h-12 px-6; }
+
+  .card { @apply rounded-lg border border-gray-200 bg-white shadow-sm; } /* Overlaps with Shadcn Card. Uses hardcoded colors/border. Consider using Shadcn <Card> component instead. */
+
+  .input { @apply flex h-11 w-full rounded-md border border-gray-300 bg-white px-4 py-2 ring-offset-white file:border-0 file:bg-transparent file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-body; } /* Overlaps with Shadcn Input. Uses hardcoded colors/border. Consider using Shadcn <Input> component instead. */
+
+  .badge { @apply inline-flex items-center rounded-full px-3 py-0.5 font-medium; } /* Overlaps with Shadcn Badge. */
+  .badge-primary { @apply bg-blue-100 text-blue-800; }
+  .badge-secondary { @apply bg-gray-100 text-gray-800; }
+  .badge-success { @apply bg-green-100 text-green-800; }
+  .badge-warning { @apply bg-yellow-100 text-yellow-800; }
+  .badge-danger { @apply bg-red-100 text-red-800; }
+}
+
+
+/* --- Other Custom CSS (Non-Layered) --- */
 .curve-bg {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 1200 800'%3E%3Cdefs%3E%3ClinearGradient id='a' gradientUnits='userSpaceOnUse' x1='600' y1='25' x2='600' y2='777'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%23f1f5fa'/%3E%3C/linearGradient%3E%3ClinearGradient id='b' gradientUnits='userSpaceOnUse' x1='650' y1='25' x2='650' y2='777'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%23f1f5fa'/%3E%3C/linearGradient%3E%3ClinearGradient id='c' gradientUnits='userSpaceOnUse' x1='700' y1='25' x2='700' y2='777'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%23f1f5fa'/%3E%3C/linearGradient%3E%3ClinearGradient id='d' gradientUnits='userSpaceOnUse' x1='750' y1='25' x2='750' y2='777'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%23f1f5fa'/%3E%3C/linearGradient%3E%3ClinearGradient id='e' gradientUnits='userSpaceOnUse' x1='800' y1='25' x2='800' y2='777'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%23f1f5fa'/%3E%3C/linearGradient%3E%3ClinearGradient id='f' gradientUnits='userSpaceOnUse' x1='850' y1='25' x2='850' y2='777'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%23f1f5fa'/%3E%3C/linearGradient%3E%3ClinearGradient id='g' gradientUnits='userSpaceOnUse' x1='900' y1='25' x2='900' y2='777'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%23f1f5fa'/%3E%3C/linearGradient%3E%3ClinearGradient id='h' gradientUnits='userSpaceOnUse' x1='950' y1='25' x2='950' y2='777'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%23f1f5fa'/%3E%3C/linearGradient%3E%3ClinearGradient id='i' gradientUnits='userSpaceOnUse' x1='1000' y1='25' x2='1000' y2='777'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%23f1f5fa'/%3E%3C/linearGradient%3E%3ClinearGradient id='j' gradientUnits='userSpaceOnUse' x1='1050' y1='25' x2='1050' y2='777'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%23f1f5fa'/%3E%3C/linearGradient%3E%3ClinearGradient id='k' gradientUnits='userSpaceOnUse' x1='1100' y1='25' x2='1100' y2='777'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%23f1f5fa'/%3E%3C/linearGradient%3E%3ClinearGradient id='l' gradientUnits='userSpaceOnUse' x1='1150' y1='25' x2='1150' y2='777'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%23f1f5fa'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg fill-opacity='1'%3E%3Crect fill='url(%23a)' width='1200' height='800'/%3E%3Crect fill='url(%23b)' x='100' width='1100' height='800'/%3E%3Crect fill='url(%23c)' x='200' width='1000' height='800'/%3E%3Crect fill='url(%23d)' x='300' width='900' height='800'/%3E%3Crect fill='url(%23e)' x='400' width='800' height='800'/%3E%3Crect fill='url(%23f)' x='500' width='700' height='800'/%3E%3Crect fill='url(%23g)' x='600' width='600' height='800'/%3E%3Crect fill='url(%23h)' x='700' width='500' height='800'/%3E%3Crect fill='url(%23i)' x='800' width='400' height='800'/%3E%3Crect fill='url(%23j)' x='900' width='300' height='800'/%3E%3Crect fill='url(%23k)' x='1000' width='200' height='800'/%3E%3Crect fill='url(%23l)' x='1100' width='100' height='800'/%3E%3C/g%3E%3C/svg%3E");
   background-attachment: fixed;
@@ -69,74 +129,4 @@
     stroke-dashoffset: 0;
   }
 }
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
-}
-
-@layer components {
-  .btn {
-    @apply inline-flex items-center justify-center rounded-md font-semibold ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 font-heading;
-  }
-  
-  .btn-primary {
-    @apply bg-blue-600 text-white hover:bg-blue-700 h-11 px-5 py-2;
-  }
-  
-  .btn-secondary {
-    @apply bg-gray-100 text-gray-900 hover:bg-gray-200 h-11 px-5 py-2;
-  }
-  
-  .btn-outline {
-    @apply border border-gray-300 bg-white hover:bg-gray-100 h-11 px-5 py-2;
-  }
-  
-  .btn-sm {
-    @apply h-9 px-4;
-  }
-  
-  .btn-lg {
-    @apply h-12 px-6;
-  }
-  
-  .card {
-    @apply rounded-lg border border-gray-200 bg-white shadow-sm;
-  }
-  
-  .input {
-    @apply flex h-11 w-full rounded-md border border-gray-300 bg-white px-4 py-2 ring-offset-white file:border-0 file:bg-transparent file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-body;
-  }
-
-  .badge {
-    @apply inline-flex items-center rounded-full px-3 py-0.5 font-medium;
-  }
-  
-  .badge-primary {
-    @apply bg-blue-100 text-blue-800;
-  }
-  
-  .badge-secondary {
-    @apply bg-gray-100 text-gray-800;
-  }
-  
-  .badge-success {
-    @apply bg-green-100 text-green-800;
-  }
-  
-  .badge-warning {
-    @apply bg-yellow-100 text-yellow-800;
-  }
-  
-  .badge-danger {
-    @apply bg-red-100 text-red-800;
-  }
-}

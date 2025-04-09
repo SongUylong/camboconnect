@@ -22,6 +22,10 @@ output: 'standalone',
       {
         protocol: 'https',
         hostname: 'f002.backblazeb2.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'f005.backblazeb2.com',
       }
     ],
     // Add unoptimized option for Docker
