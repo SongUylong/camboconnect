@@ -46,26 +46,10 @@ class B2StorageService {
   }
 
   private getFileUrl(fileName: string): string {
-    // Normalize the fileName to prevent double slashes
     const normalizedFileName = fileName.startsWith('/') ? fileName.substring(1) : fileName;
-    
-    // Use CDN URL format for profile images
-    if (normalizedFileName.startsWith('profile-images/')) {
-      return `https://media.camboconnect.com/${normalizedFileName}`;
-    }
-    
-    // For other files, use the default B2 URL format
-    const prefix = process.env.B2_FILE_URL_PREFIX || '';
-    
-    // Check if the prefix already includes the file path
-    if (prefix.includes('/file/')) {
-      // For URLs like https://f005.backblazeb2.com/file/random-image-bucket-2025
-      return `${prefix}/${normalizedFileName}`;
-    } else {
-      // For other URL formats, keep backward compatibility
-      return `${prefix}/${this.bucketName}/${normalizedFileName}`;
-    }
+    return `https://media.camboconnect.com/${normalizedFileName}`;
   }
+  
 
   async uploadFile({ 
     filePath, 

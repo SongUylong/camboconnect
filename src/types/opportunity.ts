@@ -26,6 +26,7 @@ export type OpportunityCard = Pick<
   | "status"
   | "isPopular"
   | "isNew"
+  | "imageUrl"
 > & {
   organization: Pick<Organization, "id" | "name" | "logo">;
   category: {
