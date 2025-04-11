@@ -145,7 +145,7 @@ export function OpportunitiesClient({
   return (
     <>
       {/* Grid of opportunity cards - responsive layout with different columns based on screen size */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 justify-items-center">
         {opportunities.map((opportunity: Opportunity) => (
           <OpportunityCard 
             key={opportunity.id} 
