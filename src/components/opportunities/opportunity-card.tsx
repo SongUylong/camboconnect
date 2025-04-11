@@ -116,12 +116,9 @@ export function OpportunityCard({ opportunity }: OpportunityCardProps) {
   const currentBookmarkStatus = isBookmarked(opportunity.id);
   const isPendingBookmark = pendingBookmarks.has(opportunity.id);
 
-  // --- Dimensions (Adjust as needed) ---
-  // Match DisclosureCard example sizing or adjust for your content
-  const cardWidth = "w-full max-w-[320px]"; // Example width
+  const cardWidth = "md:w-full w-[380px] "; // Example width
   const cardHeight = "h-[380px]";
   const imageHeight = "h-52"; // Adjust image height as needed
-  console.log('Rendering Image with src:', opportunity.imageUrl); // Log the value!
   return (
     // Main container div - no longer a Link itself
     <div
