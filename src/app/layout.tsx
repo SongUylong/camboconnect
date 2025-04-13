@@ -7,6 +7,7 @@ import { Toaster } from "sonner";
 import { ApplicationStateInitializer } from "@/components/global/ApplicationStateInitializer";
 import { BookmarkStateInitializer } from "@/components/global/BookmarkStateInitializer";
 import { QueryProvider } from "@/providers/query-provider";
+import { AosProvider } from "@/components/global/AosProvider";
 
 // Import professional and highly readable fonts
 const sourceSans = Source_Sans_3({ 
@@ -62,9 +63,11 @@ export default function RootLayout({
         <QueryProvider>
           <AuthProvider>
             <ApplicationProvider>
-              <ApplicationStateInitializer />
-              <BookmarkStateInitializer />
-              {children}
+              <AosProvider>
+                <ApplicationStateInitializer />
+                <BookmarkStateInitializer />
+                {children}
+              </AosProvider>
             </ApplicationProvider>
           </AuthProvider>
         </QueryProvider>

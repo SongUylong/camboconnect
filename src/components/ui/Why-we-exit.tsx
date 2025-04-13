@@ -1,144 +1,189 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
-import Image from 'next/image';
-import { ImageComparison, ImageComparisonImage, ImageComparisonSlider } from './image-comparison'; // Import ImageComparison components
+// Keep motion import if you plan to use it for other things like hover effects,
+// but we're removing the whileInView reveal from the main row.
+import { motion } from "framer-motion";
+import { Check } from "lucide-react";
+import Image from "next/image";
+// Assuming this path is correct
+import {
+  ImageComparison,
+  ImageComparisonImage,
+  ImageComparisonSlider,
+} from "./image-comparison";
 
+// --- Updated painPoints array (remains the same) ---
 const painPoints = [
-    {
-        title: 'Limited Access to Quality Education',
-        subtitle: 'Education Gap',
-        description:
-            'Many young Cambodians lack access to high-quality, affordable education that prepares them for modern job markets.',
-        points: [
-            'Affordable, flexible learning programs',
-            'Industry-aligned curriculums',
-            'Support for underserved communities',
-        ],
-        imageUrl: '/images/education.webp', // Not used for the first item, as we'll use ImageComparison
-    },
-    {
-        title: 'Underdeveloped Job Opportunities',
-        subtitle: 'Career Readiness',
-        description:
-            'Skilled graduates often struggle to find meaningful employment due to a mismatch between training and industry needs.',
-        points: [
-            'Bridge training to job placement',
-            'Partnered with local employers',
-            'Soft skills & mentorship support',
-        ],
-        imageUrl: '/images/jobs.webp',
-    },
-    {
-        title: 'Disconnected Ecosystem',
-        subtitle: 'Opportunity Network',
-        description:
-            'There’s a gap between learners, educators, and employers, making it hard to build a cohesive opportunity pipeline.',
-        points: [
-            'Centralized opportunity platform',
-            'Events & workshops for connection',
-            'Data-driven ecosystem mapping',
-        ],
-        imageUrl: '/images/ecosystem.webp',
-    },
+  {
+    title: "Scattered & Hard-to-Find Opportunities",
+    subtitle: "Opportunity Access",
+    description:
+      "Opportunities are hidden across Facebook groups, Telegram channels, Messenger chats, and random websites. Staying updated is chaotic, and great chances slip through the cracks.",
+    points: [
+      "One platform for scholarships, jobs, internships, and events",
+      "Smart filters and search to find what matters fast",
+      "Real-time tags like \"Closing Soon\" or \"New\"",
+      "Visual labels for trending or recommended picks",
+    ],
+    beforeImageUrl: "https://media.camboconnect.com/Ui/1.png",
+    afterImageUrl: "https://media.camboconnect.com/Ui/2.png",
+    imageWidth: 1024,
+    imageHeight: 1226,
+  },
+  {
+    title: "No Way to Track or Stay Organized",
+    subtitle: "Application Management",
+    description:
+      "People apply, then forget. Deadlines are missed. There’s no simple way to see what’s next or what’s been done.",
+    points: [
+      "Dashboard to track applications and statuses",
+      "Email and in-app reminders for deadlines and updates",
+      "Bookmarking to save and organize key opportunities",
+      "Follow-up prompts to stay on top of everything",
+    ],
+    imageUrl: "https://media.camboconnect.com/Ui/3.png",
+    imageWidth: 1024,
+    imageHeight: 1024,
+  },
+  {
+    title: "Feeling Lost or Alone in the Process",
+    subtitle: "User Empowerment",
+    description:
+      "Many feel stuck or unsure, especially first-timers. Without guidance or community, it’s hard to know what to do or who to ask.",
+    points: [
+      "Step-by-step onboarding and guides",
+      "Community Q&A with past participants",
+      "Success stories to inspire and motivate",
+      "Connect with friends on similar paths",
+    ],
+    imageUrl: "https://media.camboconnect.com/Ui/4.png",
+    imageWidth: 739,
+    imageHeight: 739,
+  },
 ];
 
-const fadeIn = {
-    hidden: { opacity: 0, y: 40 },
-    visible: (i: number) => ({
-        opacity: 1,
-        y: 0,
-        transition: {
-            delay: i * 0.2,
-            duration: 0.7,
-            ease: 'easeOut',
-        },
-    }),
-};
+// Removed the Framer Motion 'fadeIn' variant definition as we'll use AOS for the main reveal
 
 export default function WhyWeExist() {
-    return (
-        <section className="bg-gradient-to-t from-theme-cream-light to-white py-24 px-6">
-            <div className="max-w-5xl mx-auto text-center mb-20">
-                <h2 className="text-4xl font-bold text-theme-navy mb-4">Why We Exist</h2>
-                <p className="text-lg text-gray-700 max-w-3xl mx-auto">
-                    We address Cambodia’s biggest opportunity gaps — building a future where young people thrive.
+  return (
+    <section className="bg-gradient-to-t from-theme-cream-light to-white py-24 px-6">
+      {/* --- Add AOS to the main heading section --- */}
+      <div
+        className="max-w-5xl mx-auto text-center mb-20"
+        data-aos="fade-up" // Add AOS animation
+        data-aos-duration="800" // Optional: control speed
+      >
+        <h2 className="text-4xl lg:text-5xl font-bold text-theme-navy mb-4">
+          Why We Exist
+        </h2>
+        <p className="text-lg lg:text-xl text-gray-700 max-w-3xl mx-auto">
+          We address Cambodia’s biggest opportunity gaps — building a future
+          where young people thrive.
+        </p>
+      </div>
+
+      <div className="space-y-24 max-w-6xl mx-auto">
+        {painPoints.map((item, index) => {
+          const isEven = index % 2 === 0;
+
+          const imageAspectRatio =
+            item.imageWidth && item.imageHeight
+              ? `${item.imageWidth} / ${item.imageHeight}`
+              : "16 / 9";
+
+          return (
+            // Use a regular div instead of motion.div if only using AOS for reveal
+            <div
+              key={index}
+              className={`flex flex-col md:flex-row ${
+                !isEven ? "md:flex-row-reverse" : ""
+              } items-center gap-10 md:gap-16`}
+              // --- Add AOS attributes to each row ---
+              data-aos="fade-up" // Use 'fade-up' for a consistent reveal
+              // Optionally use alternating animations: data-aos={isEven ? "fade-right" : "fade-left"}
+              data-aos-duration="800" // Control animation speed
+              data-aos-offset="100" // Trigger animation slightly earlier/later
+              data-aos-once="true" // Animate only once
+              // Removed Framer Motion reveal props: initial, whileInView, viewport, custom, variants
+            >
+              {/* Text Section */}
+              <div className="md:w-1/2">
+                <div className="uppercase text-theme-gold font-semibold text-sm lg:text-base mb-2">
+                  {item.subtitle}
+                </div>
+                <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-theme-navy mb-4">
+                  {item.title}
+                </h3>
+                <p className="text-base lg:text-lg text-gray-700 mb-6">
+                  {item.description}
                 </p>
+                <ul className="space-y-3">
+                  {item.points.map((point, i) => (
+                    // You *could* add inner animations here (AOS or Framer Motion)
+                    // but animating the whole row is often enough.
+                    <li key={i} className="flex items-start gap-2">
+                      <Check className="w-5 h-5 mt-0.5 flex-shrink-0 text-theme-navy" />
+                      <span className="text-base lg:text-lg text-gray-800">
+                        {point}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Image Section */}
+              <div className="w-full md:w-1/2">
+                <div
+                  className="rounded-xl overflow-hidden shadow-lg w-full relative bg-gray-100"
+                  style={{ aspectRatio: imageAspectRatio }}
+                >
+                  {index === 0 ? (
+                    item.beforeImageUrl &&
+                    item.afterImageUrl && (
+                      <ImageComparison
+                        className="absolute inset-0 w-full h-full rounded-lg"
+                        enableHover
+                        springOptions={{ bounce: 0.2 }}
+                      >
+                        <ImageComparisonImage
+                          src={item.beforeImageUrl}
+                          alt="Before - Disconnected Opportunities"
+                          position="right"
+                          className="object-cover"
+                        />
+                        <ImageComparisonImage
+                          src={item.afterImageUrl}
+                          alt="After - Centralized Platform"
+                          position="left"
+                          className="object-cover"
+                        />
+                        <ImageComparisonSlider className="w-1 bg-white/50 backdrop-blur-sm" />
+                      </ImageComparison>
+                    )
+                  ) : item.imageUrl ? (
+                    <Image
+                      src={item.imageUrl}
+                      alt={item.title}
+                      layout="fill"
+                      objectFit="cover"
+                      className="rounded-xl"
+                      // Consider adding unoptimized prop if using external URLs without Next.js Image optimization configured for them
+                      // unoptimized
+                    />
+                  ) : null}
+                  {/* Placeholder logic */}
+                  {(!item.imageUrl && index !== 0 && index !== 0) ||
+                    (!item.beforeImageUrl && !item.afterImageUrl && index === 0 && (
+                      <div className="absolute inset-0 w-full h-full bg-gray-200 flex items-center justify-center rounded-xl">
+                        <span className="text-gray-500">Image loading...</span>
+                      </div>
+                    ))}
+                </div>
+              </div>
             </div>
-
-            <div className="space-y-24 max-w-6xl mx-auto">
-                {painPoints.map((item, index) => {
-                    const isEven = index % 2 === 0;
-
-                    return (
-                        <motion.div
-                            key={index}
-                            className={`flex flex-col-reverse md:flex-row ${!isEven ? 'md:flex-row-reverse' : ''
-                                } items-center gap-10 md:gap-16`}
-                            initial="hidden"
-                            whileInView="visible"
-                            viewport={{ once: true, amount: 0.4 }}
-                            custom={index}
-                            variants={fadeIn}
-                        >
-                            {/* Text Section */}
-                            <div className="md:w-1/2">
-                                <div className="uppercase text-theme-gold font-semibold text-sm mb-2">
-                                    {item.subtitle}
-                                </div>
-                                <h3 className="text-2xl md:text-3xl font-bold text-theme-navy mb-4">
-                                    {item.title}
-                                </h3>
-                                <p className="text-gray-700 mb-6">{item.description}</p>
-                                <ul className="space-y-3">
-                                    {item.points.map((point, i) => (
-                                        <li key={i} className="flex items-start gap-2">
-                                            <Check />
-                                            <span className="text-gray-800">{point}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-
-                            {/* Image Section */}
-                            <div className="md:w-1/2">
-                                <div className="rounded-xl overflow-hidden shadow-lg w-full h-[300px] md:h-[400px] relative">
-                                    {index === 0 ? (
-                                        // Image comparison for the first item
-                                        <ImageComparison className='h-full w-full rounded-lg '
-                                            enableHover
-                                            springOptions={{
-                                                bounce: 0.3,
-                                            }}>
-                                            <ImageComparisonImage
-                                                src="./images/noti2.jpg" // Update this source
-                                                alt="Before"
-                                                position="left"
-                                            />
-                                            <ImageComparisonImage
-                                                src="./images/noti.jpg" // Update this source
-                                                alt="After"
-                                                position="right"
-                                            />
-                                            <ImageComparisonSlider className='w-0.5 bg-white/30 backdrop-blur-xs' />
-                                        </ImageComparison>
-                                    ) : (
-                                        // Regular image for other items
-                                        <Image
-                                            src={item.imageUrl}
-                                            alt={item.title}
-                                            width={600}
-                                            height={400}
-                                            className="w-full h-auto object-cover"
-                                        />
-                                    )}
-                                </div>
-                            </div>
-                        </motion.div>
-                    );
-                })}
-            </div>
-        </section>
-    );
+          );
+        })}
+      </div>
+    </section>
+  );
 }
