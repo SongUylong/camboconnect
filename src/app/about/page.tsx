@@ -1,7 +1,7 @@
 "use client"
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
+import {
   ArrowRight, Heart, Target, Globe, MessageCircle, Mail, Facebook, Linkedin, Instagram
 } from 'lucide-react';
 
@@ -9,13 +9,13 @@ const AboutPage = () => {
   // Animation variants
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
       transition: { duration: 0.6 }
     }
   };
-  
+
   const staggerContainer = {
     hidden: { opacity: 0 },
     visible: {
@@ -83,7 +83,7 @@ const AboutPage = () => {
       {/* Header Section */}
       <section className="bg-theme-navy text-white py-16">
         <div className="max-w-6xl mx-auto px-4">
-          <motion.div 
+          <motion.div
             className="text-center"
             initial="hidden"
             animate="visible"
@@ -100,7 +100,7 @@ const AboutPage = () => {
       {/* Our Story Section */}
       <section className="py-16 bg-white">
         <div className="max-w-6xl mx-auto px-4">
-          <motion.div 
+          <motion.div
             className="flex flex-col md:flex-row gap-12 items-center"
             initial="hidden"
             whileInView="visible"
@@ -110,20 +110,20 @@ const AboutPage = () => {
             <div className="md:w-1/2">
               <h2 className="font-heading font-bold text-3xl text-theme-navy mb-6">Our Story</h2>
               <p className="mb-4">
-                CamboConnect was born from a simple observation: despite the abundance of opportunities in Cambodia, 
+                CamboConnect was born from a simple observation: despite the abundance of opportunities in Cambodia,
                 many talented individuals struggled to discover and access them due to fragmented information and lack of visibility.
               </p>
               <p className="mb-4">
-                Founded in 2023 by a group of students from Paragon International University, 
+                Founded in 2023 by a group of students from Paragon International University,
                 the platform started as a student project aimed at helping classmates find scholarships and internships.
               </p>
               <p className="mb-4">
-                What began as a small initiative quickly grew as we recognized the widespread need for a centralized 
-                opportunity platform across Cambodia. Today, CamboConnect serves thousands of users nationwide, 
+                What began as a small initiative quickly grew as we recognized the widespread need for a centralized
+                opportunity platform across Cambodia. Today, CamboConnect serves thousands of users nationwide,
                 connecting them with hundreds of opportunities from educational institutions, NGOs, and businesses.
               </p>
               <p>
-                Our journey continues as we expand our reach and impact, driven by our commitment to democratize 
+                Our journey continues as we expand our reach and impact, driven by our commitment to democratize
                 access to opportunities and empower Cambodians to reach their full potential.
               </p>
             </div>
@@ -139,8 +139,8 @@ const AboutPage = () => {
                   <div className="bg-theme-cream p-6 rounded-lg">
                     <h3 className="font-semibold text-xl text-theme-navy mb-2">Our Mission</h3>
                     <p className="text-theme-slate">
-                      To democratize access to opportunities across Cambodia by creating a centralized, 
-                      user-friendly platform that connects individuals with educational, professional, 
+                      To democratize access to opportunities across Cambodia by creating a centralized,
+                      user-friendly platform that connects individuals with educational, professional,
                       and personal growth opportunities.
                     </p>
                   </div>
@@ -154,7 +154,7 @@ const AboutPage = () => {
       {/* Our Team Section */}
       <section className="py-16 bg-theme-cream">
         <div className="max-w-6xl mx-auto px-4">
-          <motion.div 
+          <motion.div
             className="text-center mb-12"
             initial="hidden"
             whileInView="visible"
@@ -166,8 +166,8 @@ const AboutPage = () => {
               The passionate individuals behind CamboConnect dedicated to empowering Cambodians.
             </p>
           </motion.div>
-          
-          <motion.div 
+
+          <motion.div
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
             initial="hidden"
             whileInView="visible"
@@ -175,7 +175,7 @@ const AboutPage = () => {
             variants={staggerContainer}
           >
             {teamMembers.map((member, index) => (
-              <motion.div 
+              <motion.div
                 key={index}
                 className="bg-white rounded-xl shadow-md overflow-hidden"
                 variants={fadeIn}
@@ -209,7 +209,7 @@ const AboutPage = () => {
       {/* Our Values Section */}
       <section className="py-16 bg-white">
         <div className="max-w-6xl mx-auto px-4">
-          <motion.div 
+          <motion.div
             className="text-center mb-12"
             initial="hidden"
             whileInView="visible"
@@ -221,8 +221,8 @@ const AboutPage = () => {
               The principles that guide our work and shape our platform.
             </p>
           </motion.div>
-          
-          <motion.div 
+
+          <motion.div
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
             initial="hidden"
             whileInView="visible"
@@ -230,7 +230,7 @@ const AboutPage = () => {
             variants={staggerContainer}
           >
             {coreValues.map((value, index) => (
-              <motion.div 
+              <motion.div
                 key={index}
                 className="bg-theme-cream rounded-xl p-6 text-center"
                 variants={fadeIn}
@@ -250,7 +250,7 @@ const AboutPage = () => {
       {/* Our Vision Section */}
       <section className="py-16 bg-theme-navy text-white">
         <div className="max-w-6xl mx-auto px-4">
-          <motion.div 
+          <motion.div
             className="flex flex-col md:flex-row gap-12 items-center"
             initial="hidden"
             whileInView="visible"
@@ -260,11 +260,11 @@ const AboutPage = () => {
             <div className="md:w-1/2">
               <h2 className="font-heading font-bold text-3xl mb-6">Our Vision</h2>
               <p className="mb-4 text-gray-300">
-                We envision a Cambodia where every individual has equal access to opportunities 
+                We envision a Cambodia where every individual has equal access to opportunities
                 that can transform their lives, regardless of their background or location.
               </p>
               <p className="mb-4 text-gray-300">
-                By 2026, we aim to be the go-to platform for opportunity discovery in Cambodia, 
+                By 2026, we aim to be the go-to platform for opportunity discovery in Cambodia,
                 serving over 100,000 users and partnering with 500+ organizations.
               </p>
               <p className="mb-6 text-gray-300">
@@ -321,7 +321,7 @@ const AboutPage = () => {
       {/* Partner Organizations Section */}
       <section className="py-16 bg-white">
         <div className="max-w-6xl mx-auto px-4">
-          <motion.div 
+          <motion.div
             className="text-center mb-12"
             initial="hidden"
             whileInView="visible"
@@ -333,8 +333,8 @@ const AboutPage = () => {
               We collaborate with organizations across sectors to bring diverse opportunities to our users.
             </p>
           </motion.div>
-          
-          <motion.div 
+
+          <motion.div
             className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 justify-items-center"
             initial="hidden"
             whileInView="visible"
@@ -342,7 +342,7 @@ const AboutPage = () => {
             variants={staggerContainer}
           >
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((partner, index) => (
-              <motion.div 
+              <motion.div
                 key={index}
                 className="bg-gray-100 w-32 h-32 rounded-full flex items-center justify-center"
                 variants={fadeIn}
@@ -352,8 +352,8 @@ const AboutPage = () => {
               </motion.div>
             ))}
           </motion.div>
-          
-          <motion.div 
+
+          <motion.div
             className="text-center mt-8"
             initial="hidden"
             whileInView="visible"
@@ -371,7 +371,7 @@ const AboutPage = () => {
       {/* Contact Us Section */}
       <section className="py-16 bg-theme-cream">
         <div className="max-w-6xl mx-auto px-4">
-          <motion.div 
+          <motion.div
             className="text-center mb-12"
             initial="hidden"
             whileInView="visible"
@@ -383,8 +383,8 @@ const AboutPage = () => {
               Have questions or want to collaborate? We'd love to hear from you.
             </p>
           </motion.div>
-          
-          <motion.div 
+
+          <motion.div
             className="bg-white rounded-xl shadow-md overflow-hidden"
             initial="hidden"
             whileInView="visible"
@@ -424,7 +424,7 @@ const AboutPage = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="mt-8">
                   <h4 className="font-medium mb-4">Follow Us</h4>
                   <div className="flex space-x-4">
@@ -446,18 +446,18 @@ const AboutPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="name">Your Name</label>
-                      <input 
-                        type="text" 
-                        id="name" 
+                      <input
+                        type="text"
+                        id="name"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-theme-teal focus:border-theme-teal"
                         placeholder="John Doe"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">Your Email</label>
-                      <input 
-                        type="email" 
-                        id="email" 
+                      <input
+                        type="email"
+                        id="email"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-theme-teal focus:border-theme-teal"
                         placeholder="john@example.com"
                       />
@@ -465,24 +465,24 @@ const AboutPage = () => {
                   </div>
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="subject">Subject</label>
-                    <input 
-                      type="text" 
-                      id="subject" 
+                    <input
+                      type="text"
+                      id="subject"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-theme-teal focus:border-theme-teal"
                       placeholder="How can we help you?"
                     />
                   </div>
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="message">Message</label>
-                    <textarea 
-                      id="message" 
-                      rows={4} 
+                    <textarea
+                      id="message"
+                      rows={4}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-theme-teal focus:border-theme-teal"
                       placeholder="Your message here..."
                     ></textarea>
                   </div>
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     className="bg-theme-teal hover:bg-teal-600 text-white px-6 py-3 rounded-lg font-semibold"
                   >
                     Send Message
